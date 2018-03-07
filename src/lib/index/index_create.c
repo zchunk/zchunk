@@ -162,10 +162,10 @@ int zck_index_add_dl_chunk(zckDL *dl, char *digest, size_t size) {
         return False;
     }
     dl->index.count = dl->index.count + 1;
+    return True;
 }
 
 int zck_index_add_chunk(zckCtx *zck, char *data, size_t size) {
-    zckIndex *new_index;
     zckHash hash;
 
     if(zck == NULL) {
@@ -177,18 +177,13 @@ int zck_index_add_chunk(zckCtx *zck, char *data, size_t size) {
         if(!zck_index_new_chunk(&(zck->index), NULL, size))
             return False;
     } else {
-        if(!zck_hash_update(&(zck->full_hash), data, size)) {
-            free(new_index);
+        if(!zck_hash_update(&(zck->full_hash), data, size))
             return False;
-        }
-        if(!zck_hash_init(&hash, zck->index.hash_type)) {
-            free(new_index);
+        if(!zck_hash_init(&hash, zck->index.hash_type))
             return False;
-        }
-        if(!zck_hash_update(&hash, data, size)) {
-            free(new_index);
+        if(!zck_hash_update(&hash, data, size))
             return False;
-        }
+
         char *digest = zck_hash_finalize(&hash);
         if(digest == NULL) {
             zck_log(ZCK_LOG_ERROR,

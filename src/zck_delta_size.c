@@ -75,8 +75,14 @@ int main (int argc, char *argv[]) {
         printf("   %s: %s\n", argv[2], zck_hash_name_from_type(zck_get_chunk_hash_type(zck_src)));
         return 1;
     }
-    zckIndex *tgt_idx = zck_get_index(zck_tgt);
-    zckIndex *src_idx = zck_get_index(zck_src);
+    zckIndexInfo *tgt_info = zck_get_index(zck_tgt);
+    if(tgt_info == NULL)
+        exit(1);
+    zckIndexInfo *src_info = zck_get_index(zck_src);
+    if(src_info == NULL)
+        exit(1);
+    zckIndex *tgt_idx = tgt_info->first;
+    zckIndex *src_idx = src_info->first;
     if(memcmp(tgt_idx->digest, src_idx->digest, zck_get_chunk_digest_size(zck_tgt)) != 0)
         printf("WARNING: Dicts don't match\n");
     int dl_size = 0;
@@ -84,7 +90,7 @@ int main (int argc, char *argv[]) {
     int matched_chunks = 0;
     while(tgt_idx) {
         int found = False;
-        src_idx = zck_get_index(zck_src);
+        src_idx = src_info->first;
 
         while(src_idx) {
             if(memcmp(tgt_idx->digest, src_idx->digest, zck_get_chunk_digest_size(zck_tgt)) == 0) {

@@ -91,7 +91,7 @@ int zck_index_read(zckCtx *zck, char *data, size_t size) {
         return False;
     }
     memcpy(&hash_type, dst, 1);
-    if(!zck_hash_setup(zck->index.hash_type, hash_type)) {
+    if(!zck_set_chunk_hash_type(zck, hash_type)) {
         if(dst)
             free(dst);
         return False;

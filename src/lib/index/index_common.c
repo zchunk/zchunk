@@ -42,8 +42,10 @@ int zck_index_free(zckCtx *zck) {
             free(tmp);
             tmp = next;
         }
-        memset(&(zck->index), 0, sizeof(zckIndexInfo));
     }
+    if(zck->index.hash_type)
+        free(zck->index.hash_type);
+    memset(&(zck->index), 0, sizeof(zckIndexInfo));
     if(zck->full_hash_digest) {
         free(zck->full_hash_digest);
         zck->full_hash_digest = NULL;

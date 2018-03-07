@@ -136,11 +136,13 @@ int zck_range_calc_segments(zckRangeInfo *info, unsigned int max_ranges) {
 }
 
 int zck_range_get_need_dl(zckRangeInfo *info, zckCtx *zck_src, zckCtx *zck_tgt) {
-    zckIndex *tgt_idx = zck_get_index(zck_tgt);
-    zckIndex *src_idx = zck_get_index(zck_src);
+    zckIndexInfo *tgt_info = zck_get_index(zck_tgt);
+    zckIndexInfo *src_info = zck_get_index(zck_src);
+    zckIndex *tgt_idx = tgt_info->first;
+    zckIndex *src_idx = src_info->first;
     while(tgt_idx) {
         int found = False;
-        src_idx = zck_get_index(zck_src);
+        src_idx = src_info->first;
 
         while(src_idx) {
             if(memcmp(tgt_idx->digest, src_idx->digest, zck_get_chunk_digest_size(zck_tgt)) == 0) {

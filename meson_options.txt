@@ -1,0 +1,1 @@
+option('with-zstd', type : 'combo', choices : ['yes', 'no', 'auto'], value : 'auto')

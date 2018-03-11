@@ -85,7 +85,7 @@ void zck_free(zckCtx *zck) {
 
 zckCtx *zck_create() {
     zckCtx *zck = zmalloc(sizeof(zckCtx));
-    if(zck->index.hash_type == NULL) {
+    if(zck == NULL) {
         zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
                 sizeof(zckCtx));
         return False;

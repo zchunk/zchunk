@@ -49,6 +49,7 @@ void zck_range_close(zckRangeInfo *info) {
         next = next->next;
         free(tmp);
     }
+    memset(info, 0, sizeof(zckRangeInfo));
 }
 
 zckRange *zck_range_insert_new(zckRange *prev, zckRange *next, uint64_t start, uint64_t end) {

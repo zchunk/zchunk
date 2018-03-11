@@ -33,12 +33,18 @@ typedef struct {
 /*typedef struct zckIndex zckIndex;*/
 typedef void CURL;
 
-typedef struct zckDL {
-    size_t dl;
-    size_t ul;
-    zckIndexInfo index;
+typedef struct zckMP {
+    int state;
+    size_t length;
+    char *buffer;
+    size_t buffer_len;
+} zckMP;
+
+typedef struct zckDLPriv {
     CURL *curl_ctx;
-} zckDL;
+    zckMP *mp;
+    int parser_started;
+} zckDLPriv;
 
 typedef struct zckComp {
     int started;

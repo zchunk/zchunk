@@ -55,8 +55,19 @@ typedef struct zckIndexInfo {
     zckIndex *first;
 } zckIndexInfo;
 
+typedef struct zckDLPriv zckDLPriv;
+
+typedef struct zckDL {
+    size_t dl;
+    size_t ul;
+    int dst_fd;
+    char *boundary;
+    zckIndexInfo index;
+    zckRangeInfo info;
+    zckDLPriv *priv;
+} zckDL;
+
 typedef struct zckCtx zckCtx;
-typedef struct zckDL zckDL;
 
 zckCtx *zck_create();
 void zck_free(zckCtx *zck);
@@ -81,6 +92,7 @@ int zck_get_full_digest_size(zckCtx *zck);
 int zck_get_chunk_digest_size(zckCtx *zck);
 int zck_get_full_hash_type(zckCtx *zck);
 int zck_get_chunk_hash_type(zckCtx *zck);
+int zck_get_tmp_fd();
 const char *zck_hash_name_from_type(uint8_t hash_type);
 const char *zck_comp_name_from_type(uint8_t comp_type);
 int zck_range_calc_segments(zckRangeInfo *info, unsigned int max_ranges);
@@ -95,6 +107,7 @@ void zck_dl_free(zckDL *dl);
 int zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url);
 size_t zck_dl_get_bytes_downloaded(zckDL *dl);
 size_t zck_dl_get_bytes_uploaded(zckDL *dl);
+int zck_dl_range(zckDL *dl, char *url);
 char *zck_dl_get_range(unsigned int start, unsigned int end);
 #endif
 

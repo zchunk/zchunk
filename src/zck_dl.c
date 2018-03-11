@@ -32,6 +32,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <libgen.h>
+#include <errno.h>
 #include <zck.h>
 
 int main (int argc, char *argv[]) {
@@ -64,16 +66,37 @@ int main (int argc, char *argv[]) {
     zckDL *dl = zck_dl_init();
     if(dl == NULL)
         exit(1);
+
+    dl->dst_fd = zck_get_tmp_fd();
+    if(dl->dst_fd < 0)
+        exit(1);
     if(!zck_dl_get_header(zck_tgt, dl, argv[2]))
         exit(1);
 
-    zckRangeInfo info = {0};
-    if(!zck_range_get_need_dl(&info, zck_src, zck_tgt))
+    zck_range_close(&(dl->info));
+    if(!zck_range_get_need_dl(&(dl->info), zck_src, zck_tgt))
+        exit(1);
+    int max_ranges = 256;
+    if(!zck_range_calc_segments(&(dl->info), max_ranges))
         exit(1);
 
+    lseek(dl->dst_fd, 0, SEEK_SET);
+    if(!zck_dl_range(dl, argv[2]))
+        exit(1);
+
+    /*
+    char *outname_full = calloc(1, strlen(argv[2])+1);
+    memcpy(outname_full, argv[2], strlen(argv[2]));
+    char *outname = basename(outname_full);
+    int dst_fd = open(outname, O_EXCL | O_WRONLY | O_CREAT, 0644);
+    if(dst_fd < 0) {
+        printf("Unable to open %s: %s\n", outname, strerror(errno));
+        free(outname_full);
+        exit(1);
+    }
+    free(outname_full);*/
 
     printf("Downloaded %lu bytes\n", zck_dl_get_bytes_downloaded(dl));
-    zck_range_close(&info);
     zck_dl_free(dl);
     zck_free(zck_tgt);
     zck_free(zck_src);

@@ -40,14 +40,120 @@
                             return False; \
                         }
 
+int zck_dl_write_zero(zckCtx *tgt, zckIndex *tgt_idx) {
+    char buf[BUF_SIZE] = {0};
+    size_t tgt_data_offset = tgt->preindex_size + tgt->comp_index_size;
+    size_t to_read = tgt_idx->length;
+    if(!zck_seek(tgt->fd, tgt_data_offset + tgt_idx->start, SEEK_SET))
+        return False;
+    while(to_read > 0) {
+        int rb = BUF_SIZE;
+        if(rb > to_read)
+            rb = to_read;
+        if(!zck_write(tgt->fd, buf, rb))
+            return False;
+        to_read -= rb;
+    }
+    return True;
+}
+
+int zck_dl_write(zckDL *dl, const char *at, size_t length) {
+    if(dl->write_in_chunk < length)
+        length = dl->write_in_chunk;
+    if(!zck_write(dl->dst_fd, at, length))
+        return -1;
+    dl->write_in_chunk -= length;
+    return length;
+}
+
+int zck_dl_md_write(zckDL *dl, const char *at, size_t length) {
+    int wb = 0;
+    if(dl->write_in_chunk > 0) {
+        wb = zck_dl_write(dl, at, length);
+        if(!zck_hash_update(dl->chunk_hash, at, wb))
+            return 0;
+        if(wb < 0)
+            return 0;
+        zck_log(ZCK_LOG_DEBUG, "Writing %lu bytes\n", wb);
+        dl->dl_chunk_data += wb;
+    }
+    return wb;
+}
+
+int zck_dl_write_chunk(zckDL *dl) {
+    if(dl->chunk_hash == NULL) {
+        zck_log(ZCK_LOG_ERROR, "Chunk hash not initialized\n");
+        return False;
+    }
+    char *digest = zck_hash_finalize(dl->chunk_hash);
+    free(dl->chunk_hash);
+    if(memcmp(digest, dl->tgt_check->digest, dl->tgt_check->digest_size) != 0) {
+        zck_log(ZCK_LOG_WARNING,
+                "Downloaded chunk failed hash check\n");
+        if(!zck_dl_write_zero(dl->zck, dl->tgt_check))
+            return False;
+    } else {
+        dl->tgt_check->finished = True;
+    }
+    dl->tgt_check = NULL;
+    dl->chunk_hash = NULL;
+    free(digest);
+    return True;
+}
+
 int zck_dl_multidata_cb(zckDL *dl, const char *at, size_t length) {
-    if(dl == NULL) {
-        zck_log(ZCK_LOG_ERROR, "zckDL not initialized");
+    if(dl == NULL || dl->info.index.first == NULL) {
+        zck_log(ZCK_LOG_ERROR, "zckDL index not initialized\n");
         return 0;
     }
-    zck_log(ZCK_LOG_DEBUG, "Writing %lu bytes\n", length);
-    size_t wb = write(dl->dst_fd, at, length);
-    return wb;
+    if(dl->zck == NULL || dl->zck->index.first == NULL) {
+        zck_log(ZCK_LOG_ERROR, "zckCtx index not initialized\n");
+        return 0;
+    }
+    int wb = zck_dl_md_write(dl, at, length);
+    if(dl->write_in_chunk == 0) {
+        /* Check whether we just finished downloading a chunk and verify it */
+        if(dl->tgt_check && !zck_dl_write_chunk(dl))
+            return False;
+        zckIndex *idx = dl->info.index.first;
+        while(idx) {
+            if(dl->dl_chunk_data == idx->start) {
+                zckIndex *tgt_idx = dl->zck->index.first;
+                while(tgt_idx) {
+                    if(tgt_idx->finished)
+                        tgt_idx = tgt_idx->next;
+                    if(idx->length == tgt_idx->length &&
+                       memcmp(idx->digest, tgt_idx->digest,
+                              idx->digest_size) == 0) {
+                        dl->tgt_check = tgt_idx;
+                        dl->chunk_hash = zmalloc(sizeof(zckHash));
+                        if(!zck_hash_init(dl->chunk_hash,
+                                          &(dl->zck->chunk_hash_type)))
+                            return 0;
+                        dl->write_in_chunk = idx->length;
+                        size_t offset = dl->zck->preindex_size +
+                                        dl->zck->comp_index_size;
+                        if(!zck_seek(dl->dst_fd, offset + tgt_idx->start,
+                           SEEK_SET))
+                            return 0;
+                        idx = NULL;
+                        tgt_idx = NULL;
+                    } else {
+                        tgt_idx = tgt_idx->next;
+                    }
+                }
+            }
+            if(idx)
+                idx = idx->next;
+        }
+    }
+    int wb2 = 0;
+    if(dl->write_in_chunk > 0 && wb < length) {
+        wb2 = zck_dl_multidata_cb(dl, at+wb, length-wb);
+        if(wb2 == 0)
+            return 0;
+    }
+    return wb + wb2;
 }
 
 zckDL *zck_dl_init() {
@@ -344,6 +450,81 @@ static size_t write_data(void *ptr, size_t l, size_t c, void *dl_v) {
     return wb;
 }
 
+int zck_dl_write_and_verify(zckRangeInfo *info, zckCtx *src, zckCtx *tgt,
+                            zckIndex *src_idx, zckIndex *tgt_idx) {
+    static char buf[BUF_SIZE] = {0};
+
+    size_t src_data_offset = src->preindex_size + src->comp_index_size;
+    size_t tgt_data_offset = tgt->preindex_size + tgt->comp_index_size;
+    size_t to_read = src_idx->length;
+    if(!zck_seek(src->fd, src_data_offset + src_idx->start, SEEK_SET))
+        return False;
+    if(!zck_seek(tgt->fd, tgt_data_offset + tgt_idx->start, SEEK_SET))
+        return False;
+    zckHash check_hash = {0};
+    if(!zck_hash_init(&check_hash, &(src->chunk_hash_type)))
+        return False;
+    while(to_read > 0) {
+        int rb = BUF_SIZE;
+        if(rb > to_read)
+            rb = to_read;
+        if(!zck_read(src->fd, buf, rb))
+            return False;
+        if(!zck_hash_update(&check_hash, buf, rb))
+            return False;
+        if(!zck_write(tgt->fd, buf, rb))
+            return False;
+        to_read -= rb;
+    }
+    char *digest = zck_hash_finalize(&check_hash);
+    /* If chunk is invalid, overwrite with zeros and add to download range */
+    if(memcmp(digest, src_idx->digest, src_idx->digest_size) != 0) {
+        zck_log(ZCK_LOG_WARNING, "Source hash: %s\n",
+                zck_hash_get_printable(src_idx->digest, &(src->chunk_hash_type)));
+        zck_log(ZCK_LOG_WARNING, "Target hash: %s\n",
+                zck_hash_get_printable(digest, &(src->chunk_hash_type)));
+        if(!zck_dl_write_zero(tgt, tgt_idx))
+            return False;
+        if(!zck_range_add(info, tgt_idx, tgt))
+            return False;
+    } else {
+        tgt_idx->finished = True;
+        zck_log(ZCK_LOG_DEBUG, "Writing %lu bytes at %lu\n", tgt_idx->length,
+                tgt_idx->start);
+    }
+    free(digest);
+    return True;
+}
+
+int zck_dl_copy_src_chunks(zckRangeInfo *info, zckCtx *src, zckCtx *tgt) {
+    zckIndexInfo *tgt_info = zck_get_index(tgt);
+    zckIndexInfo *src_info = zck_get_index(src);
+    zckIndex *tgt_idx = tgt_info->first;
+    zckIndex *src_idx = src_info->first;
+    while(tgt_idx) {
+        int found = False;
+        src_idx = src_info->first;
+
+        while(src_idx) {
+            if(tgt_idx->length == src_idx->length &&
+               memcmp(tgt_idx->digest, src_idx->digest,
+                      zck_get_chunk_digest_size(tgt)) == 0) {
+                found = True;
+                break;
+            }
+            src_idx = src_idx->next;
+        }
+        /* Write out found chunk, then verify that it's valid */
+        if(found && !zck_dl_write_and_verify(info, src, tgt, src_idx, tgt_idx))
+            return False;
+        if(!found && !zck_range_add(info, tgt_idx, tgt))
+            return False;
+
+        tgt_idx = tgt_idx->next;
+    }
+    return True;
+}
+
 int zck_dl_range(zckDL *dl, char *url) {
     if(dl == NULL || dl->priv == NULL || dl->info.first == NULL) {
         zck_log(ZCK_LOG_ERROR, "Struct not defined\n");
@@ -401,6 +582,8 @@ int zck_dl_bytes(zckDL *dl, char *url, size_t bytes, size_t start,
         return False;
     }
     if(start + bytes > *buffer_len) {
+        zckIndex idx = {0};
+
         zck_log(ZCK_LOG_DEBUG, "Seeking to end of temporary file\n");
         if(lseek(dl->dst_fd, 0, SEEK_END) == -1) {
             zck_log(ZCK_LOG_ERROR, "Seek to end of temporary file failed: %s\n",
@@ -408,8 +591,10 @@ int zck_dl_bytes(zckDL *dl, char *url, size_t bytes, size_t start,
             return False;
         }
         zck_log(ZCK_LOG_DEBUG, "Downloading %lu bytes at position %lu\n", start+bytes-*buffer_len, *buffer_len);
+        idx.start = *buffer_len;
+        idx.length = start+bytes-*buffer_len;
         zck_range_close(&(dl->info));
-        zck_range_add(&(dl->info), *buffer_len, start+bytes-1);
+        zck_range_add(&(dl->info), &idx, NULL);
         if(!zck_dl_range(dl, url))
             return False;
         zck_range_close(&(dl->info));
@@ -425,10 +610,49 @@ int zck_dl_bytes(zckDL *dl, char *url, size_t bytes, size_t start,
     return True;
 }
 
+int zck_zero_bytes(zckDL *dl, size_t bytes, size_t start, size_t *buffer_len) {
+    char buf[BUF_SIZE] = {0};
+    if(start + bytes > *buffer_len) {
+        zck_log(ZCK_LOG_DEBUG, "Seeking to end of temporary file\n");
+        if(lseek(dl->dst_fd, 0, SEEK_END) == -1) {
+            zck_log(ZCK_LOG_ERROR, "Seek to end of temporary file failed: %s\n",
+                    strerror(errno));
+            return False;
+        }
+        size_t write = *buffer_len;
+        while(write < start + bytes) {
+            size_t wb = BUF_SIZE;
+            if(write + wb > start + bytes)
+                wb = (start + bytes) - write;
+            if(!zck_write(dl->dst_fd, buf, wb))
+                return False;
+            write += wb;
+        }
+        zck_log(ZCK_LOG_DEBUG, "Wrote %lu zeros at position %lu\n", start+bytes-*buffer_len, *buffer_len);
+        *buffer_len = start+bytes;
+        zck_log(ZCK_LOG_DEBUG, "Seeking to position %lu\n", start);
+        if(lseek(dl->dst_fd, start, SEEK_SET) == -1) {
+            zck_log(ZCK_LOG_ERROR,
+                    "Seek to byte %lu of temporary file failed: %s\n", start,
+                    strerror(errno));
+            return False;
+        }
+    }
+    return True;
+}
+
 int zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url) {
     size_t buffer_len = 0;
     size_t start = 0;
-
+    if(zck == NULL) {
+        zck_log(ZCK_LOG_ERROR, "zckCtx not initialized\n");
+        return False;
+    }
+    if(dl == NULL) {
+        zck_log(ZCK_LOG_ERROR, "zckDL not initialized\n");
+        return False;
+    }
+    zck->fd = dl->dst_fd;
     if(!zck_dl_bytes(dl, url, 100, start, &buffer_len))
         return False;
     if(!zck_read_initial(zck, dl->dst_fd))
@@ -457,6 +681,11 @@ int zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url) {
                      &buffer_len))
         return False;
     if(!zck_read_index(zck, dl->dst_fd))
+        return False;
+    zckIndexInfo *info = &(dl->info.index);
+    info->hash_type = zck->index.hash_type;
+    zck_log(ZCK_LOG_DEBUG, "Writing zeros to rest of file: %llu\n", zck->index.length + zck->comp_index_size + start);
+    if(!zck_zero_bytes(dl, zck->index.length, zck->comp_index_size + start, &buffer_len))
         return False;
     return True;
 }

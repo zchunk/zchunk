@@ -26,44 +26,79 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include <unistd.h>
+#include <errno.h>
 #include <zck.h>
 
 #include "zck_private.h"
 
-#define BLK_SIZE 32768
-
 int zck_read(int fd, char *data, size_t length) {
     if(length == 0)
         return True;
-
-    if(read(fd, data, length) != length) {
+    if(data == NULL) {
+        zck_log(ZCK_LOG_ERROR, "Unable to read to NULL data pointer\n");
+        return False;
+    }
+    ssize_t read_bytes = read(fd, data, length);
+    if(read_bytes == -1) {
+        zck_log(ZCK_LOG_ERROR, "Error reading data: %s\n", strerror(errno));
+        return False;
+    } else if(read_bytes != length) {
         zck_log(ZCK_LOG_ERROR, "Short read\n");
         return False;
     }
-
     return True;
 }
 
 int zck_write(int fd, const char *data, size_t length) {
     if(length == 0)
         return True;
-
-    if(write(fd, data, length) != length)
+    if(data == NULL) {
+        zck_log(ZCK_LOG_ERROR, "Unable to write from NULL data pointer\n");
         return False;
+    }
+    ssize_t write_bytes = write(fd, data, length);
+    if(write_bytes == -1) {
+        zck_log(ZCK_LOG_ERROR, "Error write data: %s\n", strerror(errno));
+        return False;
+    } else if(write_bytes != length) {
+        zck_log(ZCK_LOG_ERROR, "Short write\n");
+        return False;
+    }
+    return True;
+}
+
+int zck_seek(int fd, off_t offset, int whence) {
+    if(lseek(fd, offset, whence) == -1) {
+        char *wh_str = NULL;
+
+        if(whence == SEEK_CUR) {
+            wh_str = "from current position";
+        } else if(whence == SEEK_END) {
+            wh_str = "from end of file";
+        } else if(whence == SEEK_SET) {
+            wh_str = "from beginning of file";
+        } else {
+            wh_str = "using unknown measurement";
+        }
+        zck_log(ZCK_LOG_ERROR, "Unable to seek to %lu %s: %s\n", offset, wh_str,
+                strerror(errno));
+        return False;
+    }
     return True;
 }
 
 int zck_chunks_from_temp(zckCtx *zck) {
     int read_count;
-    char *data = zmalloc(BLK_SIZE);
+    char *data = zmalloc(BUF_SIZE);
     if(data == NULL)
         return False;
 
     if(lseek(zck->temp_fd, 0, SEEK_SET) == -1)
         return False;
 
-    while((read_count = read(zck->temp_fd, data, BLK_SIZE)) > 0) {
+    while((read_count = read(zck->temp_fd, data, BUF_SIZE)) > 0) {
         if(read_count == -1 || !zck_write(zck->fd, data, read_count)) {
             free(data);
             return False;

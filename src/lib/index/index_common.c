@@ -31,10 +31,13 @@
 
 #include "zck_private.h"
 
-int zck_index_free(zckCtx *zck) {
-    if(zck->index.first) {
+void zck_index_clean(zckIndexInfo *index) {
+    if(index == NULL)
+        return;
+
+    if(index->first) {
         zckIndex *next;
-        zckIndex *tmp=zck->index.first;
+        zckIndex *tmp=index->first;
         while(tmp != NULL) {
             next = tmp->next;
             if(tmp->digest)
@@ -43,9 +46,11 @@ int zck_index_free(zckCtx *zck) {
             tmp = next;
         }
     }
-    if(zck->index.hash_type)
-        free(zck->index.hash_type);
-    memset(&(zck->index), 0, sizeof(zckIndexInfo));
+    memset(index, 0, sizeof(zckIndexInfo));
+}
+
+void zck_index_free(zckCtx *zck) {
+    zck_index_clean(&(zck->index));
     if(zck->full_hash_digest) {
         free(zck->full_hash_digest);
         zck->full_hash_digest = NULL;
@@ -62,5 +67,4 @@ int zck_index_free(zckCtx *zck) {
         free(zck->index_digest);
         zck->index_digest = NULL;
     }
-    return True;
 }

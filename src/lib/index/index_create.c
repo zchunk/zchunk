@@ -51,7 +51,7 @@ int zck_index_finalize(zckCtx *zck) {
     if(zck->index.first) {
         zckIndex *tmp = zck->index.first;
         while(tmp) {
-            index_size += zck->index.hash_type->digest_size + sizeof(uint64_t);
+            index_size += zck->index.digest_size + sizeof(uint64_t);
             tmp = tmp->next;
         }
     }
@@ -59,7 +59,7 @@ int zck_index_finalize(zckCtx *zck) {
     /* Write index */
     index = zmalloc(index_size);
     index_loc = index;
-    memcpy(index_loc, &(zck->index.hash_type->type), 1);
+    memcpy(index_loc, &(zck->index.hash_type), 1);
     index_loc += 1;
     index_count = htole64(zck->index.count);
     memcpy(index_loc, &index_count, sizeof(uint64_t));
@@ -70,8 +70,8 @@ int zck_index_finalize(zckCtx *zck) {
         zckIndex *tmp = zck->index.first;
         while(tmp) {
             uint64_t end = htole64(tmp->start + tmp->length);
-            memcpy(index_loc, tmp->digest, zck->index.hash_type->digest_size);
-            index_loc += zck->index.hash_type->digest_size;
+            memcpy(index_loc, tmp->digest, zck->index.digest_size);
+            index_loc += zck->index.hash_type;
             memcpy(index_loc, &end, sizeof(uint64_t));
             index_loc += sizeof(uint64_t);
             tmp = tmp->next;
@@ -114,9 +114,14 @@ int zck_index_finalize(zckCtx *zck) {
     return True;
 }
 
-int zck_index_new_chunk(zckIndexInfo *index, char *digest, size_t length) {
+int zck_index_new_chunk(zckIndexInfo *index, char *digest, int digest_size,
+                        size_t length, int finished) {
     if(index == NULL) {
-        zck_log(ZCK_LOG_ERROR, "Invalid index");
+        zck_log(ZCK_LOG_ERROR, "Invalid index\n");
+        return False;
+    }
+    if(digest_size == 0) {
+        zck_log(ZCK_LOG_ERROR, "Digest size 0 too small\n");
         return False;
     }
     zckIndex *idx = zmalloc(sizeof(zckIndex));
@@ -125,18 +130,17 @@ int zck_index_new_chunk(zckIndexInfo *index, char *digest, size_t length) {
                 sizeof(zckIndex));
         return False;
     }
-    if(digest == NULL || length == 0) {
-        idx->digest = zmalloc(index->hash_type->digest_size);
-        if(idx->digest == NULL) {
-            zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
-                    index->hash_type->digest_size);
-            return False;
-        }
-    } else {
-        idx->digest = digest;
+    idx->digest = zmalloc(digest_size);
+    if(idx->digest == NULL) {
+        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n", digest_size);
+        return False;
     }
+    if(digest)
+        memcpy(idx->digest, digest, digest_size);
+    idx->digest_size = digest_size;
     idx->start = index->length;
     idx->length = length;
+    idx->finished = finished;
     if(index->first == NULL) {
         index->first = idx;
     } else {
@@ -150,21 +154,6 @@ int zck_index_new_chunk(zckIndexInfo *index, char *digest, size_t length) {
     return True;
 }
 
-int zck_index_add_dl_chunk(zckDL *dl, char *digest, size_t size) {
-    if(dl == NULL) {
-        zck_log(ZCK_LOG_ERROR, "Invalid dl context");
-        return False;
-    }
-    zckIndex *new_index = zmalloc(sizeof(zckIndex));
-    if(new_index == NULL) {
-        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
-                sizeof(zckIndex));
-        return False;
-    }
-    dl->index.count = dl->index.count + 1;
-    return True;
-}
-
 int zck_index_add_chunk(zckCtx *zck, char *data, size_t size) {
     zckHash hash;
 
@@ -174,12 +163,13 @@ int zck_index_add_chunk(zckCtx *zck, char *data, size_t size) {
     }
 
     if(size == 0) {
-        if(!zck_index_new_chunk(&(zck->index), NULL, size))
+        if(!zck_index_new_chunk(&(zck->index), NULL, zck->index.digest_size,
+                                size, True))
             return False;
     } else {
         if(!zck_hash_update(&(zck->full_hash), data, size))
             return False;
-        if(!zck_hash_init(&hash, zck->index.hash_type))
+        if(!zck_hash_init(&hash, &(zck->chunk_hash_type)))
             return False;
         if(!zck_hash_update(&hash, data, size))
             return False;
@@ -188,10 +178,11 @@ int zck_index_add_chunk(zckCtx *zck, char *data, size_t size) {
         if(digest == NULL) {
             zck_log(ZCK_LOG_ERROR,
                     "Unable to calculate %s checksum for new chunk\n",
-                    zck_hash_name_from_type(zck->index.hash_type->type));
+                    zck_hash_name_from_type(zck->index.hash_type));
             return False;
         }
-        if(!zck_index_new_chunk(&(zck->index), digest, size))
+        if(!zck_index_new_chunk(&(zck->index), digest, zck->index.digest_size,
+                                size, True))
             return False;
     }
     return True;

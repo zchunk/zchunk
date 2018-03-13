@@ -35,6 +35,7 @@
 #include "sha2/sha2.h"
 
 static char unknown[] = "Unknown(\0\0\0\0\0";
+static char hash_text[BUF_SIZE] = {0};
 
 const static char *HASH_NAME[] = {
     "SHA-1",
@@ -116,6 +117,32 @@ void zck_hash_close(zckHash *hash) {
     return;
 }
 
+/* Returns 1 if full file hash matches, 0 if it doesn't and -1 if failure */
+int zck_hash_check_full_file(zckCtx *zck, int dst_fd) {
+    if(!zck_seek(dst_fd, zck->preindex_size + zck->comp_index_size, SEEK_SET))
+        return -1;
+    if(!zck_hash_init(&(zck->check_full_hash), &(zck->hash_type)))
+        return -1;
+    char buf[BUF_SIZE] = {0};
+    zckIndex *idx = zck->index.first;
+    zck_log(ZCK_LOG_INFO, "Checking full hash\n");
+    while(idx) {
+        size_t to_read = idx->length;
+        while(to_read > 0) {
+            size_t rb = BUF_SIZE;
+            if(rb > to_read)
+                rb = to_read;
+            if(!zck_read(dst_fd, buf, rb))
+                return -1;
+            zck_hash_update(&(zck->check_full_hash), buf, rb);
+            to_read -= rb;
+        }
+        idx = idx->next;
+    }
+    return zck_validate_file(zck);
+    return True;
+}
+
 char *zck_hash_finalize(zckHash *hash) {
     if(hash && hash->ctx && hash->type) {
         if(hash->type->type == ZCK_HASH_SHA1) {
@@ -144,4 +171,17 @@ const char *zck_hash_name_from_type(uint8_t hash_type) {
     return HASH_NAME[hash_type];
 }
 
-
+const char *zck_hash_get_printable(const char *digest, zckHashType *type) {
+    if(digest == NULL || type == NULL) {
+        zck_log(ZCK_LOG_ERROR,
+                "digest or zckHashType haven't been initialized\n");
+        return False;
+    }
+    for(int i=0; i<type->digest_size; i++) {
+        if(snprintf(hash_text + (i*2), 3, "%02x", (unsigned char)digest[i]) < 0) {
+            zck_log(ZCK_LOG_ERROR, "Unable to generate printable hash\n");
+            return NULL;
+        }
+    }
+    return hash_text;
+}

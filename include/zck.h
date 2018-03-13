@@ -24,6 +24,22 @@
 typedef enum log_type { ZCK_LOG_DEBUG, ZCK_LOG_INFO, ZCK_LOG_WARNING,
                         ZCK_LOG_ERROR } log_type;
 
+typedef struct zckIndex {
+    char *digest;
+    int digest_size;
+    int finished;
+    uint64_t start;
+    size_t length;
+    struct zckIndex *next;
+} zckIndex;
+
+typedef struct zckIndexInfo {
+    uint64_t count;
+    size_t length;
+    uint8_t hash_type;
+    uint8_t digest_size;
+    zckIndex *first;
+} zckIndexInfo;
 
 typedef struct zckRange {
     uint64_t start;
@@ -37,37 +53,27 @@ typedef struct zckRangeInfo {
     unsigned int segments;
     unsigned int max_ranges;
     zckRange *first;
+    zckIndexInfo index;
 } zckRangeInfo;
 
-typedef struct zckIndex {
-    char *digest;
-    uint64_t start;
-    size_t length;
-    struct zckIndex *next;
-} zckIndex;
-
-typedef struct zckHashType zckHashType;
-
-typedef struct zckIndexInfo {
-    uint64_t count;
-    size_t length;
-    zckHashType *hash_type;
-    zckIndex *first;
-} zckIndexInfo;
-
 typedef struct zckDLPriv zckDLPriv;
+typedef struct zckCtx zckCtx;
+typedef struct zckHash zckHash;
 
 typedef struct zckDL {
     size_t dl;
     size_t ul;
+    size_t write_in_chunk;
+    size_t dl_chunk_data;
     int dst_fd;
     char *boundary;
-    zckIndexInfo index;
     zckRangeInfo info;
     zckDLPriv *priv;
+    struct zckCtx *zck;
+    zckIndex *tgt_check;
+    zckHash *chunk_hash;
 } zckDL;
 
-typedef struct zckCtx zckCtx;
 
 zckCtx *zck_create();
 void zck_free(zckCtx *zck);
@@ -86,6 +92,7 @@ zckIndexInfo *zck_get_index(zckCtx *zck);
 int zck_decompress_to_file (zckCtx *zck, int src_fd, int dst_fd);
 int zck_set_full_hash_type(zckCtx *zck, uint8_t hash_type);
 int zck_set_chunk_hash_type(zckCtx *zck, uint8_t hash_type);
+int64_t zck_get_predata_length(zckCtx *zck);
 char *zck_get_index_digest(zckCtx *zck);
 char *zck_get_full_digest(zckCtx *zck);
 int zck_get_full_digest_size(zckCtx *zck);
@@ -97,6 +104,7 @@ const char *zck_hash_name_from_type(uint8_t hash_type);
 const char *zck_comp_name_from_type(uint8_t comp_type);
 int zck_range_calc_segments(zckRangeInfo *info, unsigned int max_ranges);
 int zck_range_get_need_dl(zckRangeInfo *info, zckCtx *zck_src, zckCtx *zck_tgt);
+int zck_dl_copy_src_chunks(zckRangeInfo *info, zckCtx *src, zckCtx *tgt);
 int zck_range_get_array(zckRangeInfo *info, char **ra);
 void zck_range_close(zckRangeInfo *info);
 void zck_set_log_level(log_type ll);
@@ -109,5 +117,6 @@ size_t zck_dl_get_bytes_downloaded(zckDL *dl);
 size_t zck_dl_get_bytes_uploaded(zckDL *dl);
 int zck_dl_range(zckDL *dl, char *url);
 char *zck_dl_get_range(unsigned int start, unsigned int end);
+int zck_hash_check_full_file(zckCtx *zck, int dst_fd);
 #endif
 

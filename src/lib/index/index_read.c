@@ -37,7 +37,6 @@ int zck_index_read(zckCtx *zck, char *data, size_t size) {
     char *digest;
     uint64_t index_size;
     uint64_t index_count;
-    uint8_t hash_type;
     char *dst = NULL;
     size_t dst_size = 0;
     char *cur_loc;
@@ -90,6 +89,7 @@ int zck_index_read(zckCtx *zck, char *data, size_t size) {
                 zck->hash_type.digest_size);
         return False;
     }
+    uint8_t hash_type;
     memcpy(&hash_type, dst, 1);
     if(!zck_set_chunk_hash_type(zck, hash_type)) {
         if(dst)
@@ -98,7 +98,7 @@ int zck_index_read(zckCtx *zck, char *data, size_t size) {
     }
 
     if((dst_size - (zck->hash_type.digest_size + sizeof(uint64_t)+ 1)) %
-       (zck->index.hash_type->digest_size + sizeof(uint64_t)) != 0) {
+       (zck->index.digest_size + sizeof(uint64_t)) != 0) {
         zck_log(ZCK_LOG_ERROR, "Index size is invalid\n");
         if(dst)
             free(dst);
@@ -120,17 +120,19 @@ int zck_index_read(zckCtx *zck, char *data, size_t size) {
         }
         uint64_t end = 0;
 
-        new->digest = zmalloc(zck->index.hash_type->digest_size);
+        new->digest = zmalloc(zck->index.digest_size);
         if(!new->digest) {
             zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
-                    zck->index.hash_type->digest_size);
+                    zck->index.digest_size);
             return False;
         }
-        memcpy(new->digest, cur_loc, zck->index.hash_type->digest_size);
-        cur_loc += zck->index.hash_type->digest_size;
+        memcpy(new->digest, cur_loc, zck->index.digest_size);
+        new->digest_size = zck->index.digest_size;
+        cur_loc += zck->index.digest_size;
         memcpy(&end, cur_loc, sizeof(uint64_t));
         new->start = prev_loc;
         new->length = le64toh(end) - prev_loc;
+        new->finished = False;
         prev_loc = le64toh(end);
         zck->index.length += new->length;
         cur_loc += sizeof(uint64_t);

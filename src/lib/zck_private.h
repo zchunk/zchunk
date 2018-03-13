@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#define BUF_SIZE 32768
+
 #define zmalloc(x) calloc(1, x)
 
 struct zckComp;
@@ -25,7 +27,7 @@ typedef struct zckHashType {
     int digest_size;
 } zckHashType;
 
-typedef struct {
+typedef struct zckHash {
     zckHashType *type;
     void *ctx;
 } zckHash;
@@ -69,6 +71,7 @@ typedef struct zckCtx {
     int temp_fd;
     int fd;
 
+    size_t preindex_size;
     char *full_hash_digest;
     char *comp_index;
     size_t comp_index_size;
@@ -78,10 +81,12 @@ typedef struct zckCtx {
     zckHash check_full_hash;
     zckComp comp;
     zckHashType hash_type;
+    zckHashType chunk_hash_type;
 } zckCtx;
 
 const char *zck_hash_name_from_type(uint8_t hash_type);
 int zck_get_tmp_fd();
+int zck_validate_file(zckCtx *zck);
 
 /* comp/comp.c */
 int zck_comp_init(zckCtx *zck);
@@ -97,15 +102,20 @@ int zck_hash_init(zckHash *hash, zckHashType *hash_type);
 int zck_hash_update(zckHash *hash, const char *message, const size_t size);
 char *zck_hash_finalize(zckHash *hash);
 void zck_hash_close(zckHash *hash);
+const char *zck_hash_get_printable(const char *digest, zckHashType *type);
 
 /* index/index.c */
 int zck_index_read(zckCtx *zck, char *data, size_t size);
 int zck_index_finalize(zckCtx *zck);
+int zck_index_new_chunk(zckIndexInfo *index, char *digest, int digest_size,
+                        size_t length, int finished);
 int zck_index_add_chunk(zckCtx *zck, char *data, size_t size);
-int zck_index_free(zckCtx *zck);
+void zck_index_clean(zckIndexInfo *index);
+void zck_index_free(zckCtx *zck);
 int zck_write_index(zckCtx *zck);
 
 /* io.c */
+int zck_seek(int fd, off_t offset, int whence);
 int zck_read(int fd, char *data, size_t length);
 int zck_write(int fd, const char *data, size_t length);
 int zck_chunks_from_temp(zckCtx *zck);
@@ -121,7 +131,7 @@ int zck_write_header(zckCtx *zck);
 
 /* dl/range.c */
 char *zck_range_get_char(zckRange **range, int max_ranges);
-int zck_range_add(zckRangeInfo *info, uint64_t start, uint64_t end);
+int zck_range_add(zckRangeInfo *info, zckIndex *idx, zckCtx *zck);
 
 /* log.c */
 void zck_log(log_type lt, const char *format, ...);

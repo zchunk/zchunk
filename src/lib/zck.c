@@ -118,21 +118,16 @@ int zck_set_chunk_hash_type(zckCtx *zck, uint8_t hash_type) {
         zck_log(ZCK_LOG_ERROR, "zckCtx not initialized\n");
         return False;
     }
+    memset(&(zck->chunk_hash_type), 0, sizeof(zckHashType));
     zck_log(ZCK_LOG_INFO, "Setting chunk hash to %s\n",
             zck_hash_name_from_type(hash_type));
-    if(zck->index.hash_type == NULL) {
-        zck->index.hash_type = zmalloc(sizeof(zckHashType));
-        if(zck->index.hash_type == NULL) {
-            zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
-                    sizeof(zckHashType));
-            return False;
-        }
-    }
-    if(!zck_hash_setup(zck->index.hash_type, hash_type)) {
+    if(!zck_hash_setup(&(zck->chunk_hash_type), hash_type)) {
         zck_log(ZCK_LOG_ERROR, "Unable to set chunk hash to %s\n",
                 zck_hash_name_from_type(hash_type));
         return False;
     }
+    zck->index.hash_type = zck->chunk_hash_type.type;
+    zck->index.digest_size = zck->chunk_hash_type.digest_size;
     return True;
 }
 
@@ -143,9 +138,9 @@ int zck_get_full_digest_size(zckCtx *zck) {
 }
 
 int zck_get_chunk_digest_size(zckCtx *zck) {
-    if(zck == NULL)
+    if(zck == NULL || zck->index.digest_size == 0)
         return -1;
-    return zck->index.hash_type->digest_size;
+    return zck->index.digest_size;
 }
 
 int zck_get_full_hash_type(zckCtx *zck) {
@@ -157,7 +152,7 @@ int zck_get_full_hash_type(zckCtx *zck) {
 int zck_get_chunk_hash_type(zckCtx *zck) {
     if(zck == NULL)
         return -1;
-    return zck->index.hash_type->type;
+    return zck->index.hash_type;
 }
 
 int64_t zck_get_index_count(zckCtx *zck) {
@@ -182,6 +177,12 @@ char *zck_get_full_digest(zckCtx *zck) {
     if(zck == NULL)
         return NULL;
     return zck->full_hash_digest;
+}
+
+int64_t zck_get_predata_length(zckCtx *zck) {
+    if(zck == NULL)
+        return -1;
+    return zck->preindex_size + zck->comp_index_size;
 }
 
 int zck_get_tmp_fd() {
@@ -264,7 +265,7 @@ int zck_validate_chunk(zckCtx *zck, char *data, size_t size, zckIndex *idx,
     }
 
     /* Check chunk checksum */
-    if(!zck_hash_init(&chunk_hash, zck->index.hash_type)) {
+    if(!zck_hash_init(&chunk_hash, &(zck->chunk_hash_type))) {
         zck_log(ZCK_LOG_ERROR,
                 "Unable to initialize checksum for chunk %i\n", chk_num);
         return False;
@@ -279,13 +280,13 @@ int zck_validate_chunk(zckCtx *zck, char *data, size_t size, zckIndex *idx,
     if(!digest) {
         zck_log(ZCK_LOG_ERROR,
                 "Unable to calculate %s checksum for chunk %i\n",
-                zck_hash_name_from_type(zck->index.hash_type->type), chk_num);
+                zck_hash_name_from_type(zck->index.hash_type), chk_num);
         return False;
     }
-    if(memcmp(digest, idx->digest, zck->index.hash_type->digest_size) != 0) {
+    if(memcmp(digest, idx->digest, zck->index.digest_size) != 0) {
         free(digest);
         zck_log(ZCK_LOG_ERROR, "Chunk %i failed %s checksum\n",
-                chk_num, zck_hash_name_from_type(zck->index.hash_type->type));
+                chk_num, zck_hash_name_from_type(zck->index.hash_type));
         return False;
     }
     free(digest);

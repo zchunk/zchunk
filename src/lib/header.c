@@ -45,6 +45,7 @@ int zck_read_initial(zckCtx *zck, int src_fd) {
 
     if(!zck_hash_setup(&(zck->hash_type), header[5]))
         return False;
+    zck->preindex_size = 6;
 
     return True;
 }
@@ -62,6 +63,7 @@ int zck_read_index_hash(zckCtx *zck, int src_fd) {
         return False;
     }
     zck->index_digest = header;
+    zck->preindex_size += zck->hash_type.digest_size;
     return True;
 }
 
@@ -75,16 +77,18 @@ int zck_read_comp_type(zckCtx *zck, int src_fd) {
         return False;
     if(!zck_comp_init(zck))
         return False;
+
+    zck->preindex_size += 1;
     return True;
 }
 
 int zck_read_index_size(zckCtx *zck, int src_fd) {
     uint64_t index_size;
-
     if(!zck_read(src_fd, (char *)&index_size, sizeof(uint64_t)))
         return False;
 
     zck->comp_index_size = le64toh(index_size);
+    zck->preindex_size += sizeof(uint64_t);
     return True;
 }
 
@@ -108,6 +112,11 @@ int zck_read_index(zckCtx *zck, int src_fd) {
 }
 
 int zck_read_header(zckCtx *zck, int src_fd) {
+    if(zck == NULL) {
+        zck_log(ZCK_LOG_ERROR, "zckCtx not initialized\n");
+        return False;
+    }
+    zck->fd = src_fd;
     if(!zck_read_initial(zck, src_fd))
         return False;
     if(!zck_read_index_hash(zck, src_fd))

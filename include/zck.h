@@ -112,6 +112,7 @@ void zck_dl_global_init();
 void zck_dl_global_cleanup();
 zckDL *zck_dl_init();
 void zck_dl_free(zckDL *dl);
+void zck_dl_free_regex(zckDL *dl);
 int zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url);
 size_t zck_dl_get_bytes_downloaded(zckDL *dl);
 size_t zck_dl_get_bytes_uploaded(zckDL *dl);

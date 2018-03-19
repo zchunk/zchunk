@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <regex.h>
 
 #define BUF_SIZE 32768
 
@@ -46,6 +47,8 @@ typedef struct zckDLPriv {
     CURL *curl_ctx;
     zckMP *mp;
     int parser_started;
+    regex_t *dl_regex;
+    regex_t *hdr_regex;
 } zckDLPriv;
 
 typedef struct zckComp {

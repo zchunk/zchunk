@@ -30,6 +30,7 @@
 #include <curl/curl.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <regex.h>
 #include <errno.h>
 #include <zck.h>
 
@@ -185,6 +186,22 @@ zckDL *zck_dl_init() {
     return dl;
 }
 
+void zck_dl_free_regex(zckDL *dl) {
+    if(dl == NULL || dl->priv == NULL)
+        return;
+
+    if(dl->priv->dl_regex) {
+        regfree(dl->priv->dl_regex);
+        free(dl->priv->dl_regex);
+        dl->priv->dl_regex = NULL;
+    }
+    if(dl->priv->hdr_regex) {
+        regfree(dl->priv->hdr_regex);
+        free(dl->priv->hdr_regex);
+        dl->priv->hdr_regex = NULL;
+    }
+}
+
 void zck_dl_free(zckDL *dl) {
     if(!dl)
         return;
@@ -194,6 +211,7 @@ void zck_dl_free(zckDL *dl) {
                 free(dl->priv->mp->buffer);
             free(dl->priv->mp);
         }
+        zck_dl_free_regex(dl);
         curl_easy_cleanup(dl->priv->curl_ctx);
         free(dl->priv);
     }
@@ -214,6 +232,31 @@ char *zck_dl_get_range_char(unsigned int start, unsigned int end) {
     return range_header;
 }
 
+static char *add_boundary_to_regex(const char *regex, const char *boundary) {
+    char *regex_b = zmalloc(strlen(regex) + strlen(boundary) + 1);
+    if(regex_b == NULL) {
+        zck_log(ZCK_LOG_ERROR,
+                "Unable to reallocate %lu bytes for regular expression\n",
+                strlen(regex) + strlen(boundary) - 2);
+        return 0;
+    }
+    if(snprintf(regex_b, strlen(regex) + strlen(boundary), regex,
+                boundary) != strlen(regex) + strlen(boundary) - 2) {
+        zck_log(ZCK_LOG_ERROR, "Unable to build regular expression\n");
+        return 0;
+    }
+    return regex_b;
+}
+
+
+static int create_regex(regex_t *reg, const char *regex) {
+    if(regcomp(reg, regex, REG_ICASE | REG_EXTENDED) != 0) {
+        zck_log(ZCK_LOG_ERROR, "Unable to compile regular expression\n");
+        return False;
+    }
+    return True;
+}
+
 static size_t extract_multipart(char *b, size_t l, void *dl_v) {
     if(dl_v == NULL)
         return 0;
@@ -224,6 +267,7 @@ static size_t extract_multipart(char *b, size_t l, void *dl_v) {
     char *buf = b;
     int alloc_buf = False;
 
+    /* Add new data to stored buffer */
     if(mp->buffer) {
         buf = realloc(mp->buffer, mp->buffer_len + l);
         if(buf == NULL) {
@@ -237,10 +281,28 @@ static size_t extract_multipart(char *b, size_t l, void *dl_v) {
         mp->buffer_len = 0;
         alloc_buf = True;
     }
+
+    /* If regex hasn't been created, create it */
+    if(dl->priv->dl_regex == NULL) {
+        char *regex = "\r\n--%s\r\ncontent-type:.*\r\n" \
+                      "content-range: *bytes *([0-9]+) *- *([0-9]+) */.*\r\n\r";
+        char *regex_b = add_boundary_to_regex(regex, dl->boundary);
+        if(regex_b == NULL)
+            return 0;
+        dl->priv->dl_regex = zmalloc(sizeof(regex_t));
+        if(!create_regex(dl->priv->dl_regex, regex_b)) {
+            free(regex_b);
+            return 0;
+        }
+        free(regex_b);
+    }
+
     char *header_start = buf;
     char *i = buf;
     while(i) {
         char *end = buf + l;
+        /* If we're in data writing state, then write data until end of buffer
+         * or end of range, whichever comes first */
         if(mp->state != 0) {
             if(i >= end)
                 break;
@@ -258,6 +320,9 @@ static size_t extract_multipart(char *b, size_t l, void *dl_v) {
             i += size;
             continue;
         }
+
+        /* If we've reached the end of the buffer without finishing, save it
+         * and leave loop */
         if(i >= end) {
             size_t size = buf + l - header_start;
             if(size > 0) {
@@ -268,101 +333,39 @@ static size_t extract_multipart(char *b, size_t l, void *dl_v) {
             break;
         }
 
-        if(i + 4 + strlen(dl->boundary) + 4 > end) {
-            i += 4 + strlen(dl->boundary) + 4;
-            continue;
-        }
-        if(memcmp(i, "\r\n--", 4) != 0) {
-            zck_log(ZCK_LOG_ERROR, "Multipart boundary header invalid\n");
-            l = 0;
-            goto end;
-        }
-        i += 4;
-        if(memcmp(i, dl->boundary, strlen(dl->boundary)) != 0) {
-            zck_log(ZCK_LOG_ERROR, "Multipart boundary not matched\n");
-            l = 0;
-            goto end;
-        }
-        i += strlen(dl->boundary);
-        if(memcmp(i, "--\r\n", 4) == 0) {
-            if(i + 4 != end)
-                zck_log(ZCK_LOG_WARNING,
-                        "Multipart data end with %lu bytes still remaining\n",
-                        end - i - 4);
-            else
-                zck_log(ZCK_LOG_DEBUG, "Multipart data end\n");
-            goto end;
-        }
-        if(i + 15 > end) {
-            i += 15;
-            continue;
-        }
-        if(memcmp(i, "\r\nContent-type:", 15) != 0) {
-            zck_log(ZCK_LOG_ERROR, "Multipart type header invalid\n");
-            l = 0;
-            goto end;
-        }
-        i += 15;
-        while(True) {
-            if(i + 2 > end || memcmp(i, "\r\n", 2) == 0) {
-                i += 2;
+        /* Find double newline and replace final \n with \0, so it's a zero-
+         * terminated string */
+        for(char *j=i; j<end; j++) {
+            if(j + 4 >= end) {
+                i = j+4;
                 break;
             }
-            i++;
+            if(memcmp(j, "\r\n\r\n", 4) == 0) {
+                j[3] = '\0';
+                break;
+            }
         }
-        if(i + 21 > end) {
-            i += 21;
+        if(i >= end)
             continue;
-        }
-        if(memcmp(i, "Content-range: bytes ", 21) != 0) {
-            zck_log(ZCK_LOG_ERROR, "Multipart range header invalid\n");
-            l = 0;
+
+        /* Run regex against download range string */
+        regmatch_t match[4] = {0};
+        if(regexec(dl->priv->dl_regex, i, 3, match, 0) != 0) {
+            zck_log(ZCK_LOG_ERROR, "Unable to find multipart download range\n");
             goto end;
         }
-        i += 21;
+
+        /* Get range start from regex */
         size_t rstart = 0;
+        for(char *c=i + match[1].rm_so; c < i + match[1].rm_eo; c++)
+            rstart = rstart*10 + (size_t)(c[0] - 48);
+
+        /* Get range end from regex */
         size_t rend = 0;
-        size_t good = False;
-        while(True) {
-            if(i + 1 > end || memcmp(i, "-", 1) == 0) {
-                i++;
-                break;
-            }
-            rstart = rstart*10 + (size_t)(i[0] - 48);
-            good = True;
-            i++;
-        }
-        if(i > end)
-            continue;
-        if(!good) {
-            zck_log(ZCK_LOG_ERROR, "Multipart start range missing\n");
-            l = 0;
-            goto end;
-        }
-        good = False;
-        while(True) {
-            if(i + 1 > end || memcmp(i, "/", 1) == 0) {
-                i++;
-                break;
-            }
-            rend = rend*10 + (size_t)(i[0] - 48);
-            good = True;
-            i++;
-        }
-        if(i > end)
-            continue;
-        if(!good) {
-            zck_log(ZCK_LOG_ERROR, "Multipart end range missing\n");
-            l = 0;
-            goto end;
-        }
-        while(True) {
-            if(i + 4 >= end || memcmp(i, "\r\n\r\n", 4) == 0) {
-                i += 4;
-                break;
-            }
-            i++;
-        }
+        for(char *c=i + match[2].rm_so; c < i + match[2].rm_eo; c++)
+            rend = rend*10 + (size_t)(c[0] - 48);
+
+        i += match[0].rm_eo + 1;
         zck_log(ZCK_LOG_DEBUG, "Download range: %lu-%lu\n", rstart, rend);
         mp->length = rend-rstart+1;
         mp->state = 1;
@@ -378,17 +381,20 @@ static size_t get_header(char *b, size_t l, size_t c, void *dl_v) {
         return 0;
     zckDL *dl = (zckDL*)dl_v;
 
-    if(l*c < 14 || strncmp("Content-Type:", b, 13) != 0)
-        return l*c;
+    if(dl->priv == NULL)
+        return 0;
 
+    /* Create regex to find boundary */
+    if(dl->priv->hdr_regex == NULL) {
+        char *regex = "boundary *= *([0-9a-fA-F]+)";
+        dl->priv->hdr_regex = zmalloc(sizeof(regex_t));
+        if(!create_regex(dl->priv->hdr_regex, regex))
+            return 0;
+    }
+
+    /* Copy buffer to null-terminated string because POSIX regex requires null-
+     * terminated string */
     size_t size = l*c;
-    /* Null terminate buffer */
-    b += 13;
-    size -= 13;
-    while(size > 2 && (b[size-1] == '\n' || b[size-1] == '\r'))
-        size--;
-    if(size <= 2)
-        return l*c;
     char *buf = zmalloc(size+1);
     if(buf == NULL) {
         zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes for header\n",
@@ -397,41 +403,20 @@ static size_t get_header(char *b, size_t l, size_t c, void *dl_v) {
     }
     buf[size] = '\0';
     memcpy(buf, b, size);
-    char *loc = buf;
-    while(loc[0] == ' ') {
-        loc++;
-        size--;
-        if(size <= 0)
-            goto end;
+
+    /* Check whether this header contains the boundary and set it if it does */
+    regmatch_t match[2] = {0};
+    if(regexec(dl->priv->hdr_regex, buf, 2, match, 0) == 0) {
+        char *boundary = zmalloc(match[1].rm_eo - match[1].rm_so + 1);
+        memcpy(boundary, buf + match[1].rm_so, match[1].rm_eo - match[1].rm_so);
+        zck_log(ZCK_LOG_DEBUG, "Multipart boundary: %s\n", boundary);
+        dl->boundary = boundary;
     }
-    if(size < 22 || strncmp("multipart/byteranges;", loc, 21) != 0)
-        goto end;
-    loc += 21;
-    size -= 21;
-    while(loc[0] == ' ') {
-        loc++;
-        size--;
-        if(size <= 0)
-            goto end;
-    }
-    if(size < 10 || strncmp("boundary=", loc, 9) != 0)
-        goto end;
-    loc += 9;
-    size -= 9;
-    while(loc[0] == ' ') {
-        loc++;
-        size--;
-        if(size <= 0)
-            goto end;
-    }
-    char *boundary = zmalloc(size+1);
-    memcpy(boundary, loc, size+1);
-    zck_log(ZCK_LOG_DEBUG, "Multipart boundary: %s\n", boundary);
-    dl->boundary = boundary;
-end:
-    free(buf);
+    if(buf)
+        free(buf);
     return l*c;
 }
+
 static size_t write_data(void *ptr, size_t l, size_t c, void *dl_v) {
     if(dl_v == NULL)
         return 0;

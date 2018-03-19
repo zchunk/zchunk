@@ -47,7 +47,9 @@ typedef struct zckDLPriv {
     CURL *curl_ctx;
     zckMP *mp;
     int parser_started;
+    int is_chunk;
     regex_t *dl_regex;
+    regex_t *end_regex;
     regex_t *hdr_regex;
 } zckDLPriv;
 
@@ -135,6 +137,13 @@ int zck_write_header(zckCtx *zck);
 /* dl/range.c */
 char *zck_range_get_char(zckRange **range, int max_ranges);
 int zck_range_add(zckRangeInfo *info, zckIndex *idx, zckCtx *zck);
+
+/* dl/multipart.c */
+size_t zck_multipart_extract(zckDL *dl, char *b, size_t l);
+size_t zck_multipart_get_boundary(zckDL *dl, char *b, size_t size);
+
+/* dl/dl.c */
+int zck_dl_write_range(zckDL *dl, const char *at, size_t length);
 
 /* log.c */
 void zck_log(log_type lt, const char *format, ...);

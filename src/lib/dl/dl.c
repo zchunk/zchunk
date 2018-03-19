@@ -30,7 +30,6 @@
 #include <curl/curl.h>
 #include <unistd.h>
 #include <sys/types.h>
-#include <regex.h>
 #include <errno.h>
 #include <zck.h>
 
@@ -41,6 +40,24 @@
                             return False; \
                         }
 
+/* Free zckDL regex's used for downloading ranges */
+void zck_dl_free_dl_regex(zckDL *dl) {
+    if(dl == NULL || dl->priv == NULL)
+        return;
+
+    if(dl->priv->dl_regex) {
+        regfree(dl->priv->dl_regex);
+        free(dl->priv->dl_regex);
+        dl->priv->dl_regex = NULL;
+    }
+    if(dl->priv->end_regex) {
+        regfree(dl->priv->end_regex);
+        free(dl->priv->end_regex);
+        dl->priv->end_regex = NULL;
+    }
+}
+
+/* Write zeros to tgt->fd in location of tgt_idx */
 int zck_dl_write_zero(zckCtx *tgt, zckIndex *tgt_idx) {
     char buf[BUF_SIZE] = {0};
     size_t tgt_data_offset = tgt->preindex_size + tgt->comp_index_size;
@@ -59,6 +76,7 @@ int zck_dl_write_zero(zckCtx *tgt, zckIndex *tgt_idx) {
 }
 
 int zck_dl_write(zckDL *dl, const char *at, size_t length) {
+    VALIDATE(dl);
     if(dl->write_in_chunk < length)
         length = dl->write_in_chunk;
     if(!zck_write(dl->dst_fd, at, length))
@@ -68,6 +86,7 @@ int zck_dl_write(zckDL *dl, const char *at, size_t length) {
 }
 
 int zck_dl_md_write(zckDL *dl, const char *at, size_t length) {
+    VALIDATE(dl);
     int wb = 0;
     if(dl->write_in_chunk > 0) {
         wb = zck_dl_write(dl, at, length);
@@ -82,6 +101,7 @@ int zck_dl_md_write(zckDL *dl, const char *at, size_t length) {
 }
 
 int zck_dl_write_chunk(zckDL *dl) {
+    VALIDATE(dl);
     if(dl->chunk_hash == NULL) {
         zck_log(ZCK_LOG_ERROR, "Chunk hash not initialized\n");
         return False;
@@ -102,8 +122,9 @@ int zck_dl_write_chunk(zckDL *dl) {
     return True;
 }
 
-int zck_dl_multidata_cb(zckDL *dl, const char *at, size_t length) {
-    if(dl == NULL || dl->info.index.first == NULL) {
+int zck_dl_write_range(zckDL *dl, const char *at, size_t length) {
+    VALIDATE(dl);
+    if(dl->info.index.first == NULL) {
         zck_log(ZCK_LOG_ERROR, "zckDL index not initialized\n");
         return 0;
     }
@@ -150,76 +171,11 @@ int zck_dl_multidata_cb(zckDL *dl, const char *at, size_t length) {
     }
     int wb2 = 0;
     if(dl->write_in_chunk > 0 && wb < length) {
-        wb2 = zck_dl_multidata_cb(dl, at+wb, length-wb);
+        wb2 = zck_dl_write_range(dl, at+wb, length-wb);
         if(wb2 == 0)
             return 0;
     }
     return wb + wb2;
-}
-
-zckDL *zck_dl_init() {
-    zckDL *dl = zmalloc(sizeof(zckDL));
-    if(!dl) {
-        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes for zckDL\n",
-                sizeof(zckDL));
-        return NULL;
-    }
-    dl->priv = zmalloc(sizeof(zckDLPriv));
-    if(!dl->priv) {
-        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes for dl->priv\n",
-                sizeof(zckDL));
-        return NULL;
-    }
-    dl->priv->mp = zmalloc(sizeof(zckMP));
-    if(!dl->priv->mp) {
-        zck_log(ZCK_LOG_ERROR,
-                "Unable to allocate %lu bytes for dl->priv->mp\n",
-                sizeof(zckMP));
-        return NULL;
-    }
-    dl->priv->curl_ctx = curl_easy_init();
-    if(!dl->priv->curl_ctx) {
-        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes for dl->curl_ctx\n",
-                sizeof(CURL));
-        return NULL;
-    }
-    return dl;
-}
-
-void zck_dl_free_regex(zckDL *dl) {
-    if(dl == NULL || dl->priv == NULL)
-        return;
-
-    if(dl->priv->dl_regex) {
-        regfree(dl->priv->dl_regex);
-        free(dl->priv->dl_regex);
-        dl->priv->dl_regex = NULL;
-    }
-    if(dl->priv->hdr_regex) {
-        regfree(dl->priv->hdr_regex);
-        free(dl->priv->hdr_regex);
-        dl->priv->hdr_regex = NULL;
-    }
-}
-
-void zck_dl_free(zckDL *dl) {
-    if(!dl)
-        return;
-    if(dl->priv) {
-        if(dl->priv->mp) {
-            if(dl->priv->mp->buffer)
-                free(dl->priv->mp->buffer);
-            free(dl->priv->mp);
-        }
-        zck_dl_free_regex(dl);
-        curl_easy_cleanup(dl->priv->curl_ctx);
-        free(dl->priv);
-    }
-    if(dl->info.first)
-        zck_range_close(&(dl->info));
-    if(dl->boundary)
-        free(dl->boundary);
-    free(dl);
 }
 
 char *zck_dl_get_range_char(unsigned int start, unsigned int end) {
@@ -232,191 +188,6 @@ char *zck_dl_get_range_char(unsigned int start, unsigned int end) {
     return range_header;
 }
 
-static char *add_boundary_to_regex(const char *regex, const char *boundary) {
-    char *regex_b = zmalloc(strlen(regex) + strlen(boundary) + 1);
-    if(regex_b == NULL) {
-        zck_log(ZCK_LOG_ERROR,
-                "Unable to reallocate %lu bytes for regular expression\n",
-                strlen(regex) + strlen(boundary) - 2);
-        return 0;
-    }
-    if(snprintf(regex_b, strlen(regex) + strlen(boundary), regex,
-                boundary) != strlen(regex) + strlen(boundary) - 2) {
-        zck_log(ZCK_LOG_ERROR, "Unable to build regular expression\n");
-        return 0;
-    }
-    return regex_b;
-}
-
-
-static int create_regex(regex_t *reg, const char *regex) {
-    if(regcomp(reg, regex, REG_ICASE | REG_EXTENDED) != 0) {
-        zck_log(ZCK_LOG_ERROR, "Unable to compile regular expression\n");
-        return False;
-    }
-    return True;
-}
-
-static size_t extract_multipart(char *b, size_t l, void *dl_v) {
-    if(dl_v == NULL)
-        return 0;
-    zckDL *dl = (zckDL*)dl_v;
-    if(dl->priv == NULL || dl->priv->mp == NULL)
-        return 0;
-    zckMP *mp = dl->priv->mp;
-    char *buf = b;
-    int alloc_buf = False;
-
-    /* Add new data to stored buffer */
-    if(mp->buffer) {
-        buf = realloc(mp->buffer, mp->buffer_len + l);
-        if(buf == NULL) {
-            zck_log(ZCK_LOG_ERROR, "Unable to reallocate %lu bytes for zckDL\n",
-                    mp->buffer_len + l);
-            return 0;
-        }
-        memcpy(buf + mp->buffer_len, b, l);
-        l = mp->buffer_len + l;
-        mp->buffer = NULL;  // No need to free, buf holds realloc'd buffer
-        mp->buffer_len = 0;
-        alloc_buf = True;
-    }
-
-    /* If regex hasn't been created, create it */
-    if(dl->priv->dl_regex == NULL) {
-        char *regex = "\r\n--%s\r\ncontent-type:.*\r\n" \
-                      "content-range: *bytes *([0-9]+) *- *([0-9]+) */.*\r\n\r";
-        char *regex_b = add_boundary_to_regex(regex, dl->boundary);
-        if(regex_b == NULL)
-            return 0;
-        dl->priv->dl_regex = zmalloc(sizeof(regex_t));
-        if(!create_regex(dl->priv->dl_regex, regex_b)) {
-            free(regex_b);
-            return 0;
-        }
-        free(regex_b);
-    }
-
-    char *header_start = buf;
-    char *i = buf;
-    while(i) {
-        char *end = buf + l;
-        /* If we're in data writing state, then write data until end of buffer
-         * or end of range, whichever comes first */
-        if(mp->state != 0) {
-            if(i >= end)
-                break;
-            size_t size = end - i;
-            if(mp->length <= size) {
-                size = mp->length;
-                mp->length = 0;
-                mp->state = 0;
-                header_start = i + size;
-            } else {
-                mp->length -= size;
-            }
-            if(zck_dl_multidata_cb(dl, i, size) != size)
-                return 0;
-            i += size;
-            continue;
-        }
-
-        /* If we've reached the end of the buffer without finishing, save it
-         * and leave loop */
-        if(i >= end) {
-            size_t size = buf + l - header_start;
-            if(size > 0) {
-                mp->buffer = malloc(size);
-                memcpy(mp->buffer, header_start, size);
-                mp->buffer_len = size;
-            }
-            break;
-        }
-
-        /* Find double newline and replace final \n with \0, so it's a zero-
-         * terminated string */
-        for(char *j=i; j<end; j++) {
-            if(j + 4 >= end) {
-                i = j+4;
-                break;
-            }
-            if(memcmp(j, "\r\n\r\n", 4) == 0) {
-                j[3] = '\0';
-                break;
-            }
-        }
-        if(i >= end)
-            continue;
-
-        /* Run regex against download range string */
-        regmatch_t match[4] = {0};
-        if(regexec(dl->priv->dl_regex, i, 3, match, 0) != 0) {
-            zck_log(ZCK_LOG_ERROR, "Unable to find multipart download range\n");
-            goto end;
-        }
-
-        /* Get range start from regex */
-        size_t rstart = 0;
-        for(char *c=i + match[1].rm_so; c < i + match[1].rm_eo; c++)
-            rstart = rstart*10 + (size_t)(c[0] - 48);
-
-        /* Get range end from regex */
-        size_t rend = 0;
-        for(char *c=i + match[2].rm_so; c < i + match[2].rm_eo; c++)
-            rend = rend*10 + (size_t)(c[0] - 48);
-
-        i += match[0].rm_eo + 1;
-        zck_log(ZCK_LOG_DEBUG, "Download range: %lu-%lu\n", rstart, rend);
-        mp->length = rend-rstart+1;
-        mp->state = 1;
-    }
-end:
-    if(alloc_buf)
-        free(buf);
-    return l;
-}
-
-static size_t get_header(char *b, size_t l, size_t c, void *dl_v) {
-    if(dl_v == NULL)
-        return 0;
-    zckDL *dl = (zckDL*)dl_v;
-
-    if(dl->priv == NULL)
-        return 0;
-
-    /* Create regex to find boundary */
-    if(dl->priv->hdr_regex == NULL) {
-        char *regex = "boundary *= *([0-9a-fA-F]+)";
-        dl->priv->hdr_regex = zmalloc(sizeof(regex_t));
-        if(!create_regex(dl->priv->hdr_regex, regex))
-            return 0;
-    }
-
-    /* Copy buffer to null-terminated string because POSIX regex requires null-
-     * terminated string */
-    size_t size = l*c;
-    char *buf = zmalloc(size+1);
-    if(buf == NULL) {
-        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes for header\n",
-                size+1);
-        return 0;
-    }
-    buf[size] = '\0';
-    memcpy(buf, b, size);
-
-    /* Check whether this header contains the boundary and set it if it does */
-    regmatch_t match[2] = {0};
-    if(regexec(dl->priv->hdr_regex, buf, 2, match, 0) == 0) {
-        char *boundary = zmalloc(match[1].rm_eo - match[1].rm_so + 1);
-        memcpy(boundary, buf + match[1].rm_so, match[1].rm_eo - match[1].rm_so);
-        zck_log(ZCK_LOG_DEBUG, "Multipart boundary: %s\n", boundary);
-        dl->boundary = boundary;
-    }
-    if(buf)
-        free(buf);
-    return l*c;
-}
-
 static size_t write_data(void *ptr, size_t l, size_t c, void *dl_v) {
     if(dl_v == NULL)
         return 0;
@@ -424,7 +195,13 @@ static size_t write_data(void *ptr, size_t l, size_t c, void *dl_v) {
     size_t wb = 0;
     dl->dl += l*c;
     if(dl->boundary != NULL) {
-        int retval = extract_multipart(ptr, l*c, dl_v);
+        int retval = zck_multipart_extract(dl, ptr, l*c);
+        if(retval == 0)
+            wb = 0;
+        else
+            wb = l*c;
+    } else if(dl->priv->is_chunk) {
+        int retval = zck_dl_write_range(dl, ptr, l*c);
         if(retval == 0)
             wb = 0;
         else
@@ -510,7 +287,15 @@ int zck_dl_copy_src_chunks(zckRangeInfo *info, zckCtx *src, zckCtx *tgt) {
     return True;
 }
 
-int zck_dl_range(zckDL *dl, char *url) {
+static size_t get_header(char *b, size_t l, size_t c, void *dl_v) {
+    if(dl_v == NULL)
+        return 0;
+    zckDL *dl = (zckDL*)dl_v;
+
+    return zck_multipart_get_boundary(dl, b, c*l);
+}
+
+int zck_dl_range(zckDL *dl, char *url, int is_chunk) {
     if(dl == NULL || dl->priv == NULL || dl->info.first == NULL) {
         zck_log(ZCK_LOG_ERROR, "Struct not defined\n");
         return False;
@@ -521,6 +306,7 @@ int zck_dl_range(zckDL *dl, char *url) {
     }
     if(dl->info.segments == 0)
         dl->info.segments = 1;
+    dl->priv->is_chunk = is_chunk;
 
     char **ra = calloc(sizeof(char*), dl->info.segments);
     if(!zck_range_get_array(&(dl->info), ra)) {
@@ -531,6 +317,13 @@ int zck_dl_range(zckDL *dl, char *url) {
 
     for(int i=0; i<dl->info.segments; i++) {
         struct curl_slist *header = NULL;
+
+        if(dl->priv->dl_regex != NULL)
+            zck_dl_free_dl_regex(dl);
+        if(dl->boundary != NULL)
+            free(dl->boundary);
+
+        zck_log(ZCK_LOG_DEBUG, "%s\n", ra[i]);
         header = curl_slist_append(header, ra[i]);
         curl_easy_setopt(dl->priv->curl_ctx, CURLOPT_URL, url);
         curl_easy_setopt(dl->priv->curl_ctx, CURLOPT_FOLLOWLOCATION, 1L);
@@ -555,6 +348,7 @@ int zck_dl_range(zckDL *dl, char *url) {
                     url);
             return False;
         }
+        zck_dl_free_regex(dl);
     }
     free(ra);
     return True;
@@ -580,7 +374,7 @@ int zck_dl_bytes(zckDL *dl, char *url, size_t bytes, size_t start,
         idx.length = start+bytes-*buffer_len;
         zck_range_close(&(dl->info));
         zck_range_add(&(dl->info), &idx, NULL);
-        if(!zck_dl_range(dl, url))
+        if(!zck_dl_range(dl, url, 0))
             return False;
         zck_range_close(&(dl->info));
         *buffer_len = start+bytes;
@@ -626,6 +420,7 @@ int zck_zero_bytes(zckDL *dl, size_t bytes, size_t start, size_t *buffer_len) {
     return True;
 }
 
+/* Download header */
 int zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url) {
     size_t buffer_len = 0;
     size_t start = 0;
@@ -691,4 +486,69 @@ void zck_dl_global_init() {
 
 void zck_dl_global_cleanup() {
     curl_global_cleanup();
+}
+
+/* Free zckDL header regex used for downloading ranges */
+void zck_dl_free_regex(zckDL *dl) {
+    if(dl == NULL || dl->priv == NULL)
+        return;
+
+    zck_dl_free_dl_regex(dl);
+    if(dl->priv->hdr_regex) {
+        regfree(dl->priv->hdr_regex);
+        free(dl->priv->hdr_regex);
+        dl->priv->hdr_regex = NULL;
+    }
+}
+
+/* Initialize zckDL.  When finished, zckDL *must* be freed by zck_dl_free() */
+zckDL *zck_dl_init() {
+    zckDL *dl = zmalloc(sizeof(zckDL));
+    if(!dl) {
+        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes for zckDL\n",
+                sizeof(zckDL));
+        return NULL;
+    }
+    dl->priv = zmalloc(sizeof(zckDLPriv));
+    if(!dl->priv) {
+        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes for dl->priv\n",
+                sizeof(zckDL));
+        return NULL;
+    }
+    dl->priv->mp = zmalloc(sizeof(zckMP));
+    if(!dl->priv->mp) {
+        zck_log(ZCK_LOG_ERROR,
+                "Unable to allocate %lu bytes for dl->priv->mp\n",
+                sizeof(zckMP));
+        return NULL;
+    }
+    dl->priv->curl_ctx = curl_easy_init();
+    if(!dl->priv->curl_ctx) {
+        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes for dl->curl_ctx\n",
+                sizeof(CURL));
+        return NULL;
+    }
+    return dl;
+}
+
+/* Free zckDL and set pointer to NULL */
+void zck_dl_free(zckDL **dl) {
+    if(!*dl)
+        return;
+    if((*dl)->priv) {
+        if((*dl)->priv->mp) {
+            if((*dl)->priv->mp->buffer)
+                free((*dl)->priv->mp->buffer);
+            free((*dl)->priv->mp);
+        }
+        zck_dl_free_regex(*dl);
+        curl_easy_cleanup((*dl)->priv->curl_ctx);
+        free((*dl)->priv);
+    }
+    if((*dl)->info.first)
+        zck_range_close(&((*dl)->info));
+    if((*dl)->boundary)
+        free((*dl)->boundary);
+    free(*dl);
+    *dl = NULL;
 }

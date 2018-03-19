@@ -81,7 +81,7 @@ int main (int argc, char *argv[]) {
         exit(1);
 
     lseek(dl->dst_fd, 0, SEEK_SET);
-    if(!zck_dl_range(dl, argv[2]))
+    if(!zck_dl_range(dl, argv[2], 1))
         exit(1);
 
     /*
@@ -107,7 +107,7 @@ int main (int argc, char *argv[]) {
         default:
             break;
     }
-    zck_dl_free(dl);
+    zck_dl_free(&dl);
     zck_free(zck_tgt);
     zck_free(zck_src);
     zck_dl_global_cleanup();

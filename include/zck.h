@@ -111,12 +111,12 @@ void zck_set_log_level(log_type ll);
 void zck_dl_global_init();
 void zck_dl_global_cleanup();
 zckDL *zck_dl_init();
-void zck_dl_free(zckDL *dl);
+void zck_dl_free(zckDL **dl);
 void zck_dl_free_regex(zckDL *dl);
 int zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url);
 size_t zck_dl_get_bytes_downloaded(zckDL *dl);
 size_t zck_dl_get_bytes_uploaded(zckDL *dl);
-int zck_dl_range(zckDL *dl, char *url);
+int zck_dl_range(zckDL *dl, char *url, int is_chunk);
 char *zck_dl_get_range(unsigned int start, unsigned int end);
 int zck_hash_check_full_file(zckCtx *zck, int dst_fd);
 #endif

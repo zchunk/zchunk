@@ -90,6 +90,18 @@ int zck_hash_init(zckHash *hash, zckHashType *hash_type) {
 }
 
 int zck_hash_update(zckHash *hash, const char *message, const size_t size) {
+    if(message == NULL && size == 0)
+        return True;
+    if(message == NULL) {
+        zck_log(ZCK_LOG_ERROR,
+                "Hash data is supposed to have %lu bytes, but is NULL\n", size);
+        return False;
+    }
+    if(size == 0) {
+        zck_log(ZCK_LOG_ERROR,
+                "Hash data is supposed to be 0-length, but is not NULL\n");
+        return False;
+    }
     if(hash && hash->ctx && hash->type) {
         if(hash->type->type == ZCK_HASH_SHA1) {
             SHA1_Update((SHA_CTX *)hash->ctx, (const sha1_byte *)message, size);

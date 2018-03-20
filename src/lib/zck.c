@@ -34,11 +34,13 @@
 
 #include "zck_private.h"
 
+#define VALIDATE(f)     if(!f) { \
+                            zck_log(ZCK_LOG_ERROR, "zckCtx not initialized\n"); \
+                            return False; \
+                        }
+
 int zck_write_file(zckCtx *zck) {
-    if(zck == NULL) {
-        zck_log(ZCK_LOG_ERROR, "zckCtx not initialized\n");
-        return False;
-    }
+    VALIDATE(zck);
     zck_index_finalize(zck);
     zck_log(ZCK_LOG_DEBUG, "Writing header\n");
     if(!zck_write_header(zck))
@@ -80,7 +82,6 @@ void zck_free(zckCtx *zck) {
         zck->temp_fd = 0;
     }
     free(zck);
-    zck = NULL;
 }
 
 zckCtx *zck_create() {
@@ -94,10 +95,7 @@ zckCtx *zck_create() {
 }
 
 int zck_set_full_hash_type(zckCtx *zck, uint8_t hash_type) {
-    if(zck == NULL) {
-        zck_log(ZCK_LOG_ERROR, "zckCtx not initialized\n");
-        return False;
-    }
+    VALIDATE(zck);
     zck_log(ZCK_LOG_INFO, "Setting full hash to %s\n",
             zck_hash_name_from_type(hash_type));
     if(!zck_hash_setup(&(zck->hash_type), hash_type)) {
@@ -114,10 +112,7 @@ int zck_set_full_hash_type(zckCtx *zck, uint8_t hash_type) {
 }
 
 int zck_set_chunk_hash_type(zckCtx *zck, uint8_t hash_type) {
-    if(zck == NULL) {
-        zck_log(ZCK_LOG_ERROR, "zckCtx not initialized\n");
-        return False;
-    }
+    VALIDATE(zck);
     memset(&(zck->chunk_hash_type), 0, sizeof(zckHashType));
     zck_log(ZCK_LOG_INFO, "Setting chunk hash to %s\n",
             zck_hash_name_from_type(hash_type));
@@ -210,17 +205,18 @@ int zck_get_tmp_fd() {
         zck_log(ZCK_LOG_ERROR, "Unable to create temporary file\n");
         return -1;
     }
-    /*if(unlink(fname) < 0) {
+    if(unlink(fname) < 0) {
         free(fname);
         zck_log(ZCK_LOG_ERROR, "Unable to delete temporary file\n");
         return -1;
-    }*/
+    }
     free(fname);
     return temp_fd;
 }
 
 int zck_init_write (zckCtx *zck, int dst_fd) {
-    /* Clear zck */
+    VALIDATE(zck);
+    zck_free(zck);
     memset(zck, 0, sizeof(zckCtx));
 
     zck->temp_fd = zck_get_tmp_fd();
@@ -243,6 +239,12 @@ int zck_init_write (zckCtx *zck, int dst_fd) {
 }
 
 int zck_import_dict(zckCtx *zck, char *data, size_t size) {
+    VALIDATE(zck);
+    if(data == NULL || size == 0) {
+        zck_log(ZCK_LOG_ERROR,
+                "Attempting to initialize an empty compression dictionary\n");
+        return False;
+    }
     if(!zck_comp_close(zck))
         return False;
     if(!zck_set_comp_parameter(zck, ZCK_COMMON_DICT, data))
@@ -256,6 +258,11 @@ int zck_import_dict(zckCtx *zck, char *data, size_t size) {
 
 int zck_validate_chunk(zckCtx *zck, char *data, size_t size, zckIndex *idx,
                        int chk_num) {
+    VALIDATE(zck);
+    if(idx == NULL) {
+        zck_log(ZCK_LOG_ERROR, "zckIndex not initialized\n");
+        return False;
+    }
     zckHash chunk_hash;
 
     /* Overall chunk checksum */
@@ -294,6 +301,7 @@ int zck_validate_chunk(zckCtx *zck, char *data, size_t size, zckIndex *idx,
 }
 
 int zck_validate_file(zckCtx *zck) {
+    VALIDATE(zck);
     char *digest = zck_hash_finalize(&(zck->check_full_hash));
     if(digest == NULL) {
         zck_log(ZCK_LOG_ERROR,
@@ -310,6 +318,7 @@ int zck_validate_file(zckCtx *zck) {
 }
 
 int zck_decompress_to_file(zckCtx *zck, int src_fd, int dst_fd) {
+    VALIDATE(zck);
     if(!zck_read_header(zck, src_fd))
         return False;
     if(!zck_hash_init(&(zck->check_full_hash), &(zck->hash_type)))

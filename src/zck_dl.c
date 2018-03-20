@@ -67,9 +67,18 @@ int main (int argc, char *argv[]) {
         exit(1);
     dl->zck = zck_tgt;
 
-    dl->dst_fd = zck_get_tmp_fd();
-    if(dl->dst_fd < 0)
+    char *outname_full = calloc(1, strlen(argv[2])+1);
+    memcpy(outname_full, argv[2], strlen(argv[2]));
+    char *outname = basename(outname_full);
+    int dst_fd = open(outname, O_EXCL | O_RDWR | O_CREAT, 0644);
+    if(dst_fd < 0) {
+        printf("Unable to open %s: %s\n", outname, strerror(errno));
+        free(outname_full);
         exit(1);
+    }
+    free(outname_full);
+    dl->dst_fd = dst_fd;
+
     if(!zck_dl_get_header(zck_tgt, dl, argv[2]))
         exit(1);
 
@@ -84,17 +93,6 @@ int main (int argc, char *argv[]) {
     if(!zck_dl_range(dl, argv[2], 1))
         exit(1);
 
-    /*
-    char *outname_full = calloc(1, strlen(argv[2])+1);
-    memcpy(outname_full, argv[2], strlen(argv[2]));
-    char *outname = basename(outname_full);
-    int dst_fd = open(outname, O_EXCL | O_WRONLY | O_CREAT, 0644);
-    if(dst_fd < 0) {
-        printf("Unable to open %s: %s\n", outname, strerror(errno));
-        free(outname_full);
-        exit(1);
-    }
-    free(outname_full);*/
 
     printf("Downloaded %lu bytes\n", zck_dl_get_bytes_downloaded(dl));
     switch(zck_hash_check_full_file(dl->zck, dl->dst_fd)) {

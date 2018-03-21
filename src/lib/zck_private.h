@@ -78,7 +78,6 @@ typedef struct zckCtx {
     int temp_fd;
     int fd;
 
-    size_t preindex_size;
     char *full_hash_digest;
     char *header_string;
     size_t header_size;
@@ -125,6 +124,7 @@ int zck_write_index(zckCtx *zck);
 
 /* io.c */
 int zck_seek(int fd, off_t offset, int whence);
+size_t zck_tell(int fd);
 int zck_read(int fd, char *data, size_t length);
 int zck_write(int fd, const char *data, size_t length);
 int zck_write_comp_size(int fd, size_t val);

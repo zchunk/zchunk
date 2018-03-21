@@ -110,6 +110,10 @@ int zck_seek(int fd, off_t offset, int whence) {
     return True;
 }
 
+size_t zck_tell(int fd) {
+    return lseek(fd, 0, SEEK_CUR);
+}
+
 int zck_chunks_from_temp(zckCtx *zck) {
     int read_count;
     char *data = zmalloc(BUF_SIZE);

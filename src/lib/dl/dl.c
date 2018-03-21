@@ -60,7 +60,7 @@ void zck_dl_free_dl_regex(zckDL *dl) {
 /* Write zeros to tgt->fd in location of tgt_idx */
 int zck_dl_write_zero(zckCtx *tgt, zckIndex *tgt_idx) {
     char buf[BUF_SIZE] = {0};
-    size_t tgt_data_offset = tgt->preindex_size + tgt->index_size;
+    size_t tgt_data_offset = tgt->header_size + tgt->index_size;
     size_t to_read = tgt_idx->length;
     if(!zck_seek(tgt->fd, tgt_data_offset + tgt_idx->start, SEEK_SET))
         return False;
@@ -153,7 +153,7 @@ int zck_dl_write_range(zckDL *dl, const char *at, size_t length) {
                                           &(dl->zck->chunk_hash_type)))
                             return 0;
                         dl->write_in_chunk = idx->length;
-                        size_t offset = dl->zck->preindex_size +
+                        size_t offset = dl->zck->header_size +
                                         dl->zck->index_size;
                         if(!zck_seek(dl->dst_fd, offset + tgt_idx->start,
                            SEEK_SET))
@@ -216,8 +216,8 @@ int zck_dl_write_and_verify(zckRangeInfo *info, zckCtx *src, zckCtx *tgt,
                             zckIndex *src_idx, zckIndex *tgt_idx) {
     static char buf[BUF_SIZE] = {0};
 
-    size_t src_data_offset = src->preindex_size + src->index_size;
-    size_t tgt_data_offset = tgt->preindex_size + tgt->index_size;
+    size_t src_data_offset = src->header_size + src->index_size;
+    size_t tgt_data_offset = tgt->header_size + tgt->index_size;
     size_t to_read = src_idx->length;
     if(!zck_seek(src->fd, src_data_offset + src_idx->start, SEEK_SET))
         return False;
@@ -422,8 +422,6 @@ int zck_zero_bytes(zckDL *dl, size_t bytes, size_t start, size_t *buffer_len) {
 
 /* Download header */
 int zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url) {
-    size_t buffer_len = 0;
-    size_t start = 0;
     if(zck == NULL) {
         zck_log(ZCK_LOG_ERROR, "zckCtx not initialized\n");
         return False;
@@ -432,37 +430,51 @@ int zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url) {
         zck_log(ZCK_LOG_ERROR, "zckDL not initialized\n");
         return False;
     }
+    size_t buffer_len = 0;
+    size_t start = 0;
     zck->fd = dl->dst_fd;
+
+    /* Download first hundred bytes and read magic and hash type */
     if(!zck_dl_bytes(dl, url, 100, start, &buffer_len))
         return False;
     if(!zck_read_initial(zck, dl->dst_fd))
         return False;
-    start += 6;
-    if(!zck_dl_bytes(dl, url, zck->hash_type.digest_size+9, start,
-                     &buffer_len))
+    start = zck_tell(dl->dst_fd);
+
+    /* If we haven't downloaded enough for the index hash plus a few others, do
+     * it now */
+    if(!zck_dl_bytes(dl, url, zck->hash_type.digest_size+start+MAX_COMP_SIZE*2,
+                     start, &buffer_len))
         return False;
+    /* Read and store the index hash */
     if(!zck_read_index_hash(zck, dl->dst_fd))
         return False;
     start += zck->hash_type.digest_size;
-
     char *digest = zck_get_index_digest(zck);
-    zck_log(ZCK_LOG_DEBUG, "Index hash: (%s)", zck_hash_name_from_type(zck_get_full_hash_type(zck)));
+    zck_log(ZCK_LOG_DEBUG, "Index hash: (%s)",
+            zck_hash_name_from_type(zck_get_full_hash_type(zck)));
     for(int i=0; i<zck_get_full_digest_size(zck); i++)
         zck_log(ZCK_LOG_DEBUG, "%02x", (unsigned char)digest[i]);
     zck_log(ZCK_LOG_DEBUG, "\n");
+
+    /* Read and store compression type and index size */
     if(!zck_read_ct_is(zck, dl->dst_fd))
         return False;
-    start += 2;
+    start = zck_tell(dl->dst_fd);
     zck_log(ZCK_LOG_DEBUG, "Index size: %llu\n", zck->index_size);
+
+    /* Download and read rest of index */
     if(!zck_dl_bytes(dl, url, zck->index_size, start,
                      &buffer_len))
         return False;
     if(!zck_read_index(zck, dl->dst_fd))
         return False;
+
+    /* Write zeros to rest of file */
     zckIndexInfo *info = &(dl->info.index);
     info->hash_type = zck->index.hash_type;
     zck_log(ZCK_LOG_DEBUG, "Writing zeros to rest of file: %llu\n", zck->index.length + zck->index_size + start);
-    if(!zck_zero_bytes(dl, zck->index.length, zck->index_size + start, &buffer_len))
+    if(!zck_zero_bytes(dl, zck->index.length, zck->header_size + zck->index_size, &buffer_len))
         return False;
     return True;
 }

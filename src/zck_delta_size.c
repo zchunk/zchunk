@@ -85,9 +85,11 @@ int main (int argc, char *argv[]) {
     zckIndex *src_idx = src_info->first;
     if(memcmp(tgt_idx->digest, src_idx->digest, zck_get_chunk_digest_size(zck_tgt)) != 0)
         printf("WARNING: Dicts don't match\n");
-    int dl_size = 0;
-    int total_size = 0;
-    int matched_chunks = 0;
+    ssize_t dl_size = zck_get_header_length(zck_tgt);
+    if(dl_size < 0)
+        exit(1);
+    ssize_t total_size = 0;
+    ssize_t matched_chunks = 0;
     while(tgt_idx) {
         int found = False;
         src_idx = src_info->first;
@@ -107,8 +109,8 @@ int main (int argc, char *argv[]) {
         total_size += tgt_idx->length;
         tgt_idx = tgt_idx->next;
     }
-    printf("Would download %i of %i bytes\n", dl_size, total_size);
-    printf("Matched %i of %lu chunks\n", matched_chunks, zck_get_index_count(zck_tgt));
+    printf("Would download %li of %li bytes\n", dl_size, total_size);
+    printf("Matched %li of %lu chunks\n", matched_chunks, zck_get_index_count(zck_tgt));
     zck_free(&zck_tgt);
     zck_free(&zck_src);
 }

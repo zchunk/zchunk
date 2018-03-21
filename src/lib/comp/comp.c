@@ -132,7 +132,7 @@ int zck_comp_close(zckCtx *zck) {
     return True;
 }
 
-int zck_set_compression_type(zckCtx *zck, uint8_t type) {
+int zck_set_compression_type(zckCtx *zck, int type) {
     zckComp *comp = &(zck->comp);
 
     /* Cannot change compression type after compression has started */
@@ -182,7 +182,7 @@ int zck_set_comp_parameter(zckCtx *zck, int option, void *value) {
     return True;
 }
 
-const char *zck_comp_name_from_type(uint8_t comp_type) {
+const char *zck_comp_name_from_type(int comp_type) {
     if(comp_type > 1) {
         snprintf(unknown+8, 4, "%i)", comp_type);
         return unknown;

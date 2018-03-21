@@ -6,6 +6,8 @@
 #include <regex.h>
 
 #define BUF_SIZE 32768
+/* Maximum string length for a compressed size_t */
+#define MAX_COMP_SIZE (((sizeof(size_t) * 8) / 7) + 1)
 
 #define zmalloc(x) calloc(1, x)
 
@@ -24,7 +26,7 @@ typedef int (*fcclose)(struct zckComp *comp);
 typedef enum log_type log_type;
 
 typedef struct zckHashType {
-    uint8_t type;
+    int type;
     int digest_size;
 } zckHashType;
 
@@ -78,8 +80,10 @@ typedef struct zckCtx {
 
     size_t preindex_size;
     char *full_hash_digest;
-    char *comp_index;
-    size_t comp_index_size;
+    char *header_string;
+    size_t header_size;
+    char *index_string;
+    size_t index_size;
     zckIndexInfo index;
     char *index_digest;
     zckHash full_hash;
@@ -89,7 +93,7 @@ typedef struct zckCtx {
     zckHashType chunk_hash_type;
 } zckCtx;
 
-const char *zck_hash_name_from_type(uint8_t hash_type);
+const char *zck_hash_name_from_type(int hash_type);
 int zck_get_tmp_fd();
 int zck_validate_file(zckCtx *zck);
 
@@ -98,7 +102,7 @@ int zck_comp_init(zckCtx *zck);
 int zck_compress(zckCtx *zck, const char *src, const size_t src_size);
 int zck_decompress(zckCtx *zck, const char *src, const size_t src_size, char **dst, size_t *dst_size);
 int zck_comp_close(zckCtx *zck);
-int zck_set_compression_type(zckCtx *zck, uint8_t type);
+int zck_set_compression_type(zckCtx *zck, int type);
 int zck_set_comp_parameter(zckCtx *zck, int option, void *value);
 
 /* hash/hash.h */
@@ -123,14 +127,16 @@ int zck_write_index(zckCtx *zck);
 int zck_seek(int fd, off_t offset, int whence);
 int zck_read(int fd, char *data, size_t length);
 int zck_write(int fd, const char *data, size_t length);
+int zck_write_comp_size(int fd, size_t val);
+int zck_read_comp_size(int fd, size_t *val, size_t *length);
 int zck_chunks_from_temp(zckCtx *zck);
 
 /* header.c */
 int zck_read_initial(zckCtx *zck, int src_fd);
 int zck_read_index_hash(zckCtx *zck, int src_fd);
-int zck_read_comp_type(zckCtx *zck, int src_fd);
-int zck_read_index_size(zckCtx *zck, int src_fd);
+int zck_read_ct_is(zckCtx *zck, int src_fd);
 int zck_read_index(zckCtx *zck, int src_fd);
+int zck_header_create(zckCtx *zck);
 int zck_read_header(zckCtx *zck, int src_fd);
 int zck_write_header(zckCtx *zck);
 
@@ -144,6 +150,14 @@ size_t zck_multipart_get_boundary(zckDL *dl, char *b, size_t size);
 
 /* dl/dl.c */
 int zck_dl_write_range(zckDL *dl, const char *at, size_t length);
+
+/* compint.c */
+int zck_compint_from_int(char *compint, int val, size_t *length);
+int zck_compint_from_size(char *compint, size_t val, size_t *length);
+int zck_compint_to_int(int *val, const char *compint, size_t *length);
+int zck_compint_to_size(size_t *val, const char *compint, size_t *length);
+
+
 
 /* log.c */
 void zck_log(log_type lt, const char *format, ...);

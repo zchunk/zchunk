@@ -103,15 +103,15 @@ int zck_range_add(zckRangeInfo *info, zckIndex *idx, zckCtx *zck) {
         zck_log(ZCK_LOG_ERROR, "zckRangeInfo or zckIndex not allocated\n");
         return False;
     }
-    size_t predata_len = 0;
+    size_t header_len = 0;
     int add_index = False;
     if(zck) {
-        predata_len = zck_get_predata_length(zck);
+        header_len = zck_get_header_length(zck);
         add_index = True;
     }
 
-    size_t start = idx->start + predata_len;
-    size_t end = idx->start + predata_len + idx->length - 1;
+    size_t start = idx->start + header_len;
+    size_t end = idx->start + header_len + idx->length - 1;
     zckRange *prev = info->first;
     for(zckRange *ptr=info->first; ptr;) {
         prev = ptr;

@@ -35,10 +35,7 @@
 #include <zck.h>
 
 int main (int argc, char *argv[]) {
-    zckCtx *zck = zck_create();
     char *out_name;
-    if(zck == NULL)
-        exit(1);
 
     zck_set_log_level(ZCK_LOG_DEBUG);
 
@@ -65,16 +62,20 @@ int main (int argc, char *argv[]) {
         exit(1);
     }
 
+    zckCtx *zck = zck_create();
+    if(zck == NULL)
+        exit(1);
 
     if(!zck_decompress_to_file(zck, src_fd, dst_fd)) {
         unlink(out_name);
         free(out_name);
         close(src_fd);
         close(dst_fd);
-        zck_free(zck);
+        zck_free(&zck);
+        exit(1);
     }
     free(out_name);
     close(src_fd);
     close(dst_fd);
-    zck_free(zck);
+    zck_free(&zck);
 }

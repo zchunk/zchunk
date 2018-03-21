@@ -34,72 +34,69 @@
 int zck_index_finalize(zckCtx *zck) {
     zckHash index_hash;
     char *index;
-    char *index_loc;
+    size_t index_malloc = 0;
     size_t index_size = 0;
-    uint64_t index_count = 0;
 
 
     zck->full_hash_digest = zck_hash_finalize(&(zck->full_hash));
     if(zck->full_hash_digest == NULL)
         return False;
 
-    index_size = 1; // Chunk hash type;
-    index_size += sizeof(uint64_t); // Number of index entries
-    index_size += zck->hash_type.digest_size; // Full hash digest
+    index_malloc  = MAX_COMP_SIZE * 2; // Chunk hash type and # of index entries
+    index_malloc += zck->hash_type.digest_size; // Full hash digest
 
-    /* Add digest size + 8 bytes for end location for each entry in index */
+    /* Add digest size + MAX_COMP_SIZE bytes for length of each entry in
+     * index */
     if(zck->index.first) {
         zckIndex *tmp = zck->index.first;
         while(tmp) {
-            index_size += zck->index.digest_size + sizeof(uint64_t);
+            index_malloc += zck->index.digest_size + MAX_COMP_SIZE;
             tmp = tmp->next;
         }
     }
 
     /* Write index */
-    index = zmalloc(index_size);
-    index_loc = index;
-    memcpy(index_loc, &(zck->index.hash_type), 1);
-    index_loc += 1;
-    index_count = htole64(zck->index.count);
-    memcpy(index_loc, &index_count, sizeof(uint64_t));
-    index_loc += sizeof(uint64_t);
-    memcpy(index_loc, zck->full_hash_digest, zck->hash_type.digest_size);
-    index_loc += zck->hash_type.digest_size;
+    index = zmalloc(index_malloc);
+    zck_compint_from_size(index+index_size, zck->index.hash_type, &index_size);
+    zck_compint_from_size(index+index_size, zck->index.count, &index_size);
+    memcpy(index+index_size, zck->full_hash_digest, zck->hash_type.digest_size);
+    index_size += zck->hash_type.digest_size;
     if(zck->index.first) {
         zckIndex *tmp = zck->index.first;
         while(tmp) {
-            uint64_t end = htole64(tmp->start + tmp->length);
-            memcpy(index_loc, tmp->digest, zck->index.digest_size);
-            index_loc += zck->index.hash_type;
-            memcpy(index_loc, &end, sizeof(uint64_t));
-            index_loc += sizeof(uint64_t);
+            memcpy(index+index_size, tmp->digest, zck->index.digest_size);
+            index_size += zck->index.digest_size;
+            zck_compint_from_size(index+index_size, tmp->length, &index_size);
             tmp = tmp->next;
         }
     }
-
-    if(!zck->comp.compress(&zck->comp, index, index_size, &(zck->comp_index),
-                           &(zck->comp_index_size), 0)) {
-        free(index);
+    /* Shrink index to actual size */
+    index = realloc(index, index_size);
+    if(index == NULL) {
+        zck_log(ZCK_LOG_ERROR, "Unable to reallocate %lu bytes\n", index_size);
         return False;
     }
-    index_size = htole64((uint64_t) zck->comp_index_size);
+    zck->index_string = index;
+    zck->index_size = index_size;
 
-    /* Calculate hash of index, including compressed size at beginning */
+    /* Rebuild header with index hash set to zeros */
+    if(zck->index_digest) {
+        free(zck->index_digest);
+        zck->index_digest = NULL;
+    }
+    if(!zck_header_create(zck))
+        return False;
+
+    /* Calculate hash of header */
     if(!zck_hash_init(&index_hash, &(zck->hash_type))) {
         free(index);
         return False;
     }
-    if(!zck_hash_update(&index_hash, (const char *)&(zck->comp.type), 1)) {
+    if(!zck_hash_update(&index_hash, zck->header_string, zck->header_size)) {
         free(index);
         return False;
     }
-    if(!zck_hash_update(&index_hash, (const char *)&index_size,
-                        sizeof(uint64_t))) {
-        free(index);
-        return False;
-    }
-    if(!zck_hash_update(&index_hash, zck->comp_index, zck->comp_index_size)) {
+    if(!zck_hash_update(&index_hash, zck->index_string, zck->index_size)) {
         free(index);
         return False;
     }
@@ -110,7 +107,11 @@ int zck_index_finalize(zckCtx *zck) {
                 zck_hash_name_from_type(zck->hash_type.type));
         return False;
     }
-    free(index);
+
+    /* Rebuild header string with calculated index hash */
+    if(!zck_header_create(zck))
+        return False;
+
     return True;
 }
 
@@ -184,10 +185,11 @@ int zck_index_add_chunk(zckCtx *zck, char *data, size_t size) {
         if(!zck_index_new_chunk(&(zck->index), digest, zck->index.digest_size,
                                 size, True))
             return False;
+        free(digest);
     }
     return True;
 }
 
 int zck_write_index(zckCtx *zck) {
-    return zck_write(zck->fd, zck->comp_index, zck->comp_index_size);
+    return zck_write(zck->fd, zck->index_string, zck->index_size);
 }

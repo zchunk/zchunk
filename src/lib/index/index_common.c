@@ -59,9 +59,13 @@ void zck_index_free(zckCtx *zck) {
         free(zck->full_hash.ctx);
         zck->full_hash.ctx = NULL;
     }
-    if(zck->comp_index) {
-        free(zck->comp_index);
-        zck->comp_index = NULL;
+    if(zck->index_string) {
+        free(zck->index_string);
+        zck->index_string = NULL;
+    }
+    if(zck->header_string) {
+        free(zck->header_string);
+        zck->header_string = NULL;
     }
     if(zck->index_digest) {
         free(zck->index_digest);

@@ -207,6 +207,6 @@ int main (int argc, char *argv[]) {
     }
     if(!zck_write_file(zck))
         exit(1);
-    zck_free(zck);
+    zck_free(&zck);
     close(dst_fd);
 }

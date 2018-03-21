@@ -34,7 +34,7 @@
 #include "sha1/sha1.h"
 #include "sha2/sha2.h"
 
-static char unknown[] = "Unknown(\0\0\0\0\0";
+static char unknown[] = "Unknown(\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 static char hash_text[BUF_SIZE] = {0};
 
 const static char *HASH_NAME[] = {
@@ -131,7 +131,7 @@ void zck_hash_close(zckHash *hash) {
 
 /* Returns 1 if full file hash matches, 0 if it doesn't and -1 if failure */
 int zck_hash_check_full_file(zckCtx *zck, int dst_fd) {
-    if(!zck_seek(dst_fd, zck->preindex_size + zck->comp_index_size, SEEK_SET))
+    if(!zck_seek(dst_fd, zck->preindex_size + zck->index_size, SEEK_SET))
         return -1;
     if(!zck_hash_init(&(zck->check_full_hash), &(zck->hash_type)))
         return -1;
@@ -175,9 +175,9 @@ char *zck_hash_finalize(zckHash *hash) {
     return NULL;
 }
 
-const char *zck_hash_name_from_type(uint8_t hash_type) {
+const char *zck_hash_name_from_type(int hash_type) {
     if(hash_type > 1) {
-        snprintf(unknown+8, 4, "%i)", hash_type);
+        snprintf(unknown+8, 21, "%i)", hash_type);
         return unknown;
     }
     return HASH_NAME[hash_type];

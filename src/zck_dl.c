@@ -106,8 +106,8 @@ int main (int argc, char *argv[]) {
             break;
     }
     zck_dl_free(&dl);
-    zck_free(zck_tgt);
-    zck_free(zck_src);
+    zck_free(&zck_tgt);
+    zck_free(&zck_src);
     zck_dl_global_cleanup();
     exit(0);
 }

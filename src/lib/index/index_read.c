@@ -33,22 +33,15 @@
 #include "zck_private.h"
 
 int zck_index_read(zckCtx *zck, char *data, size_t size) {
-    zckHash index_hash;
-    char *digest;
-    uint64_t index_size;
-    uint64_t index_count;
-    char *dst = NULL;
-    size_t dst_size = 0;
-    char *cur_loc;
+    zckHash index_hash = {0};
+    char *digest = NULL;
+    size_t length = 0;
 
     /* Check that index checksum matches stored checksum */
-    zck_log(ZCK_LOG_DEBUG, "Reading index size\n");
-    index_size = htole64(size);
+    zck_log(ZCK_LOG_DEBUG, "Calculating index checksum\n");
     if(!zck_hash_init(&index_hash, &(zck->hash_type)))
         return False;
-    if(!zck_hash_update(&index_hash, (const char *)&(zck->comp.type), 1))
-        return False;
-    if(!zck_hash_update(&index_hash, (const char *)&index_size, sizeof(uint64_t)))
+    if(!zck_hash_update(&index_hash, zck->header_string, zck->header_size))
         return False;
     if(!zck_hash_update(&index_hash, data, size))
         return False;
@@ -65,84 +58,77 @@ int zck_index_read(zckCtx *zck, char *data, size_t size) {
         zck_log(ZCK_LOG_ERROR, "Index fails checksum test\n");
         return False;
     }
+    zck_log(ZCK_LOG_DEBUG, "Checksum is valid\n");
     free(digest);
-    zck_log(ZCK_LOG_DEBUG, "Decompressing index\n");
-    if(!zck_decompress(zck, data, size, &dst, &dst_size)) {
-        zck_log(ZCK_LOG_ERROR, "Unable to decompress index\n");
-        return False;
-    }
 
     /* Make sure there's at least enough data for full digest and index count */
-    if(dst_size < zck->hash_type.digest_size + sizeof(uint64_t) + 1) {
+    if(size < zck->hash_type.digest_size + MAX_COMP_SIZE*2) {
         zck_log(ZCK_LOG_ERROR, "Index is too small to read\n");
-        if(dst)
-            free(dst);
         return False;
     }
 
-    zckIndex *prev = zck->index.first;
+    /* Read and configure hash type */
+    int hash_type;
+    if(!zck_compint_to_int(&hash_type, data + length, &length))
+        return False;
+    if(!zck_set_chunk_hash_type(zck, hash_type))
+        return False;
+
+    /* Read number of index entries */
+    size_t index_count;
+    if(!zck_compint_to_size(&index_count, data + length, &length))
+        return False;
+    zck->index.count = index_count;
+
+    /* Read full data hash */
     zck->full_hash_digest = zmalloc(zck->hash_type.digest_size);
     if(!zck->full_hash_digest) {
-        if(dst)
-            free(dst);
         zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
                 zck->hash_type.digest_size);
         return False;
     }
-    uint8_t hash_type;
-    memcpy(&hash_type, dst, 1);
-    if(!zck_set_chunk_hash_type(zck, hash_type)) {
-        if(dst)
-            free(dst);
-        return False;
-    }
+    memcpy(zck->full_hash_digest, data + length, zck->hash_type.digest_size);
+    length += zck->hash_type.digest_size;
 
-    if((dst_size - (zck->hash_type.digest_size + sizeof(uint64_t)+ 1)) %
-       (zck->index.digest_size + sizeof(uint64_t)) != 0) {
-        zck_log(ZCK_LOG_ERROR, "Index size is invalid\n");
-        if(dst)
-            free(dst);
-        return False;
-    }
-    cur_loc = dst + 1;
-    memcpy(&index_count, cur_loc, sizeof(uint64_t));
-    zck->index.count = le64toh(index_count);
-    cur_loc += sizeof(uint64_t);
-    memcpy(zck->full_hash_digest, cur_loc, zck->hash_type.digest_size);
-    cur_loc += zck->hash_type.digest_size;
-    uint64_t prev_loc = 0;
-    while(cur_loc < dst + dst_size) {
+    zckIndex *prev = zck->index.first;
+    size_t idx_loc = 0;
+    while(length < size) {
         zckIndex *new = zmalloc(sizeof(zckIndex));
         if(!new) {
             zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
                     sizeof(zckIndex));
             return False;
         }
-        uint64_t end = 0;
 
+        /* Read index entry digest */
         new->digest = zmalloc(zck->index.digest_size);
         if(!new->digest) {
             zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
                     zck->index.digest_size);
             return False;
         }
-        memcpy(new->digest, cur_loc, zck->index.digest_size);
+        memcpy(new->digest, data+length, zck->index.digest_size);
         new->digest_size = zck->index.digest_size;
-        cur_loc += zck->index.digest_size;
-        memcpy(&end, cur_loc, sizeof(uint64_t));
-        new->start = prev_loc;
-        new->length = le64toh(end) - prev_loc;
+        length += zck->index.digest_size;
+
+        /* Read and store entry length */
+        size_t chunk_length = 0;
+        if(!zck_compint_to_size(&chunk_length, data+length, &length))
+            return False;
+        new->start = idx_loc;
+        new->length = chunk_length;
         new->finished = False;
-        prev_loc = le64toh(end);
-        zck->index.length += new->length;
-        cur_loc += sizeof(uint64_t);
-        if(prev) {
+
+        idx_loc += chunk_length;
+        zck->index.length = idx_loc;
+
+        if(prev)
             prev->next = new;
-        } else {
+        else
             zck->index.first = new;
-        }
         prev = new;
     }
-    free(dst);
+    free(zck->index_string);
+    zck->index_string = NULL;
     return True;
 }

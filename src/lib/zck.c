@@ -62,7 +62,7 @@ int zck_write_file(zckCtx *zck) {
     return True;
 }
 
-void zck_free(zckCtx *zck) {
+void zck_clear(zckCtx *zck) {
     if(zck == NULL)
         return;
     zck_index_free(zck);
@@ -81,7 +81,14 @@ void zck_free(zckCtx *zck) {
         close(zck->temp_fd);
         zck->temp_fd = 0;
     }
-    free(zck);
+}
+
+void zck_free(zckCtx **zck) {
+    if(*zck == NULL)
+        return;
+    zck_clear(*zck);
+    free(*zck);
+    *zck = NULL;
 }
 
 zckCtx *zck_create() {
@@ -94,7 +101,7 @@ zckCtx *zck_create() {
     return zck;
 }
 
-int zck_set_full_hash_type(zckCtx *zck, uint8_t hash_type) {
+int zck_set_full_hash_type(zckCtx *zck, int hash_type) {
     VALIDATE(zck);
     zck_log(ZCK_LOG_INFO, "Setting full hash to %s\n",
             zck_hash_name_from_type(hash_type));
@@ -111,7 +118,7 @@ int zck_set_full_hash_type(zckCtx *zck, uint8_t hash_type) {
     return True;
 }
 
-int zck_set_chunk_hash_type(zckCtx *zck, uint8_t hash_type) {
+int zck_set_chunk_hash_type(zckCtx *zck, int hash_type) {
     VALIDATE(zck);
     memset(&(zck->chunk_hash_type), 0, sizeof(zckHashType));
     zck_log(ZCK_LOG_INFO, "Setting chunk hash to %s\n",
@@ -150,7 +157,7 @@ int zck_get_chunk_hash_type(zckCtx *zck) {
     return zck->index.hash_type;
 }
 
-int64_t zck_get_index_count(zckCtx *zck) {
+ssize_t zck_get_index_count(zckCtx *zck) {
     if(zck == NULL)
         return -1;
     return zck->index.count;
@@ -174,10 +181,10 @@ char *zck_get_full_digest(zckCtx *zck) {
     return zck->full_hash_digest;
 }
 
-int64_t zck_get_predata_length(zckCtx *zck) {
+ssize_t zck_get_header_length(zckCtx *zck) {
     if(zck == NULL)
         return -1;
-    return zck->preindex_size + zck->comp_index_size;
+    return zck->header_size + zck->index_size;
 }
 
 int zck_get_tmp_fd() {
@@ -216,7 +223,7 @@ int zck_get_tmp_fd() {
 
 int zck_init_write (zckCtx *zck, int dst_fd) {
     VALIDATE(zck);
-    zck_free(zck);
+    zck_clear(zck);
     memset(zck, 0, sizeof(zckCtx));
 
     zck->temp_fd = zck_get_tmp_fd();
@@ -347,11 +354,8 @@ int zck_decompress_to_file(zckCtx *zck, int src_fd, int dst_fd) {
             zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n", csize);
             return False;
         }
-        if(lseek(src_fd, start + idx->start, SEEK_SET) == -1) {
-            zck_log(ZCK_LOG_ERROR, "Unable to seek in source file: %s\n",
-                    strerror(errno));
+        if(!zck_seek(src_fd, start + idx->start, SEEK_SET))
             return False;
-        }
         if(!zck_read(src_fd, cdata, csize)) {
             free(cdata);
             zck_log(ZCK_LOG_ERROR, "Error reading chunk %i\n", count);

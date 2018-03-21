@@ -69,6 +69,27 @@ int zck_write(int fd, const char *data, size_t length) {
     return True;
 }
 
+int zck_write_comp_size(int fd, size_t val) {
+    char data[sizeof(size_t)*2] = {0};
+    size_t length = 0;
+    if(!zck_compint_from_size(data, val, &length))
+        return False;
+    return zck_write(fd, data, length);
+}
+
+int zck_read_comp_size(int fd, size_t *val, size_t *length) {
+    char data[MAX_COMP_SIZE] = {0};
+    int i=0;
+    for(char c=zck_read(fd, data+i, 1); c < 128 && i < MAX_COMP_SIZE;
+        i++,c=zck_read(fd, data+i, 1));
+    if(i == MAX_COMP_SIZE && data[i] < 128) {
+        zck_log(ZCK_LOG_ERROR, "Number too large\n");
+        *val = 0;
+        return False;
+    }
+    return !zck_compint_to_size(val, data, length);
+}
+
 int zck_seek(int fd, off_t offset, int whence) {
     if(lseek(fd, offset, whence) == -1) {
         char *wh_str = NULL;

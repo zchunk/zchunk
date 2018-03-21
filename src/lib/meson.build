@@ -3,7 +3,7 @@ subdir('comp')
 subdir('hash')
 subdir('index')
 subdir('dl')
-sources += ['zck.c', 'header.c', 'io.c', 'log.c']
+sources += ['zck.c', 'header.c', 'io.c', 'log.c', 'compint.c']
 zcklib = shared_library('zck',
                         sources,
                         include_directories: inc,

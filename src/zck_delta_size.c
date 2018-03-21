@@ -109,6 +109,6 @@ int main (int argc, char *argv[]) {
     }
     printf("Would download %i of %i bytes\n", dl_size, total_size);
     printf("Matched %i of %lu chunks\n", matched_chunks, zck_get_index_count(zck_tgt));
-    zck_free(zck_tgt);
-    zck_free(zck_src);
+    zck_free(&zck_tgt);
+    zck_free(&zck_src);
 }

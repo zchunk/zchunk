@@ -60,7 +60,7 @@ void zck_dl_free_dl_regex(zckDL *dl) {
 /* Write zeros to tgt->fd in location of tgt_idx */
 int zck_dl_write_zero(zckCtx *tgt, zckIndex *tgt_idx) {
     char buf[BUF_SIZE] = {0};
-    size_t tgt_data_offset = tgt->preindex_size + tgt->comp_index_size;
+    size_t tgt_data_offset = tgt->preindex_size + tgt->index_size;
     size_t to_read = tgt_idx->length;
     if(!zck_seek(tgt->fd, tgt_data_offset + tgt_idx->start, SEEK_SET))
         return False;
@@ -154,7 +154,7 @@ int zck_dl_write_range(zckDL *dl, const char *at, size_t length) {
                             return 0;
                         dl->write_in_chunk = idx->length;
                         size_t offset = dl->zck->preindex_size +
-                                        dl->zck->comp_index_size;
+                                        dl->zck->index_size;
                         if(!zck_seek(dl->dst_fd, offset + tgt_idx->start,
                            SEEK_SET))
                             return 0;
@@ -216,8 +216,8 @@ int zck_dl_write_and_verify(zckRangeInfo *info, zckCtx *src, zckCtx *tgt,
                             zckIndex *src_idx, zckIndex *tgt_idx) {
     static char buf[BUF_SIZE] = {0};
 
-    size_t src_data_offset = src->preindex_size + src->comp_index_size;
-    size_t tgt_data_offset = tgt->preindex_size + tgt->comp_index_size;
+    size_t src_data_offset = src->preindex_size + src->index_size;
+    size_t tgt_data_offset = tgt->preindex_size + tgt->index_size;
     size_t to_read = src_idx->length;
     if(!zck_seek(src->fd, src_data_offset + src_idx->start, SEEK_SET))
         return False;
@@ -450,22 +450,19 @@ int zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url) {
     for(int i=0; i<zck_get_full_digest_size(zck); i++)
         zck_log(ZCK_LOG_DEBUG, "%02x", (unsigned char)digest[i]);
     zck_log(ZCK_LOG_DEBUG, "\n");
-    if(!zck_read_comp_type(zck, dl->dst_fd))
+    if(!zck_read_ct_is(zck, dl->dst_fd))
         return False;
-    start += 1;
-    if(!zck_read_index_size(zck, dl->dst_fd))
-        return False;
-    start += sizeof(uint64_t);
-    zck_log(ZCK_LOG_DEBUG, "Index size: %llu\n", zck->comp_index_size);
-    if(!zck_dl_bytes(dl, url, zck->comp_index_size, start,
+    start += 2;
+    zck_log(ZCK_LOG_DEBUG, "Index size: %llu\n", zck->index_size);
+    if(!zck_dl_bytes(dl, url, zck->index_size, start,
                      &buffer_len))
         return False;
     if(!zck_read_index(zck, dl->dst_fd))
         return False;
     zckIndexInfo *info = &(dl->info.index);
     info->hash_type = zck->index.hash_type;
-    zck_log(ZCK_LOG_DEBUG, "Writing zeros to rest of file: %llu\n", zck->index.length + zck->comp_index_size + start);
-    if(!zck_zero_bytes(dl, zck->index.length, zck->comp_index_size + start, &buffer_len))
+    zck_log(ZCK_LOG_DEBUG, "Writing zeros to rest of file: %llu\n", zck->index.length + zck->index_size + start);
+    if(!zck_zero_bytes(dl, zck->index.length, zck->index_size + start, &buffer_len))
         return False;
     return True;
 }

@@ -75,34 +75,77 @@ typedef struct zckDL {
 } zckDL;
 
 
+/* Get a zchunk context that can be used for creating or reading a zchunk
+ * file.  Must be freed using zck_free */
 zckCtx *zck_create();
+/* Free a zchunk context.  You must pass the address of the context, and the
+ * context will automatically be set to null after it is freed */
 void zck_free(zckCtx **zck);
+/* Clear a zchunk context so it may be reused */
 void zck_clear(zckCtx *zck);
+
+/* No idea, but probably important */
 int zck_init_write (zckCtx *zck, int dst_fd);
+
+/* Set compression type */
 int zck_set_compression_type(zckCtx *zck, int comp_type);
+/* Get name of compression type */
+const char *zck_comp_name_from_type(int comp_type);
+/* Set compression parameter */
 int zck_set_comp_parameter(zckCtx *zck, int option, void *value);
+/* Initialize compression.  Compression type and parameters *must* be done
+ * before this is called */
 int zck_comp_init(zckCtx *zck);
+/* Release compression resources.  After this is run, you may change compression
+ * type and parameters */
 int zck_comp_close(zckCtx *zck);
+/* Compress data src of size src_size, and write to chunk */
 int zck_compress(zckCtx *zck, const char *src, const size_t src_size);
+/* Decompress data src of size src_size, and write to dst, while setting
+ * dst_size */
 int zck_decompress(zckCtx *zck, const char *src, const size_t src_size,
                    char **dst, size_t *dst_size);
+
+/* Write everything to disk */
 int zck_write_file(zckCtx *zck);
+
+/* Read zchunk header from src_fd */
 int zck_read_header(zckCtx *zck, int src_fd);
+
+/* Get index count */
 ssize_t zck_get_index_count(zckCtx *zck);
+/* Get index */
 zckIndexInfo *zck_get_index(zckCtx *zck);
+
+/* Decompress zchunk file pointed to by src_fd into dst_fd */
 int zck_decompress_to_file (zckCtx *zck, int src_fd, int dst_fd);
+
+/* Set overall hash type */
 int zck_set_full_hash_type(zckCtx *zck, int hash_type);
-int zck_set_chunk_hash_type(zckCtx *zck, int hash_type);
-ssize_t zck_get_header_length(zckCtx *zck);
-char *zck_get_index_digest(zckCtx *zck);
-char *zck_get_full_digest(zckCtx *zck);
-int zck_get_full_digest_size(zckCtx *zck);
-int zck_get_chunk_digest_size(zckCtx *zck);
+/* Get overall hash type */
 int zck_get_full_hash_type(zckCtx *zck);
+/* Get digest size of overall hash type */
+int zck_get_full_digest_size(zckCtx *zck);
+/* Get index digest (uses overall hash type) */
+char *zck_get_index_digest(zckCtx *zck);
+/* Get index digest (uses overall hash type) */
+char *zck_get_data_digest(zckCtx *zck);
+/* Set chunk hash type */
+int zck_set_chunk_hash_type(zckCtx *zck, int hash_type);
+/* Get chunk hash type */
 int zck_get_chunk_hash_type(zckCtx *zck);
-int zck_get_tmp_fd();
+/* Get digest size of chunk hash type */
+int zck_get_chunk_digest_size(zckCtx *zck);
+/* Get name of hash type */
 const char *zck_hash_name_from_type(int hash_type);
-const char *zck_comp_name_from_type(int comp_type);
+
+/* Get header length (header + index) */
+ssize_t zck_get_header_length(zckCtx *zck);
+
+/* Get temporary fd */
+int zck_get_tmp_fd();
+
+
 int zck_range_calc_segments(zckRangeInfo *info, unsigned int max_ranges);
 int zck_range_get_need_dl(zckRangeInfo *info, zckCtx *zck_src, zckCtx *zck_tgt);
 int zck_dl_copy_src_chunks(zckRangeInfo *info, zckCtx *src, zckCtx *tgt);
@@ -121,4 +164,3 @@ int zck_dl_range(zckDL *dl, char *url, int is_chunk);
 char *zck_dl_get_range(unsigned int start, unsigned int end);
 int zck_hash_check_full_file(zckCtx *zck, int dst_fd);
 #endif
-

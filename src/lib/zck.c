@@ -175,7 +175,7 @@ char *zck_get_index_digest(zckCtx *zck) {
     return zck->index_digest;
 }
 
-char *zck_get_full_digest(zckCtx *zck) {
+char *zck_get_data_digest(zckCtx *zck) {
     if(zck == NULL)
         return NULL;
     return zck->full_hash_digest;

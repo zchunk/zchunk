@@ -62,7 +62,7 @@ int main (int argc, char *argv[]) {
             printf("%02x", (unsigned char)digest[i]);
     printf("\n");
     printf("Data checksum: ");
-    digest = zck_get_full_digest(zck);
+    digest = zck_get_data_digest(zck);
     for(int i=0; i<zck_get_full_digest_size(zck); i++)
             printf("%02x", (unsigned char)digest[i]);
     printf("\n");

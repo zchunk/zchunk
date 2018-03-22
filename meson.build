@@ -13,7 +13,7 @@ endif
 if use_zstd == 'auto' or use_zstd == 'yes'
     zstd_dep = dependency('libzstd', required:zstd_required)
     if zstd_dep.found()
-        add_global_arguments('-DZCHUNK_ZSTD', language : 'c')
+        add_project_arguments('-DZCHUNK_ZSTD', language : 'c')
         use_zstd = 'yes'
     endif
 endif

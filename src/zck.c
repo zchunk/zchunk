@@ -125,6 +125,7 @@ int main (int argc, char *argv[]) {
         read(in_fd, data, in_size);
         close(in_fd);
 
+        /* Chunk based on string in argv[2] (Currently with ugly hack to group srpms together) */
         if(True) {
             char *found = data;
             char *search = found;
@@ -171,6 +172,7 @@ int main (int argc, char *argv[]) {
                     search = NULL;
                 }
             }
+        /* Naive (and inefficient) rolling window */
         } else {
             char *cur_loc = data;
             char *start = data;
@@ -194,7 +196,6 @@ int main (int argc, char *argv[]) {
                             break;
                     }
                 } else {
-                    printf("Not big enough\n");
                     cur_loc = data + in_size;
                 }
                 printf("Completing %li bytes\n", cur_loc-start);

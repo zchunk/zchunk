@@ -24,22 +24,22 @@
 typedef enum log_type { ZCK_LOG_DEBUG, ZCK_LOG_INFO, ZCK_LOG_WARNING,
                         ZCK_LOG_ERROR } log_type;
 
-typedef struct zckIndex {
+typedef struct zckIndexItem {
     char *digest;
     int digest_size;
     int finished;
     size_t start;
     size_t length;
-    struct zckIndex *next;
-} zckIndex;
+    struct zckIndexItem *next;
+} zckIndexItem;
 
-typedef struct zckIndexInfo {
+typedef struct zckIndex {
     size_t count;
     size_t length;
     int hash_type;
     size_t digest_size;
-    zckIndex *first;
-} zckIndexInfo;
+    zckIndexItem *first;
+} zckIndex;
 
 typedef struct zckRange {
     size_t start;
@@ -53,7 +53,7 @@ typedef struct zckRangeInfo {
     unsigned int segments;
     unsigned int max_ranges;
     zckRange *first;
-    zckIndexInfo index;
+    zckIndex index;
 } zckRangeInfo;
 
 typedef struct zckDLPriv zckDLPriv;
@@ -70,7 +70,7 @@ typedef struct zckDL {
     zckRangeInfo info;
     zckDLPriv *priv;
     struct zckCtx *zck;
-    zckIndex *tgt_check;
+    zckIndexItem *tgt_check;
     zckHash *chunk_hash;
 } zckDL;
 
@@ -84,8 +84,8 @@ void zck_free(zckCtx **zck);
 /* Clear a zchunk context so it may be reused */
 void zck_clear(zckCtx *zck);
 
-/* No idea, but probably important */
-int zck_init_write (zckCtx *zck, int dst_fd);
+/* Set logging level */
+void zck_set_log_level(log_type ll);
 
 /* Set compression type */
 int zck_set_compression_type(zckCtx *zck, int comp_type);
@@ -106,19 +106,20 @@ int zck_compress(zckCtx *zck, const char *src, const size_t src_size);
 int zck_decompress(zckCtx *zck, const char *src, const size_t src_size,
                    char **dst, size_t *dst_size);
 
+/* Initialize zchunk for writing */
+int zck_init_write (zckCtx *zck, int dst_fd);
 /* Write everything to disk */
 int zck_write_file(zckCtx *zck);
-
 /* Read zchunk header from src_fd */
 int zck_read_header(zckCtx *zck, int src_fd);
+/* Decompress zchunk file pointed to by src_fd into dst_fd */
+int zck_decompress_to_file (zckCtx *zck, int src_fd, int dst_fd);
 
 /* Get index count */
 ssize_t zck_get_index_count(zckCtx *zck);
 /* Get index */
-zckIndexInfo *zck_get_index(zckCtx *zck);
+zckIndex *zck_get_index(zckCtx *zck);
 
-/* Decompress zchunk file pointed to by src_fd into dst_fd */
-int zck_decompress_to_file (zckCtx *zck, int src_fd, int dst_fd);
 
 /* Set overall hash type */
 int zck_set_full_hash_type(zckCtx *zck, int hash_type);
@@ -138,6 +139,8 @@ int zck_get_chunk_hash_type(zckCtx *zck);
 int zck_get_chunk_digest_size(zckCtx *zck);
 /* Get name of hash type */
 const char *zck_hash_name_from_type(int hash_type);
+/* Check data hash */
+int zck_hash_check_data(zckCtx *zck, int dst_fd);
 
 /* Get header length (header + index) */
 ssize_t zck_get_header_length(zckCtx *zck);
@@ -146,21 +149,40 @@ ssize_t zck_get_header_length(zckCtx *zck);
 int zck_get_tmp_fd();
 
 
-int zck_range_calc_segments(zckRangeInfo *info, unsigned int max_ranges);
-int zck_range_get_need_dl(zckRangeInfo *info, zckCtx *zck_src, zckCtx *zck_tgt);
+/* Get any matching chunks from src and put them in the right place in tgt */
 int zck_dl_copy_src_chunks(zckRangeInfo *info, zckCtx *src, zckCtx *tgt);
+/* Update info with the maximum number of ranges in a single request */
+int zck_range_calc_segments(zckRangeInfo *info, unsigned int max_ranges);
+/* Get index of chunks not available in src, and put them in info */
+int zck_range_get_need_dl(zckRangeInfo *info, zckCtx *zck_src, zckCtx *zck_tgt);
+/* Get array of range request strings.  ra must be allocated to size
+ * info->segments, and the strings must be freed by the caller after use */
 int zck_range_get_array(zckRangeInfo *info, char **ra);
+/* Free any resources in zckRangeInfo */
 void zck_range_close(zckRangeInfo *info);
-void zck_set_log_level(log_type ll);
+
+
+/* Initialize curl stuff, should be run at beginning of any program using any
+ * following functions */
 void zck_dl_global_init();
+/* Clean up curl stuff, should be run at end of any program using any following
+ * functions */
 void zck_dl_global_cleanup();
+
+/* Initialize zchunk download context */
 zckDL *zck_dl_init();
+/* Free zchunk download context */
 void zck_dl_free(zckDL **dl);
-void zck_dl_free_regex(zckDL *dl);
+/* Clear regex used for extracting download ranges from multipart download */
+void zck_dl_clear_regex(zckDL *dl);
+/* Download and process the header from url */
 int zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url);
+/* Get number of bytes downloaded using download context */
 size_t zck_dl_get_bytes_downloaded(zckDL *dl);
+/* Get number of bytes uploaded using download context */
 size_t zck_dl_get_bytes_uploaded(zckDL *dl);
-int zck_dl_range(zckDL *dl, char *url, int is_chunk);
+/* Download ranges specified in dl->info from url */
+int zck_dl_range(zckDL *dl, char *url);
+/* Return string with range request from start to end (inclusive) */
 char *zck_dl_get_range(unsigned int start, unsigned int end);
-int zck_hash_check_full_file(zckCtx *zck, int dst_fd);
 #endif

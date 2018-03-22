@@ -21,9 +21,12 @@
 #define True 1
 #define False 0
 
-typedef enum log_type { ZCK_LOG_DEBUG, ZCK_LOG_INFO, ZCK_LOG_WARNING,
+typedef enum log_type { ZCK_LOG_DEBUG,
+                        ZCK_LOG_INFO,
+                        ZCK_LOG_WARNING,
                         ZCK_LOG_ERROR } log_type;
 
+/* Contains an index item */
 typedef struct zckIndexItem {
     char *digest;
     int digest_size;
@@ -33,6 +36,7 @@ typedef struct zckIndexItem {
     struct zckIndexItem *next;
 } zckIndexItem;
 
+/* Contains everything about an index and a pointer to the first index item */
 typedef struct zckIndex {
     size_t count;
     size_t length;
@@ -41,6 +45,7 @@ typedef struct zckIndex {
     zckIndexItem *first;
 } zckIndex;
 
+/* Contains a single range */
 typedef struct zckRangeItem {
     size_t start;
     size_t end;
@@ -48,6 +53,8 @@ typedef struct zckRangeItem {
     struct zckRangeItem *prev;
 } zckRangeItem;
 
+/* Contains a series of ranges, information about them, a link to the first
+ * range item, and an index describing what information is in the ranges */
 typedef struct zckRange {
     unsigned int count;
     unsigned int segments;
@@ -60,6 +67,7 @@ typedef struct zckDLPriv zckDLPriv;
 typedef struct zckCtx zckCtx;
 typedef struct zckHash zckHash;
 
+/* Contains a zchunk download context */
 typedef struct zckDL {
     size_t dl;
     size_t ul;
@@ -74,7 +82,9 @@ typedef struct zckDL {
     zckHash *chunk_hash;
 } zckDL;
 
-
+/*******************************************************************
+ * Zchunk contexts
+ *******************************************************************/
 /* Get a zchunk context that can be used for creating or reading a zchunk
  * file.  Must be freed using zck_free */
 zckCtx *zck_create();
@@ -84,9 +94,19 @@ void zck_free(zckCtx **zck);
 /* Clear a zchunk context so it may be reused */
 void zck_clear(zckCtx *zck);
 
+/*******************************************************************
+ * Miscellaneous utilities
+ *******************************************************************/
 /* Set logging level */
 void zck_set_log_level(log_type ll);
+/* Get header length (header + index) */
+ssize_t zck_get_header_length(zckCtx *zck);
+/* Get temporary fd that will disappear when fd is closed */
+int zck_get_tmp_fd();
 
+/*******************************************************************
+ * Compression
+ *******************************************************************/
 /* Set compression type */
 int zck_set_compression_type(zckCtx *zck, int comp_type);
 /* Get name of compression type */
@@ -106,21 +126,33 @@ int zck_compress(zckCtx *zck, const char *src, const size_t src_size);
 int zck_decompress(zckCtx *zck, const char *src, const size_t src_size,
                    char **dst, size_t *dst_size);
 
+/*******************************************************************
+ * Creating a zchunk file
+ *******************************************************************/
 /* Initialize zchunk for writing */
 int zck_init_write (zckCtx *zck, int dst_fd);
 /* Write everything to disk */
 int zck_write_file(zckCtx *zck);
+
+/*******************************************************************
+ * Reading a zchunk file
+ *******************************************************************/
 /* Read zchunk header from src_fd */
 int zck_read_header(zckCtx *zck, int src_fd);
 /* Decompress zchunk file pointed to by src_fd into dst_fd */
 int zck_decompress_to_file (zckCtx *zck, int src_fd, int dst_fd);
 
+/*******************************************************************
+ * Indexes
+ *******************************************************************/
 /* Get index count */
 ssize_t zck_get_index_count(zckCtx *zck);
 /* Get index */
 zckIndex *zck_get_index(zckCtx *zck);
 
-
+/*******************************************************************
+ * Hashing
+ *******************************************************************/
 /* Set overall hash type */
 int zck_set_full_hash_type(zckCtx *zck, int hash_type);
 /* Get overall hash type */
@@ -142,17 +174,13 @@ const char *zck_hash_name_from_type(int hash_type);
 /* Check data hash */
 int zck_hash_check_data(zckCtx *zck, int dst_fd);
 
-/* Get header length (header + index) */
-ssize_t zck_get_header_length(zckCtx *zck);
-
-/* Get temporary fd */
-int zck_get_tmp_fd();
-
-
-/* Get any matching chunks from src and put them in the right place in tgt */
-int zck_dl_copy_src_chunks(zckRange *info, zckCtx *src, zckCtx *tgt);
+/*******************************************************************
+ * Ranges
+ *******************************************************************/
 /* Update info with the maximum number of ranges in a single request */
 int zck_range_calc_segments(zckRange *info, unsigned int max_ranges);
+/* Get any matching chunks from src and put them in the right place in tgt */
+int zck_dl_copy_src_chunks(zckRange *info, zckCtx *src, zckCtx *tgt);
 /* Get index of chunks not available in src, and put them in info */
 int zck_range_get_need_dl(zckRange *info, zckCtx *zck_src, zckCtx *zck_tgt);
 /* Get array of range request strings.  ra must be allocated to size
@@ -161,7 +189,9 @@ int zck_range_get_array(zckRange *info, char **ra);
 /* Free any resources in zckRange */
 void zck_range_close(zckRange *info);
 
-
+/*******************************************************************
+ * Downloading (should this go in a separate header and library?)
+ *******************************************************************/
 /* Initialize curl stuff, should be run at beginning of any program using any
  * following functions */
 void zck_dl_global_init();

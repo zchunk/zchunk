@@ -48,7 +48,7 @@ int zck_index_finalize(zckCtx *zck) {
     /* Add digest size + MAX_COMP_SIZE bytes for length of each entry in
      * index */
     if(zck->index.first) {
-        zckIndex *tmp = zck->index.first;
+        zckIndexItem *tmp = zck->index.first;
         while(tmp) {
             index_malloc += zck->index.digest_size + MAX_COMP_SIZE;
             tmp = tmp->next;
@@ -62,7 +62,7 @@ int zck_index_finalize(zckCtx *zck) {
     memcpy(index+index_size, zck->full_hash_digest, zck->hash_type.digest_size);
     index_size += zck->hash_type.digest_size;
     if(zck->index.first) {
-        zckIndex *tmp = zck->index.first;
+        zckIndexItem *tmp = zck->index.first;
         while(tmp) {
             memcpy(index+index_size, tmp->digest, zck->index.digest_size);
             index_size += zck->index.digest_size;
@@ -115,7 +115,7 @@ int zck_index_finalize(zckCtx *zck) {
     return True;
 }
 
-int zck_index_new_chunk(zckIndexInfo *index, char *digest, int digest_size,
+int zck_index_new_chunk(zckIndex *index, char *digest, int digest_size,
                         size_t length, int finished) {
     if(index == NULL) {
         zck_log(ZCK_LOG_ERROR, "Invalid index\n");
@@ -125,10 +125,10 @@ int zck_index_new_chunk(zckIndexInfo *index, char *digest, int digest_size,
         zck_log(ZCK_LOG_ERROR, "Digest size 0 too small\n");
         return False;
     }
-    zckIndex *idx = zmalloc(sizeof(zckIndex));
+    zckIndexItem *idx = zmalloc(sizeof(zckIndexItem));
     if(idx == NULL) {
         zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
-                sizeof(zckIndex));
+                sizeof(zckIndexItem));
         return False;
     }
     idx->digest = zmalloc(digest_size);
@@ -145,7 +145,7 @@ int zck_index_new_chunk(zckIndexInfo *index, char *digest, int digest_size,
     if(index->first == NULL) {
         index->first = idx;
     } else {
-        zckIndex *tmp=index->first;
+        zckIndexItem *tmp=index->first;
         while(tmp->next)
             tmp = tmp->next;
         tmp->next = idx;

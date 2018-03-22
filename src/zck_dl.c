@@ -90,12 +90,12 @@ int main (int argc, char *argv[]) {
         exit(1);
 
     lseek(dl->dst_fd, 0, SEEK_SET);
-    if(!zck_dl_range(dl, argv[2], 1))
+    if(!zck_dl_range(dl, argv[2]))
         exit(1);
 
 
     printf("Downloaded %lu bytes\n", zck_dl_get_bytes_downloaded(dl));
-    switch(zck_hash_check_full_file(dl->zck, dl->dst_fd)) {
+    switch(zck_hash_check_data(dl->zck, dl->dst_fd)) {
         case -1:
             exit(1);
             break;

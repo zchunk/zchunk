@@ -68,10 +68,10 @@ int main (int argc, char *argv[]) {
     printf("\n");
     printf("Index count: %lu\n", zck_get_index_count(zck));
     printf("Chunk checksum type: %s\n", zck_hash_name_from_type(zck_get_chunk_hash_type(zck)));
-    zckIndexInfo *idxi = zck_get_index(zck);
+    zckIndex *idxi = zck_get_index(zck);
     if(idxi == NULL)
         exit(1);
-    zckIndex *idx = idxi->first;
+    zckIndexItem *idx = idxi->first;
     while(idx) {
         for(int i=0; i<zck_get_chunk_digest_size(zck); i++)
             printf("%02x", (unsigned char)idx->digest[i]);

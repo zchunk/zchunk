@@ -163,7 +163,7 @@ ssize_t zck_get_index_count(zckCtx *zck) {
     return zck->index.count;
 }
 
-zckIndexInfo *zck_get_index(zckCtx *zck) {
+zckIndex *zck_get_index(zckCtx *zck) {
     if(zck == NULL)
         return NULL;
     return &(zck->index);
@@ -263,11 +263,11 @@ int zck_import_dict(zckCtx *zck, char *data, size_t size) {
     return True;
 }
 
-int zck_validate_chunk(zckCtx *zck, char *data, size_t size, zckIndex *idx,
+int zck_validate_chunk(zckCtx *zck, char *data, size_t size, zckIndexItem *idx,
                        int chk_num) {
     VALIDATE(zck);
     if(idx == NULL) {
-        zck_log(ZCK_LOG_ERROR, "zckIndex not initialized\n");
+        zck_log(ZCK_LOG_ERROR, "zckIndexItem not initialized\n");
         return False;
     }
     zckHash chunk_hash;
@@ -338,8 +338,8 @@ int zck_decompress_to_file(zckCtx *zck, int src_fd, int dst_fd) {
         return False;
     }
 
-    zckIndexInfo *index = zck_get_index(zck);
-    zckIndex *idx = index->first;
+    zckIndex *index = zck_get_index(zck);
+    zckIndexItem *idx = index->first;
 
     /* Check if zck file is empty */
     for(int count=0; idx; count++) {

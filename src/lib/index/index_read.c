@@ -90,13 +90,13 @@ int zck_index_read(zckCtx *zck, char *data, size_t size) {
     memcpy(zck->full_hash_digest, data + length, zck->hash_type.digest_size);
     length += zck->hash_type.digest_size;
 
-    zckIndex *prev = zck->index.first;
+    zckIndexItem *prev = zck->index.first;
     size_t idx_loc = 0;
     while(length < size) {
-        zckIndex *new = zmalloc(sizeof(zckIndex));
+        zckIndexItem *new = zmalloc(sizeof(zckIndexItem));
         if(!new) {
             zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
-                    sizeof(zckIndex));
+                    sizeof(zckIndexItem));
             return False;
         }
 

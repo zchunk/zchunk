@@ -31,13 +31,13 @@
 
 #include "zck_private.h"
 
-void zck_index_clean(zckIndexInfo *index) {
+void zck_index_clean(zckIndex *index) {
     if(index == NULL)
         return;
 
     if(index->first) {
-        zckIndex *next;
-        zckIndex *tmp=index->first;
+        zckIndexItem *next;
+        zckIndexItem *tmp=index->first;
         while(tmp != NULL) {
             next = tmp->next;
             if(tmp->digest)
@@ -46,7 +46,7 @@ void zck_index_clean(zckIndexInfo *index) {
             tmp = next;
         }
     }
-    memset(index, 0, sizeof(zckIndexInfo));
+    memset(index, 0, sizeof(zckIndex));
 }
 
 void zck_index_free(zckCtx *zck) {

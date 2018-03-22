@@ -58,7 +58,7 @@ void zck_dl_free_dl_regex(zckDL *dl) {
 }
 
 /* Write zeros to tgt->fd in location of tgt_idx */
-int zck_dl_write_zero(zckCtx *tgt, zckIndex *tgt_idx) {
+int zck_dl_write_zero(zckCtx *tgt, zckIndexItem *tgt_idx) {
     char buf[BUF_SIZE] = {0};
     size_t tgt_data_offset = tgt->header_size + tgt->index_size;
     size_t to_read = tgt_idx->length;
@@ -137,10 +137,10 @@ int zck_dl_write_range(zckDL *dl, const char *at, size_t length) {
         /* Check whether we just finished downloading a chunk and verify it */
         if(dl->tgt_check && !zck_dl_write_chunk(dl))
             return False;
-        zckIndex *idx = dl->info.index.first;
+        zckIndexItem *idx = dl->info.index.first;
         while(idx) {
             if(dl->dl_chunk_data == idx->start) {
-                zckIndex *tgt_idx = dl->zck->index.first;
+                zckIndexItem *tgt_idx = dl->zck->index.first;
                 while(tgt_idx) {
                     if(tgt_idx->finished)
                         tgt_idx = tgt_idx->next;
@@ -213,7 +213,7 @@ static size_t write_data(void *ptr, size_t l, size_t c, void *dl_v) {
 }
 
 int zck_dl_write_and_verify(zckRangeInfo *info, zckCtx *src, zckCtx *tgt,
-                            zckIndex *src_idx, zckIndex *tgt_idx) {
+                            zckIndexItem *src_idx, zckIndexItem *tgt_idx) {
     static char buf[BUF_SIZE] = {0};
 
     size_t src_data_offset = src->header_size + src->index_size;
@@ -259,10 +259,10 @@ int zck_dl_write_and_verify(zckRangeInfo *info, zckCtx *src, zckCtx *tgt,
 }
 
 int zck_dl_copy_src_chunks(zckRangeInfo *info, zckCtx *src, zckCtx *tgt) {
-    zckIndexInfo *tgt_info = zck_get_index(tgt);
-    zckIndexInfo *src_info = zck_get_index(src);
-    zckIndex *tgt_idx = tgt_info->first;
-    zckIndex *src_idx = src_info->first;
+    zckIndex *tgt_info = zck_get_index(tgt);
+    zckIndex *src_info = zck_get_index(src);
+    zckIndexItem *tgt_idx = tgt_info->first;
+    zckIndexItem *src_idx = src_info->first;
     while(tgt_idx) {
         int found = False;
         src_idx = src_info->first;
@@ -295,7 +295,7 @@ static size_t get_header(char *b, size_t l, size_t c, void *dl_v) {
     return zck_multipart_get_boundary(dl, b, c*l);
 }
 
-int zck_dl_range(zckDL *dl, char *url, int is_chunk) {
+int zck_dl_range_chk_chunk(zckDL *dl, char *url, int is_chunk) {
     if(dl == NULL || dl->priv == NULL || dl->info.first == NULL) {
         zck_log(ZCK_LOG_ERROR, "Struct not defined\n");
         return False;
@@ -348,10 +348,14 @@ int zck_dl_range(zckDL *dl, char *url, int is_chunk) {
                     url);
             return False;
         }
-        zck_dl_free_regex(dl);
+        zck_dl_clear_regex(dl);
     }
     free(ra);
     return True;
+}
+
+int zck_dl_range(zckDL *dl, char *url) {
+    return zck_dl_range_chk_chunk(dl, url, 1);
 }
 
 int zck_dl_bytes(zckDL *dl, char *url, size_t bytes, size_t start,
@@ -361,7 +365,7 @@ int zck_dl_bytes(zckDL *dl, char *url, size_t bytes, size_t start,
         return False;
     }
     if(start + bytes > *buffer_len) {
-        zckIndex idx = {0};
+        zckIndexItem idx = {0};
 
         zck_log(ZCK_LOG_DEBUG, "Seeking to end of temporary file\n");
         if(lseek(dl->dst_fd, 0, SEEK_END) == -1) {
@@ -374,7 +378,7 @@ int zck_dl_bytes(zckDL *dl, char *url, size_t bytes, size_t start,
         idx.length = start+bytes-*buffer_len;
         zck_range_close(&(dl->info));
         zck_range_add(&(dl->info), &idx, NULL);
-        if(!zck_dl_range(dl, url, 0))
+        if(!zck_dl_range_chk_chunk(dl, url, 0))
             return False;
         zck_range_close(&(dl->info));
         *buffer_len = start+bytes;
@@ -471,7 +475,7 @@ int zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url) {
         return False;
 
     /* Write zeros to rest of file */
-    zckIndexInfo *info = &(dl->info.index);
+    zckIndex *info = &(dl->info.index);
     info->hash_type = zck->index.hash_type;
     zck_log(ZCK_LOG_DEBUG, "Writing zeros to rest of file: %llu\n", zck->index.length + zck->index_size + start);
     if(!zck_zero_bytes(dl, zck->index.length, zck->header_size + zck->index_size, &buffer_len))
@@ -498,7 +502,7 @@ void zck_dl_global_cleanup() {
 }
 
 /* Free zckDL header regex used for downloading ranges */
-void zck_dl_free_regex(zckDL *dl) {
+void zck_dl_clear_regex(zckDL *dl) {
     if(dl == NULL || dl->priv == NULL)
         return;
 
@@ -550,7 +554,7 @@ void zck_dl_free(zckDL **dl) {
                 free((*dl)->priv->mp->buffer);
             free((*dl)->priv->mp);
         }
-        zck_dl_free_regex(*dl);
+        zck_dl_clear_regex(*dl);
         curl_easy_cleanup((*dl)->priv->curl_ctx);
         free((*dl)->priv);
     }

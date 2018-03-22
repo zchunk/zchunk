@@ -129,14 +129,14 @@ void zck_hash_close(zckHash *hash) {
     return;
 }
 
-/* Returns 1 if full file hash matches, 0 if it doesn't and -1 if failure */
-int zck_hash_check_full_file(zckCtx *zck, int dst_fd) {
+/* Returns 1 if data hash matches, 0 if it doesn't and -1 if failure */
+int zck_hash_check_data(zckCtx *zck, int dst_fd) {
     if(!zck_seek(dst_fd, zck->header_size + zck->index_size, SEEK_SET))
         return -1;
     if(!zck_hash_init(&(zck->check_full_hash), &(zck->hash_type)))
         return -1;
     char buf[BUF_SIZE] = {0};
-    zckIndex *idx = zck->index.first;
+    zckIndexItem *idx = zck->index.first;
     zck_log(ZCK_LOG_INFO, "Checking full hash\n");
     while(idx) {
         size_t to_read = idx->length;

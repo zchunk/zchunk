@@ -75,20 +75,20 @@ int main (int argc, char *argv[]) {
         printf("   %s: %s\n", argv[2], zck_hash_name_from_type(zck_get_chunk_hash_type(zck_src)));
         return 1;
     }
-    zckIndexInfo *tgt_info = zck_get_index(zck_tgt);
+    zckIndex *tgt_info = zck_get_index(zck_tgt);
     if(tgt_info == NULL)
         exit(1);
-    zckIndexInfo *src_info = zck_get_index(zck_src);
+    zckIndex *src_info = zck_get_index(zck_src);
     if(src_info == NULL)
         exit(1);
-    zckIndex *tgt_idx = tgt_info->first;
-    zckIndex *src_idx = src_info->first;
+    zckIndexItem *tgt_idx = tgt_info->first;
+    zckIndexItem *src_idx = src_info->first;
     if(memcmp(tgt_idx->digest, src_idx->digest, zck_get_chunk_digest_size(zck_tgt)) != 0)
         printf("WARNING: Dicts don't match\n");
     ssize_t dl_size = zck_get_header_length(zck_tgt);
     if(dl_size < 0)
         exit(1);
-    ssize_t total_size = 0;
+    ssize_t total_size = zck_get_header_length(zck_tgt);
     ssize_t matched_chunks = 0;
     while(tgt_idx) {
         int found = False;

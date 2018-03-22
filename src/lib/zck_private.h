@@ -35,7 +35,7 @@ typedef struct zckHash {
     void *ctx;
 } zckHash;
 
-/*typedef struct zckIndex zckIndex;*/
+/*typedef struct zckIndexItem zckIndexItem;*/
 typedef void CURL;
 
 typedef struct zckMP {
@@ -83,7 +83,7 @@ typedef struct zckCtx {
     size_t header_size;
     char *index_string;
     size_t index_size;
-    zckIndexInfo index;
+    zckIndex index;
     char *index_digest;
     zckHash full_hash;
     zckHash check_full_hash;
@@ -115,10 +115,10 @@ const char *zck_hash_get_printable(const char *digest, zckHashType *type);
 /* index/index.c */
 int zck_index_read(zckCtx *zck, char *data, size_t size);
 int zck_index_finalize(zckCtx *zck);
-int zck_index_new_chunk(zckIndexInfo *index, char *digest, int digest_size,
+int zck_index_new_chunk(zckIndex *index, char *digest, int digest_size,
                         size_t length, int finished);
 int zck_index_add_chunk(zckCtx *zck, char *data, size_t size);
-void zck_index_clean(zckIndexInfo *index);
+void zck_index_clean(zckIndex *index);
 void zck_index_free(zckCtx *zck);
 int zck_write_index(zckCtx *zck);
 
@@ -142,7 +142,7 @@ int zck_write_header(zckCtx *zck);
 
 /* dl/range.c */
 char *zck_range_get_char(zckRange **range, int max_ranges);
-int zck_range_add(zckRangeInfo *info, zckIndex *idx, zckCtx *zck);
+int zck_range_add(zckRangeInfo *info, zckIndexItem *idx, zckCtx *zck);
 
 /* dl/multipart.c */
 size_t zck_multipart_extract(zckDL *dl, char *b, size_t l);
@@ -150,6 +150,7 @@ size_t zck_multipart_get_boundary(zckDL *dl, char *b, size_t size);
 
 /* dl/dl.c */
 int zck_dl_write_range(zckDL *dl, const char *at, size_t length);
+int zck_dl_range_chk_chunk(zckDL *dl, char *url, int is_chunk);
 
 /* compint.c */
 int zck_compint_from_int(char *compint, int val, size_t *length);

@@ -179,8 +179,8 @@ int zck_dl_write_range(zckDL *dl, const char *at, size_t length) {
 }
 
 char *zck_dl_get_range_char(unsigned int start, unsigned int end) {
-    zckRange r = {0};
-    zckRange *range = &r;
+    zckRangeItem r = {0};
+    zckRangeItem *range = &r;
 
     r.start = start;
     r.end = end;
@@ -212,7 +212,7 @@ static size_t write_data(void *ptr, size_t l, size_t c, void *dl_v) {
     return wb;
 }
 
-int zck_dl_write_and_verify(zckRangeInfo *info, zckCtx *src, zckCtx *tgt,
+int zck_dl_write_and_verify(zckRange *info, zckCtx *src, zckCtx *tgt,
                             zckIndexItem *src_idx, zckIndexItem *tgt_idx) {
     static char buf[BUF_SIZE] = {0};
 
@@ -258,7 +258,7 @@ int zck_dl_write_and_verify(zckRangeInfo *info, zckCtx *src, zckCtx *tgt,
     return True;
 }
 
-int zck_dl_copy_src_chunks(zckRangeInfo *info, zckCtx *src, zckCtx *tgt) {
+int zck_dl_copy_src_chunks(zckRange *info, zckCtx *src, zckCtx *tgt) {
     zckIndex *tgt_info = zck_get_index(tgt);
     zckIndex *src_info = zck_get_index(src);
     zckIndexItem *tgt_idx = tgt_info->first;

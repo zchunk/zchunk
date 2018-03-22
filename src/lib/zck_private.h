@@ -141,8 +141,8 @@ int zck_read_header(zckCtx *zck, int src_fd);
 int zck_write_header(zckCtx *zck);
 
 /* dl/range.c */
-char *zck_range_get_char(zckRange **range, int max_ranges);
-int zck_range_add(zckRangeInfo *info, zckIndexItem *idx, zckCtx *zck);
+char *zck_range_get_char(zckRangeItem **range, int max_ranges);
+int zck_range_add(zckRange *info, zckIndexItem *idx, zckCtx *zck);
 
 /* dl/multipart.c */
 size_t zck_multipart_extract(zckDL *dl, char *b, size_t l);

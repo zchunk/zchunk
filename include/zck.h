@@ -41,20 +41,20 @@ typedef struct zckIndex {
     zckIndexItem *first;
 } zckIndex;
 
-typedef struct zckRange {
+typedef struct zckRangeItem {
     size_t start;
     size_t end;
-    struct zckRange *next;
-    struct zckRange *prev;
-} zckRange;
+    struct zckRangeItem *next;
+    struct zckRangeItem *prev;
+} zckRangeItem;
 
-typedef struct zckRangeInfo {
+typedef struct zckRange {
     unsigned int count;
     unsigned int segments;
     unsigned int max_ranges;
-    zckRange *first;
+    zckRangeItem *first;
     zckIndex index;
-} zckRangeInfo;
+} zckRange;
 
 typedef struct zckDLPriv zckDLPriv;
 typedef struct zckCtx zckCtx;
@@ -67,7 +67,7 @@ typedef struct zckDL {
     size_t dl_chunk_data;
     int dst_fd;
     char *boundary;
-    zckRangeInfo info;
+    zckRange info;
     zckDLPriv *priv;
     struct zckCtx *zck;
     zckIndexItem *tgt_check;
@@ -150,16 +150,16 @@ int zck_get_tmp_fd();
 
 
 /* Get any matching chunks from src and put them in the right place in tgt */
-int zck_dl_copy_src_chunks(zckRangeInfo *info, zckCtx *src, zckCtx *tgt);
+int zck_dl_copy_src_chunks(zckRange *info, zckCtx *src, zckCtx *tgt);
 /* Update info with the maximum number of ranges in a single request */
-int zck_range_calc_segments(zckRangeInfo *info, unsigned int max_ranges);
+int zck_range_calc_segments(zckRange *info, unsigned int max_ranges);
 /* Get index of chunks not available in src, and put them in info */
-int zck_range_get_need_dl(zckRangeInfo *info, zckCtx *zck_src, zckCtx *zck_tgt);
+int zck_range_get_need_dl(zckRange *info, zckCtx *zck_src, zckCtx *zck_tgt);
 /* Get array of range request strings.  ra must be allocated to size
  * info->segments, and the strings must be freed by the caller after use */
-int zck_range_get_array(zckRangeInfo *info, char **ra);
-/* Free any resources in zckRangeInfo */
-void zck_range_close(zckRangeInfo *info);
+int zck_range_get_array(zckRange *info, char **ra);
+/* Free any resources in zckRange */
+void zck_range_close(zckRange *info);
 
 
 /* Initialize curl stuff, should be run at beginning of any program using any

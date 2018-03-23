@@ -77,53 +77,58 @@ int zck_dl_write_zero(zckCtx *tgt, zckIndexItem *tgt_idx) {
 
 int zck_dl_write(zckDL *dl, const char *at, size_t length) {
     VALIDATE(dl);
-    if(dl->write_in_chunk < length)
-        length = dl->write_in_chunk;
+    VALIDATE(dl->priv);
+    if(dl->priv->write_in_chunk < length)
+        length = dl->priv->write_in_chunk;
     if(!zck_write(dl->dst_fd, at, length))
         return -1;
-    dl->write_in_chunk -= length;
+    dl->priv->write_in_chunk -= length;
     return length;
 }
 
 int zck_dl_md_write(zckDL *dl, const char *at, size_t length) {
     VALIDATE(dl);
+    VALIDATE(dl->priv);
     int wb = 0;
-    if(dl->write_in_chunk > 0) {
+    if(dl->priv->write_in_chunk > 0) {
         wb = zck_dl_write(dl, at, length);
-        if(!zck_hash_update(dl->chunk_hash, at, wb))
+        if(!zck_hash_update(dl->priv->chunk_hash, at, wb))
             return 0;
         if(wb < 0)
             return 0;
         zck_log(ZCK_LOG_DEBUG, "Writing %lu bytes\n", wb);
-        dl->dl_chunk_data += wb;
+        dl->priv->dl_chunk_data += wb;
     }
     return wb;
 }
 
 int zck_dl_write_chunk(zckDL *dl) {
     VALIDATE(dl);
-    if(dl->chunk_hash == NULL) {
+    VALIDATE(dl->priv);
+    if(dl->priv->chunk_hash == NULL) {
         zck_log(ZCK_LOG_ERROR, "Chunk hash not initialized\n");
         return False;
     }
-    char *digest = zck_hash_finalize(dl->chunk_hash);
-    free(dl->chunk_hash);
-    if(memcmp(digest, dl->tgt_check->digest, dl->tgt_check->digest_size) != 0) {
+    char *digest = zck_hash_finalize(dl->priv->chunk_hash);
+    free(dl->priv->chunk_hash);
+    if(memcmp(digest, dl->priv->tgt_check->digest,
+              dl->priv->tgt_check->digest_size) != 0) {
         zck_log(ZCK_LOG_WARNING,
                 "Downloaded chunk failed hash check\n");
-        if(!zck_dl_write_zero(dl->zck, dl->tgt_check))
+        if(!zck_dl_write_zero(dl->zck, dl->priv->tgt_check))
             return False;
     } else {
-        dl->tgt_check->finished = True;
+        dl->priv->tgt_check->finished = True;
     }
-    dl->tgt_check = NULL;
-    dl->chunk_hash = NULL;
+    dl->priv->tgt_check = NULL;
+    dl->priv->chunk_hash = NULL;
     free(digest);
     return True;
 }
 
 int zck_dl_write_range(zckDL *dl, const char *at, size_t length) {
     VALIDATE(dl);
+    VALIDATE(dl->priv);
     if(dl->info.index.first == NULL) {
         zck_log(ZCK_LOG_ERROR, "zckDL index not initialized\n");
         return 0;
@@ -133,13 +138,13 @@ int zck_dl_write_range(zckDL *dl, const char *at, size_t length) {
         return 0;
     }
     int wb = zck_dl_md_write(dl, at, length);
-    if(dl->write_in_chunk == 0) {
+    if(dl->priv->write_in_chunk == 0) {
         /* Check whether we just finished downloading a chunk and verify it */
-        if(dl->tgt_check && !zck_dl_write_chunk(dl))
+        if(dl->priv->tgt_check && !zck_dl_write_chunk(dl))
             return False;
         zckIndexItem *idx = dl->info.index.first;
         while(idx) {
-            if(dl->dl_chunk_data == idx->start) {
+            if(dl->priv->dl_chunk_data == idx->start) {
                 zckIndexItem *tgt_idx = dl->zck->index.first;
                 while(tgt_idx) {
                     if(tgt_idx->finished)
@@ -147,12 +152,12 @@ int zck_dl_write_range(zckDL *dl, const char *at, size_t length) {
                     if(idx->length == tgt_idx->length &&
                        memcmp(idx->digest, tgt_idx->digest,
                               idx->digest_size) == 0) {
-                        dl->tgt_check = tgt_idx;
-                        dl->chunk_hash = zmalloc(sizeof(zckHash));
-                        if(!zck_hash_init(dl->chunk_hash,
+                        dl->priv->tgt_check = tgt_idx;
+                        dl->priv->chunk_hash = zmalloc(sizeof(zckHash));
+                        if(!zck_hash_init(dl->priv->chunk_hash,
                                           &(dl->zck->chunk_hash_type)))
                             return 0;
-                        dl->write_in_chunk = idx->length;
+                        dl->priv->write_in_chunk = idx->length;
                         size_t offset = dl->zck->header_size +
                                         dl->zck->index_size;
                         if(!zck_seek(dl->dst_fd, offset + tgt_idx->start,
@@ -170,7 +175,7 @@ int zck_dl_write_range(zckDL *dl, const char *at, size_t length) {
         }
     }
     int wb2 = 0;
-    if(dl->write_in_chunk > 0 && wb < length) {
+    if(dl->priv->write_in_chunk > 0 && wb < length) {
         wb2 = zck_dl_write_range(dl, at+wb, length-wb);
         if(wb2 == 0)
             return 0;

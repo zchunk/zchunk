@@ -50,9 +50,13 @@ typedef struct zckDLPriv {
     zckMP *mp;
     int parser_started;
     int is_chunk;
+    size_t write_in_chunk;
+    size_t dl_chunk_data;
     regex_t *dl_regex;
     regex_t *end_regex;
     regex_t *hdr_regex;
+    zckIndexItem *tgt_check;
+    zckHash *chunk_hash;
 } zckDLPriv;
 
 typedef struct zckComp {

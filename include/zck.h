@@ -71,15 +71,11 @@ typedef struct zckHash zckHash;
 typedef struct zckDL {
     size_t dl;
     size_t ul;
-    size_t write_in_chunk;
-    size_t dl_chunk_data;
     int dst_fd;
     char *boundary;
     zckRange info;
     zckDLPriv *priv;
     struct zckCtx *zck;
-    zckIndexItem *tgt_check;
-    zckHash *chunk_hash;
 } zckDL;
 
 /*******************************************************************

@@ -50,7 +50,7 @@ int zck_index_finalize(zckCtx *zck) {
     if(zck->index.first) {
         zckIndexItem *tmp = zck->index.first;
         while(tmp) {
-            index_malloc += zck->index.digest_size + MAX_COMP_SIZE;
+            index_malloc += zck->index.digest_size + MAX_COMP_SIZE*2;
             tmp = tmp->next;
         }
     }
@@ -64,10 +64,15 @@ int zck_index_finalize(zckCtx *zck) {
     if(zck->index.first) {
         zckIndexItem *tmp = zck->index.first;
         while(tmp) {
+            /* Write digest */
             memcpy(index+index_size, tmp->digest, zck->index.digest_size);
             index_size += zck->index.digest_size;
+            /* Write compressed size */
             zck_compint_from_size(index+index_size, tmp->comp_length,
                                   &index_size);
+            /* Write uncompressed size */
+            zck_compint_from_size(index+index_size, tmp->length, &index_size);
+
             tmp = tmp->next;
         }
     }
@@ -117,7 +122,7 @@ int zck_index_finalize(zckCtx *zck) {
 }
 
 int zck_index_new_chunk(zckIndex *index, char *digest, int digest_size,
-                        size_t length, int finished) {
+                        size_t comp_size, size_t orig_size, int finished) {
     if(index == NULL) {
         zck_log(ZCK_LOG_ERROR, "Invalid index\n");
         return False;
@@ -141,7 +146,8 @@ int zck_index_new_chunk(zckIndex *index, char *digest, int digest_size,
         memcpy(idx->digest, digest, digest_size);
     idx->digest_size = digest_size;
     idx->start = index->length;
-    idx->comp_length = length;
+    idx->comp_length = comp_size;
+    idx->length = orig_size;
     idx->finished = finished;
     if(index->first == NULL) {
         index->first = idx;
@@ -152,11 +158,12 @@ int zck_index_new_chunk(zckIndex *index, char *digest, int digest_size,
         tmp->next = idx;
     }
     index->count += 1;
-    index->length += length;
+    index->length += comp_size;
     return True;
 }
 
-int zck_index_add_chunk(zckCtx *zck, char *data, size_t size) {
+int zck_index_add_chunk(zckCtx *zck, char *data, size_t comp_size,
+                        size_t orig_size) {
     zckHash hash;
 
     if(zck == NULL) {
@@ -164,16 +171,16 @@ int zck_index_add_chunk(zckCtx *zck, char *data, size_t size) {
         return False;
     }
 
-    if(size == 0) {
+    if(comp_size == 0) {
         if(!zck_index_new_chunk(&(zck->index), NULL, zck->index.digest_size,
-                                size, True))
+                                comp_size, orig_size, True))
             return False;
     } else {
-        if(!zck_hash_update(&(zck->full_hash), data, size))
+        if(!zck_hash_update(&(zck->full_hash), data, comp_size))
             return False;
         if(!zck_hash_init(&hash, &(zck->chunk_hash_type)))
             return False;
-        if(!zck_hash_update(&hash, data, size))
+        if(!zck_hash_update(&hash, data, comp_size))
             return False;
 
         char *digest = zck_hash_finalize(&hash);
@@ -184,7 +191,7 @@ int zck_index_add_chunk(zckCtx *zck, char *data, size_t size) {
             return False;
         }
         if(!zck_index_new_chunk(&(zck->index), digest, zck->index.digest_size,
-                                size, True))
+                                comp_size, orig_size, True))
             return False;
         free(digest);
     }

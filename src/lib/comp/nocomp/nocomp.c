@@ -35,8 +35,7 @@ static int zck_nocomp_init(zckComp *comp) {
     return True;
 }
 
-/* Nocomp just copies data for both compression and decompression */
-static int zck_nocomp_de_comp(zckComp *comp, const char *src, const size_t src_size,
+static int zck_nocomp_comp(zckComp *comp, const char *src, const size_t src_size,
                         char **dst, size_t *dst_size, int use_dict) {
     *dst = zmalloc(src_size);
     if(dst == NULL) {
@@ -46,6 +45,19 @@ static int zck_nocomp_de_comp(zckComp *comp, const char *src, const size_t src_s
 
     memcpy(*dst, src, src_size);
     *dst_size = src_size;
+
+    return True;
+}
+
+static int zck_nocomp_decomp(zckComp *comp, const char *src, const size_t src_size,
+                        char **dst, size_t dst_size, int use_dict) {
+    *dst = zmalloc(src_size);
+    if(dst == NULL) {
+        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n", src_size);
+        return False;
+    }
+
+    memcpy(*dst, src, src_size);
 
     return True;
 }
@@ -69,8 +81,8 @@ static int zck_nocomp_set_default_parameters(zckComp *comp) {
 int zck_nocomp_setup(zckComp *comp) {
     comp->init = zck_nocomp_init;
     comp->set_parameter = zck_nocomp_set_parameter;
-    comp->compress = zck_nocomp_de_comp;
-    comp->decompress = zck_nocomp_de_comp;
+    comp->compress = zck_nocomp_comp;
+    comp->decompress = zck_nocomp_decomp;
     comp->close = zck_nocomp_close;
     comp->type = ZCK_COMP_NONE;
     return zck_nocomp_set_default_parameters(comp);

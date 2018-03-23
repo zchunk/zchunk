@@ -19,7 +19,7 @@ typedef int (*fcomp)(struct zckComp *comp, const char *src,
                      const size_t src_size, char **dst, size_t *dst_size,
                      int use_dict);
 typedef int (*fdecomp)(struct zckComp *comp, const char *src,
-                       const size_t src_size, char **dst, size_t *dst_size,
+                       const size_t src_size, char **dst, size_t dst_size,
                        int use_dict);
 typedef int (*fcclose)(struct zckComp *comp);
 
@@ -100,14 +100,6 @@ const char *zck_hash_name_from_type(int hash_type);
 int zck_get_tmp_fd();
 int zck_validate_file(zckCtx *zck);
 
-/* comp/comp.c */
-int zck_comp_init(zckCtx *zck);
-int zck_compress(zckCtx *zck, const char *src, const size_t src_size);
-int zck_decompress(zckCtx *zck, const char *src, const size_t src_size, char **dst, size_t *dst_size);
-int zck_comp_close(zckCtx *zck);
-int zck_set_compression_type(zckCtx *zck, int type);
-int zck_set_comp_parameter(zckCtx *zck, int option, void *value);
-
 /* hash/hash.h */
 int zck_hash_setup(zckHashType *ht, int h);
 int zck_hash_init(zckHash *hash, zckHashType *hash_type);
@@ -120,8 +112,9 @@ const char *zck_hash_get_printable(const char *digest, zckHashType *type);
 int zck_index_read(zckCtx *zck, char *data, size_t size);
 int zck_index_finalize(zckCtx *zck);
 int zck_index_new_chunk(zckIndex *index, char *digest, int digest_size,
-                        size_t length, int finished);
-int zck_index_add_chunk(zckCtx *zck, char *data, size_t size);
+                        size_t comp_size, size_t orig_size, int finished);
+int zck_index_add_chunk(zckCtx *zck, char *data, size_t comp_size,
+                        size_t orig_size);
 void zck_index_clean(zckIndex *index);
 void zck_index_free(zckCtx *zck);
 int zck_write_index(zckCtx *zck);

@@ -71,7 +71,7 @@ int zck_comp_init(zckCtx *zck) {
             free(dst);
             return False;
         }
-        zck_index_add_chunk(zck, dst, dst_size);
+        zck_index_add_chunk(zck, dst, dst_size, zck->comp.dict_size);
         free(dst);
     }
     zck->comp.dict = NULL;
@@ -100,15 +100,15 @@ int zck_compress(zckCtx *zck, const char *src, const size_t src_size) {
         free(dst);
         return False;
     }
-    zck_index_add_chunk(zck, dst, dst_size);
+    zck_index_add_chunk(zck, dst, dst_size, src_size);
     free(dst);
     return True;
 }
 
-int zck_decompress(zckCtx *zck, const char *src, const size_t src_size, char **dst, size_t *dst_size) {
+int zck_decompress(zckCtx *zck, const char *src, const size_t src_size,
+                   char **dst, size_t dst_size) {
     zckComp *comp = &(zck->comp);
     *dst = NULL;
-    *dst_size = 0;
 
     if(!zck->comp.started) {
         zck_log(ZCK_LOG_ERROR, "Compression hasn't been initialized yet\n");

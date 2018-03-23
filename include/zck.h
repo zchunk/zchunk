@@ -33,6 +33,7 @@ typedef struct zckIndexItem {
     int finished;
     size_t start;
     size_t comp_length;
+    size_t length;
     struct zckIndexItem *next;
 } zckIndexItem;
 
@@ -120,7 +121,7 @@ int zck_compress(zckCtx *zck, const char *src, const size_t src_size);
 /* Decompress data src of size src_size, and write to dst, while setting
  * dst_size */
 int zck_decompress(zckCtx *zck, const char *src, const size_t src_size,
-                   char **dst, size_t *dst_size);
+                   char **dst, size_t dst_size);
 
 /*******************************************************************
  * Creating a zchunk file

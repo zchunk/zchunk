@@ -117,9 +117,15 @@ int zck_index_read(zckCtx *zck, char *data, size_t size) {
             return False;
         new->start = idx_loc;
         new->comp_length = chunk_length;
-        new->finished = False;
 
-        idx_loc += chunk_length;
+        /* Read and store uncompressed entry length */
+        chunk_length = 0;
+        if(!zck_compint_to_size(&chunk_length, data+length, &length))
+            return False;
+        new->length = chunk_length;
+
+        new->finished = False;
+        idx_loc += new->comp_length;
         zck->index.length = idx_loc;
 
         if(prev)

@@ -75,7 +75,7 @@ int main (int argc, char *argv[]) {
     while(idx) {
         for(int i=0; i<zck_get_chunk_digest_size(zck); i++)
             printf("%02x", (unsigned char)idx->digest[i]);
-        printf(" %12lu %12lu %12lu\n", idx->start + zck_get_header_length(zck), idx->comp_length, idx->comp_length);
+        printf(" %12lu %12lu %12lu\n", idx->start + zck_get_header_length(zck), idx->comp_length, idx->length);
         idx = idx->next;
     }
 

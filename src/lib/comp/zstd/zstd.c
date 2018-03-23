@@ -85,30 +85,20 @@ static int zck_zstd_compress(zckComp *comp, const char *src,
 
 static int zck_zstd_decompress(zckComp *comp, const char *src,
                                const size_t src_size, char **dst,
-                               size_t *dst_size, int use_dict) {
-    unsigned long long frame_size;
-    size_t retval;
-
-    frame_size = ZSTD_getFrameContentSize(src, src_size);
-    if(frame_size == ZSTD_CONTENTSIZE_UNKNOWN ||
-       frame_size == ZSTD_CONTENTSIZE_ERROR) {
-        zck_log(ZCK_LOG_ERROR, "Unknown content size\n");
-        return False;
-    }
-    *dst_size = (size_t)frame_size;
-    *dst = zmalloc(*dst_size);
+                               size_t dst_size, int use_dict) {
+    *dst = zmalloc(dst_size);
     if(dst == NULL) {
-        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n", *dst_size);
+        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n", dst_size);
         return False;
     }
 
-    if(use_dict && comp->ddict_ctx) {
-        retval = ZSTD_decompress_usingDDict(comp->dctx, *dst, *dst_size, src,
+    size_t retval;
+    if(use_dict && comp->ddict_ctx)
+        retval = ZSTD_decompress_usingDDict(comp->dctx, *dst, dst_size, src,
                                             src_size, comp->ddict_ctx);
-    } else {
-        retval = ZSTD_decompressDCtx(comp->dctx, *dst, *dst_size, src,
+    else
+        retval = ZSTD_decompressDCtx(comp->dctx, *dst, dst_size, src,
                                      src_size);
-    }
     if(ZSTD_isError(retval)) {
         free(*dst);
         *dst = NULL;

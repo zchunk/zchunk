@@ -344,6 +344,7 @@ int zck_decompress_to_file(zckCtx *zck, int src_fd, int dst_fd) {
     /* Check if zck file is empty */
     for(int count=0; idx; count++) {
         size_t csize = idx->comp_length;
+        size_t size = idx->length;
         char *cdata;
 
         if(csize == 0)
@@ -366,9 +367,8 @@ int zck_decompress_to_file(zckCtx *zck, int src_fd, int dst_fd) {
             return False;
         }
 
-        size_t size = 0;
         char *data = NULL;
-        if(!zck_decompress(zck, cdata, csize, &data, &size)) {
+        if(!zck_decompress(zck, cdata, csize, &data, size)) {
             free(cdata);
             zck_log(ZCK_LOG_ERROR, "Unable to decompress chunk %i\n", count);
             return False;

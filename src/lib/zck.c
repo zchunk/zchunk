@@ -343,7 +343,7 @@ int zck_decompress_to_file(zckCtx *zck, int src_fd, int dst_fd) {
 
     /* Check if zck file is empty */
     for(int count=0; idx; count++) {
-        size_t csize = idx->length;
+        size_t csize = idx->comp_length;
         char *cdata;
 
         if(csize == 0)

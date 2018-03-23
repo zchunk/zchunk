@@ -66,7 +66,8 @@ int zck_index_finalize(zckCtx *zck) {
         while(tmp) {
             memcpy(index+index_size, tmp->digest, zck->index.digest_size);
             index_size += zck->index.digest_size;
-            zck_compint_from_size(index+index_size, tmp->length, &index_size);
+            zck_compint_from_size(index+index_size, tmp->comp_length,
+                                  &index_size);
             tmp = tmp->next;
         }
     }
@@ -140,7 +141,7 @@ int zck_index_new_chunk(zckIndex *index, char *digest, int digest_size,
         memcpy(idx->digest, digest, digest_size);
     idx->digest_size = digest_size;
     idx->start = index->length;
-    idx->length = length;
+    idx->comp_length = length;
     idx->finished = finished;
     if(index->first == NULL) {
         index->first = idx;

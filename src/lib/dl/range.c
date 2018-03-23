@@ -111,7 +111,7 @@ int zck_range_add(zckRange *info, zckIndexItem *idx, zckCtx *zck) {
     }
 
     size_t start = idx->start + header_len;
-    size_t end = idx->start + header_len + idx->length - 1;
+    size_t end = idx->start + header_len + idx->comp_length - 1;
     zckRangeItem *prev = info->first;
     for(zckRangeItem *ptr=info->first; ptr;) {
         prev = ptr;

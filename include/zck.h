@@ -32,7 +32,7 @@ typedef struct zckIndexItem {
     int digest_size;
     int finished;
     size_t start;
-    size_t length;
+    size_t comp_length;
     struct zckIndexItem *next;
 } zckIndexItem;
 

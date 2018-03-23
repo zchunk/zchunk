@@ -139,7 +139,7 @@ int zck_hash_check_data(zckCtx *zck, int dst_fd) {
     zckIndexItem *idx = zck->index.first;
     zck_log(ZCK_LOG_INFO, "Checking full hash\n");
     while(idx) {
-        size_t to_read = idx->length;
+        size_t to_read = idx->comp_length;
         while(to_read > 0) {
             size_t rb = BUF_SIZE;
             if(rb > to_read)

@@ -61,7 +61,7 @@ void zck_dl_free_dl_regex(zckDL *dl) {
 int zck_dl_write_zero(zckCtx *tgt, zckIndexItem *tgt_idx) {
     char buf[BUF_SIZE] = {0};
     size_t tgt_data_offset = tgt->header_size + tgt->index_size;
-    size_t to_read = tgt_idx->length;
+    size_t to_read = tgt_idx->comp_length;
     if(!zck_seek(tgt->fd, tgt_data_offset + tgt_idx->start, SEEK_SET))
         return False;
     while(to_read > 0) {
@@ -149,7 +149,7 @@ int zck_dl_write_range(zckDL *dl, const char *at, size_t length) {
                 while(tgt_idx) {
                     if(tgt_idx->finished)
                         tgt_idx = tgt_idx->next;
-                    if(idx->length == tgt_idx->length &&
+                    if(idx->comp_length == tgt_idx->comp_length &&
                        memcmp(idx->digest, tgt_idx->digest,
                               idx->digest_size) == 0) {
                         dl->priv->tgt_check = tgt_idx;
@@ -157,7 +157,7 @@ int zck_dl_write_range(zckDL *dl, const char *at, size_t length) {
                         if(!zck_hash_init(dl->priv->chunk_hash,
                                           &(dl->zck->chunk_hash_type)))
                             return 0;
-                        dl->priv->write_in_chunk = idx->length;
+                        dl->priv->write_in_chunk = idx->comp_length;
                         size_t offset = dl->zck->header_size +
                                         dl->zck->index_size;
                         if(!zck_seek(dl->dst_fd, offset + tgt_idx->start,
@@ -223,7 +223,7 @@ int zck_dl_write_and_verify(zckRange *info, zckCtx *src, zckCtx *tgt,
 
     size_t src_data_offset = src->header_size + src->index_size;
     size_t tgt_data_offset = tgt->header_size + tgt->index_size;
-    size_t to_read = src_idx->length;
+    size_t to_read = src_idx->comp_length;
     if(!zck_seek(src->fd, src_data_offset + src_idx->start, SEEK_SET))
         return False;
     if(!zck_seek(tgt->fd, tgt_data_offset + tgt_idx->start, SEEK_SET))
@@ -256,8 +256,8 @@ int zck_dl_write_and_verify(zckRange *info, zckCtx *src, zckCtx *tgt,
             return False;
     } else {
         tgt_idx->finished = True;
-        zck_log(ZCK_LOG_DEBUG, "Writing %lu bytes at %lu\n", tgt_idx->length,
-                tgt_idx->start);
+        zck_log(ZCK_LOG_DEBUG, "Writing %lu bytes at %lu\n",
+                tgt_idx->comp_length, tgt_idx->start);
     }
     free(digest);
     return True;
@@ -273,7 +273,7 @@ int zck_dl_copy_src_chunks(zckRange *info, zckCtx *src, zckCtx *tgt) {
         src_idx = src_info->first;
 
         while(src_idx) {
-            if(tgt_idx->length == src_idx->length &&
+            if(tgt_idx->comp_length == src_idx->comp_length &&
                memcmp(tgt_idx->digest, src_idx->digest,
                       zck_get_chunk_digest_size(tgt)) == 0) {
                 found = True;
@@ -380,7 +380,7 @@ int zck_dl_bytes(zckDL *dl, char *url, size_t bytes, size_t start,
         }
         zck_log(ZCK_LOG_DEBUG, "Downloading %lu bytes at position %lu\n", start+bytes-*buffer_len, *buffer_len);
         idx.start = *buffer_len;
-        idx.length = start+bytes-*buffer_len;
+        idx.comp_length = start+bytes-*buffer_len;
         zck_range_close(&(dl->info));
         zck_range_add(&(dl->info), &idx, NULL);
         if(!zck_dl_range_chk_chunk(dl, url, 0))

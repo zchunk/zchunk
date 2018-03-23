@@ -102,11 +102,11 @@ int main (int argc, char *argv[]) {
             src_idx = src_idx->next;
         }
         if(!found) {
-            dl_size += tgt_idx->length;
+            dl_size += tgt_idx->comp_length;
         } else {
             matched_chunks += 1;
         }
-        total_size += tgt_idx->length;
+        total_size += tgt_idx->comp_length;
         tgt_idx = tgt_idx->next;
     }
     printf("Would download %li of %li bytes\n", dl_size, total_size);

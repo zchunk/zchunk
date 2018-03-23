@@ -88,6 +88,8 @@ typedef struct zckCtx {
     char *index_string;
     size_t index_size;
     zckIndex index;
+    zckIndexItem *work_index_item;
+    zckHash work_index_hash;
     char *index_digest;
     zckHash full_hash;
     zckHash check_full_hash;
@@ -99,6 +101,7 @@ typedef struct zckCtx {
 const char *zck_hash_name_from_type(int hash_type);
 int zck_get_tmp_fd();
 int zck_validate_file(zckCtx *zck);
+void zck_clear_work_index(zckCtx *zck);
 
 /* hash/hash.h */
 int zck_hash_setup(zckHashType *ht, int h);
@@ -113,10 +116,12 @@ int zck_index_read(zckCtx *zck, char *data, size_t size);
 int zck_index_finalize(zckCtx *zck);
 int zck_index_new_chunk(zckIndex *index, char *digest, int digest_size,
                         size_t comp_size, size_t orig_size, int finished);
-int zck_index_add_chunk(zckCtx *zck, char *data, size_t comp_size,
+int zck_index_add_to_chunk(zckCtx *zck, char *data, size_t comp_size,
                         size_t orig_size);
+int zck_index_finish_chunk(zckCtx *zck);
 void zck_index_clean(zckIndex *index);
 void zck_index_free(zckCtx *zck);
+void zck_index_free_item(zckIndexItem **item);
 int zck_write_index(zckCtx *zck);
 
 /* io.c */

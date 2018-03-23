@@ -62,6 +62,15 @@ int zck_write_file(zckCtx *zck) {
     return True;
 }
 
+void zck_clear_work_index(zckCtx *zck) {
+    if(zck == NULL)
+        return;
+
+    zck_hash_close(&(zck->work_index_hash));
+    if(zck->work_index_item)
+        zck_index_free_item(&(zck->work_index_item));
+}
+
 void zck_clear(zckCtx *zck) {
     if(zck == NULL)
         return;
@@ -69,6 +78,7 @@ void zck_clear(zckCtx *zck) {
     zck_comp_close(zck);
     zck_hash_close(&(zck->full_hash));
     zck_hash_close(&(zck->check_full_hash));
+    zck_clear_work_index(zck);
     if(zck->full_hash_digest) {
         free(zck->full_hash_digest);
         zck->full_hash_digest = NULL;

@@ -38,7 +38,7 @@
 
 #define BLK_SIZE 32768
 
-static char unknown[] = "Unknown(\0\0\0\0\0";
+static char unknown[] = "Unknown(\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 
 const static char *COMP_NAME[] = {
     "no",
@@ -71,7 +71,8 @@ int zck_comp_init(zckCtx *zck) {
             free(dst);
             return False;
         }
-        zck_index_add_chunk(zck, dst, dst_size, zck->comp.dict_size);
+        zck_index_add_to_chunk(zck, dst, dst_size, zck->comp.dict_size);
+        zck_index_finish_chunk(zck);
         free(dst);
     }
     zck->comp.dict = NULL;
@@ -100,7 +101,8 @@ int zck_compress(zckCtx *zck, const char *src, const size_t src_size) {
         free(dst);
         return False;
     }
-    zck_index_add_chunk(zck, dst, dst_size, src_size);
+    zck_index_add_to_chunk(zck, dst, dst_size, src_size);
+    zck_index_finish_chunk(zck);
     free(dst);
     return True;
 }
@@ -184,7 +186,7 @@ int zck_set_comp_parameter(zckCtx *zck, int option, void *value) {
 
 const char *zck_comp_name_from_type(int comp_type) {
     if(comp_type > 1) {
-        snprintf(unknown+8, 4, "%i)", comp_type);
+        snprintf(unknown+8, 21, "%i)", comp_type);
         return unknown;
     }
     return COMP_NAME[comp_type];

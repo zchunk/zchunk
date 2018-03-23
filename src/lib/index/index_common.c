@@ -31,6 +31,17 @@
 
 #include "zck_private.h"
 
+void zck_index_free_item(zckIndexItem **item) {
+    if(*item == NULL)
+        return;
+
+    if((*item)->digest)
+        free((*item)->digest);
+    free(*item);
+    *item = NULL;
+    return;
+}
+
 void zck_index_clean(zckIndex *index) {
     if(index == NULL)
         return;
@@ -40,9 +51,7 @@ void zck_index_clean(zckIndex *index) {
         zckIndexItem *tmp=index->first;
         while(tmp != NULL) {
             next = tmp->next;
-            if(tmp->digest)
-                free(tmp->digest);
-            free(tmp);
+            zck_index_free_item(&tmp);
             tmp = next;
         }
     }

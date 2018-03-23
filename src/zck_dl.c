@@ -95,12 +95,13 @@ int main (int argc, char *argv[]) {
 
 
     printf("Downloaded %lu bytes\n", zck_dl_get_bytes_downloaded(dl));
+    int exit_val = 0;
     switch(zck_hash_check_data(dl->zck, dl->dst_fd)) {
         case -1:
-            exit(1);
+            exit_val = 1;
             break;
         case 0:
-            exit(1);
+            exit_val = 1;
             break;
         default:
             break;
@@ -109,5 +110,5 @@ int main (int argc, char *argv[]) {
     zck_free(&zck_tgt);
     zck_free(&zck_src);
     zck_dl_global_cleanup();
-    exit(0);
+    exit(exit_val);
 }

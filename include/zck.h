@@ -118,6 +118,8 @@ int zck_comp_init(zckCtx *zck);
 int zck_comp_close(zckCtx *zck);
 /* Compress data src of size src_size, and write to chunk */
 int zck_compress(zckCtx *zck, const char *src, const size_t src_size);
+/* Finish compressing chunk */
+int zck_end_chunk(zckCtx *zck);
 /* Decompress data src of size src_size, and write to dst, while setting
  * dst_size */
 int zck_decompress(zckCtx *zck, const char *src, const size_t src_size,

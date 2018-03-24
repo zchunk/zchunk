@@ -43,7 +43,6 @@ int main (int argc, char *argv[]) {
     char *out_name;
     char *dict = NULL;
     size_t dict_size = 0;
-    zckCtx *zck = zck_create();
 
     zck_set_log_level(ZCK_LOG_DEBUG);
 
@@ -86,6 +85,10 @@ int main (int argc, char *argv[]) {
         exit(1);
     }
     free(out_name);
+
+    zckCtx *zck = zck_create();
+    if(zck == NULL)
+        exit(1);
     if(!zck_init_write(zck, dst_fd))
         exit(1);
 
@@ -161,6 +164,8 @@ int main (int argc, char *argv[]) {
                     printf("Compressing %li bytes\n", next-found);
                     if(!zck_compress(zck, found, next-found))
                         exit(1);
+                    if(!zck_end_chunk(zck))
+                        exit(1);
                     found = next;
                     search = next + 1;
                     if(search > data + in_size)
@@ -168,6 +173,8 @@ int main (int argc, char *argv[]) {
                 } else {
                     printf("Completing %li bytes\n", data+in_size-found);
                     if(!zck_compress(zck, found, data+in_size-found))
+                        exit(1);
+                    if(!zck_end_chunk(zck))
                         exit(1);
                     search = NULL;
                 }
@@ -200,6 +207,8 @@ int main (int argc, char *argv[]) {
                 }
                 printf("Completing %li bytes\n", cur_loc-start);
                 if(!zck_compress(zck, start, cur_loc-start))
+                    exit(1);
+                if(!zck_end_chunk(zck))
                     exit(1);
                 start = cur_loc;
             }

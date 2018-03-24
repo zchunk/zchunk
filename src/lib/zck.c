@@ -262,12 +262,16 @@ int zck_import_dict(zckCtx *zck, char *data, size_t size) {
                 "Attempting to initialize an empty compression dictionary\n");
         return False;
     }
+    zck_log(ZCK_LOG_DEBUG, "Closing compression\n");
     if(!zck_comp_close(zck))
         return False;
+    zck_log(ZCK_LOG_DEBUG, "setting dict 1\n");
     if(!zck_set_comp_parameter(zck, ZCK_COMMON_DICT, data))
         return False;
+    zck_log(ZCK_LOG_DEBUG, "setting dict 2\n");
     if(!zck_set_comp_parameter(zck, ZCK_COMMON_DICT_SIZE, &size))
         return False;
+    zck_log(ZCK_LOG_DEBUG, "Initializing\n");
     if(!zck_comp_init(zck))
         return False;
     return True;
@@ -325,11 +329,13 @@ int zck_validate_file(zckCtx *zck) {
                 "Unable to calculate %s checksum for full file\n");
         return False;
     }
+    zck_log(ZCK_LOG_DEBUG, "Checking data checksum\n");
     if(memcmp(digest, zck->full_hash_digest, zck->hash_type.digest_size) != 0) {
         free(digest);
-        zck_log(ZCK_LOG_ERROR, "Final file failed checksum\n");
+        zck_log(ZCK_LOG_ERROR, "Data checksum failed!\n");
         return False;
     }
+    zck_log(ZCK_LOG_DEBUG, "Data checksum valid\n");
     free(digest);
     return True;
 }

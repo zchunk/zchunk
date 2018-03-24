@@ -199,11 +199,12 @@ int zck_index_add_to_chunk(zckCtx *zck, char *data, size_t comp_size,
                            size_t orig_size) {
     VALIDATE(zck);
 
-    if(comp_size == 0)
-        return True;
-
     if(zck->work_index_item == NULL && !zck_index_create_chunk(zck))
         return False;
+
+    zck->work_index_item->length += orig_size;
+    if(comp_size == 0)
+        return True;
 
     if(!zck_hash_update(&(zck->full_hash), data, comp_size))
         return False;
@@ -211,7 +212,6 @@ int zck_index_add_to_chunk(zckCtx *zck, char *data, size_t comp_size,
         return False;
 
     zck->work_index_item->comp_length += comp_size;
-    zck->work_index_item->length += orig_size;
     return True;
 }
 

@@ -37,6 +37,10 @@
 #endif
 
 #define BLK_SIZE 32768
+#define VALIDATE(f)     if(!f) { \
+                            zck_log(ZCK_LOG_ERROR, "zckCtx not initialized\n"); \
+                            return False; \
+                        }
 
 static char unknown[] = "Unknown(\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 
@@ -46,6 +50,8 @@ const static char *COMP_NAME[] = {
 };
 
 int zck_comp_init(zckCtx *zck) {
+    VALIDATE(zck);
+
     zckComp *comp = &(zck->comp);
     char *dst = NULL;
     size_t dst_size = 0;
@@ -66,12 +72,22 @@ int zck_comp_init(zckCtx *zck) {
         if(!zck->comp.compress(comp, zck->comp.dict, zck->comp.dict_size, &dst,
                                &dst_size, 0))
             return False;
-
         if(!zck_write(zck->temp_fd, dst, dst_size)) {
             free(dst);
             return False;
         }
         zck_index_add_to_chunk(zck, dst, dst_size, zck->comp.dict_size);
+        free(dst);
+        dst = NULL;
+        dst_size = 0;
+
+        if(!zck->comp.end_chunk(comp, &dst, &dst_size, 0))
+            return False;
+        if(!zck_write(zck->temp_fd, dst, dst_size)) {
+            free(dst);
+            return False;
+        }
+        zck_index_add_to_chunk(zck, dst, dst_size, 0);
         zck_index_finish_chunk(zck);
         free(dst);
     }
@@ -82,9 +98,7 @@ int zck_comp_init(zckCtx *zck) {
 }
 
 int zck_compress(zckCtx *zck, const char *src, const size_t src_size) {
-    zckComp *comp = &(zck->comp);
-    char *dst;
-    size_t dst_size;
+    VALIDATE(zck);
 
     if(!zck->comp.started) {
         zck_log(ZCK_LOG_ERROR, "Compression hasn't been initialized yet\n");
@@ -94,21 +108,61 @@ int zck_compress(zckCtx *zck, const char *src, const size_t src_size) {
     if(src_size == 0)
         return True;
 
-    if(!zck->comp.compress(comp, src, src_size, &dst, &dst_size, 1))
+    char *dst = NULL;
+    size_t dst_size = 0;
+    if(!zck->comp.compress(&(zck->comp), src, src_size, &dst, &dst_size, 1))
         return False;
-
-    if(!zck_write(zck->temp_fd, dst, dst_size)) {
+    if(dst_size > 0 && !zck_write(zck->temp_fd, dst, dst_size)) {
         free(dst);
         return False;
     }
-    zck_index_add_to_chunk(zck, dst, dst_size, src_size);
-    zck_index_finish_chunk(zck);
+    if(!zck_index_add_to_chunk(zck, dst, dst_size, src_size)) {
+        free(dst);
+        return False;
+    }
+    free(dst);
+    return True;
+}
+
+int zck_end_chunk(zckCtx *zck) {
+    VALIDATE(zck);
+
+    if(!zck->comp.started) {
+        zck_log(ZCK_LOG_ERROR, "Compression hasn't been initialized yet\n");
+        return False;
+    }
+
+    /* No point in compressing empty data */
+    if(zck->comp.data_size == 0) {
+        if(!zck_index_finish_chunk(zck))
+            return False;
+        return True;
+    }
+
+    char *dst = NULL;
+    size_t dst_size = 0;
+    if(!zck->comp.end_chunk(&(zck->comp), &dst, &dst_size, 1))
+        return False;
+    if(dst_size > 0 && !zck_write(zck->temp_fd, dst, dst_size)) {
+        free(dst);
+        return False;
+    }
+    if(!zck_index_add_to_chunk(zck, dst, dst_size, 0)) {
+        free(dst);
+        return False;
+    }
+    if(!zck_index_finish_chunk(zck)) {
+        free(dst);
+        return False;
+    }
     free(dst);
     return True;
 }
 
 int zck_decompress(zckCtx *zck, const char *src, const size_t src_size,
                    char **dst, size_t dst_size) {
+    VALIDATE(zck);
+
     zckComp *comp = &(zck->comp);
     *dst = NULL;
 
@@ -127,14 +181,17 @@ int zck_decompress(zckCtx *zck, const char *src, const size_t src_size,
 }
 
 int zck_comp_close(zckCtx *zck) {
-    if(zck->comp.cctx) {
-        zck->comp.started = 0;
-        return zck->comp.close(&(zck->comp));
-    }
-    return True;
+    VALIDATE(zck);
+
+    zck->comp.started = 0;
+    if(zck->comp.close == NULL)
+        return True;
+    return zck->comp.close(&(zck->comp));
 }
 
 int zck_set_compression_type(zckCtx *zck, int type) {
+    VALIDATE(zck);
+
     zckComp *comp = &(zck->comp);
 
     /* Cannot change compression type after compression has started */
@@ -163,6 +220,8 @@ int zck_set_compression_type(zckCtx *zck, int type) {
 }
 
 int zck_set_comp_parameter(zckCtx *zck, int option, void *value) {
+    VALIDATE(zck);
+
     /* Cannot change compression parameters after compression has started */
     if(zck && zck->comp.started) {
         zck_log(ZCK_LOG_ERROR,

@@ -15,6 +15,8 @@ struct zckComp;
 
 typedef int (*finit)(struct zckComp *comp);
 typedef int (*fparam)(struct zckComp *comp, int option, void *value);
+typedef int (*fcompend)(struct zckComp *comp, char **dst, size_t *dst_size,
+                        int use_dict);
 typedef int (*fcomp)(struct zckComp *comp, const char *src,
                      const size_t src_size, char **dst, size_t *dst_size,
                      int use_dict);
@@ -71,9 +73,14 @@ typedef struct zckComp {
     void *ddict_ctx;
     void *dict;
     size_t dict_size;
+
+    char *data;
+    size_t data_size;
+
     finit init;
     fparam set_parameter;
     fcomp compress;
+    fcompend end_chunk;
     fdecomp decompress;
     fcclose close;
 } zckComp;

@@ -221,15 +221,24 @@ int zck_index_finish_chunk(zckCtx *zck) {
     if(zck->work_index_item == NULL && !zck_index_create_chunk(zck))
         return False;
 
-    /* Finalize chunk checksum */
-    char *digest = zck_hash_finalize(&(zck->work_index_hash));
-    if(digest == NULL) {
-        zck_log(ZCK_LOG_ERROR,
-                "Unable to calculate %s checksum for new chunk\n",
-                zck_hash_name_from_type(zck->index.hash_type));
-        return False;
+    char *digest = NULL;
+    if(zck->work_index_item->length > 0) {
+        /* Finalize chunk checksum */
+        digest = zck_hash_finalize(&(zck->work_index_hash));
+        if(digest == NULL) {
+            zck_log(ZCK_LOG_ERROR,
+                    "Unable to calculate %s checksum for new chunk\n",
+                    zck_hash_name_from_type(zck->index.hash_type));
+            return False;
+        }
+    } else {
+        digest = zmalloc(zck->chunk_hash_type.digest_size);
+        if(digest == NULL) {
+            zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
+                    zck->chunk_hash_type.digest_size);
+            return False;
+        }
     }
-
     if(!finish_chunk(&(zck->index), zck->work_index_item, digest, True))
         return False;
 

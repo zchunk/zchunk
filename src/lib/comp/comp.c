@@ -68,28 +68,32 @@ int zck_comp_init(zckCtx *zck) {
     if(!zck->comp.init(&(zck->comp)))
         return False;
 
-    if(zck->comp.dict && zck->temp_fd) {
-        if(!zck->comp.compress(comp, zck->comp.dict, zck->comp.dict_size, &dst,
-                               &dst_size, 0))
-            return False;
-        if(!zck_write(zck->temp_fd, dst, dst_size)) {
+    if(zck->temp_fd) {
+        if(zck->comp.dict) {
+            if(!zck->comp.compress(comp, zck->comp.dict, zck->comp.dict_size, &dst,
+                                   &dst_size, 0))
+                return False;
+            if(!zck_write(zck->temp_fd, dst, dst_size)) {
+                free(dst);
+                return False;
+            }
+            zck_index_add_to_chunk(zck, dst, dst_size, zck->comp.dict_size);
             free(dst);
-            return False;
-        }
-        zck_index_add_to_chunk(zck, dst, dst_size, zck->comp.dict_size);
-        free(dst);
-        dst = NULL;
-        dst_size = 0;
+            dst = NULL;
+            dst_size = 0;
 
-        if(!zck->comp.end_chunk(comp, &dst, &dst_size, 0))
-            return False;
-        if(!zck_write(zck->temp_fd, dst, dst_size)) {
+            if(!zck->comp.end_chunk(comp, &dst, &dst_size, 0))
+                return False;
+            if(!zck_write(zck->temp_fd, dst, dst_size)) {
+                free(dst);
+                return False;
+            }
+            zck_index_add_to_chunk(zck, dst, dst_size, 0);
+            zck_index_finish_chunk(zck);
             free(dst);
-            return False;
+        } else {
+            zck_index_finish_chunk(zck);
         }
-        zck_index_add_to_chunk(zck, dst, dst_size, 0);
-        zck_index_finish_chunk(zck);
-        free(dst);
     }
     zck->comp.dict = NULL;
     zck->comp.dict_size = 0;
@@ -133,11 +137,8 @@ int zck_end_chunk(zckCtx *zck) {
     }
 
     /* No point in compressing empty data */
-    if(zck->comp.data_size == 0) {
-        if(!zck_index_finish_chunk(zck))
-            return False;
+    if(zck->comp.data_size == 0)
         return True;
-    }
 
     char *dst = NULL;
     size_t dst_size = 0;

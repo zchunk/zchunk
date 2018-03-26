@@ -363,8 +363,10 @@ int zck_decompress_to_file(zckCtx *zck, int src_fd, int dst_fd) {
         size_t size = idx->length;
         char *cdata;
 
-        if(csize == 0)
+        if(csize == 0) {
+            idx = idx->next;
             continue;
+        }
 
         cdata = zmalloc(csize);
         if(cdata == NULL) {

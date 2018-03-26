@@ -104,10 +104,8 @@ int zck_comp_init(zckCtx *zck) {
 int zck_compress(zckCtx *zck, const char *src, const size_t src_size) {
     VALIDATE(zck);
 
-    if(!zck->comp.started) {
-        zck_log(ZCK_LOG_ERROR, "Compression hasn't been initialized yet\n");
+    if(!zck->comp.started && !zck_comp_init(zck))
         return False;
-    }
 
     if(src_size == 0)
         return True;
@@ -131,10 +129,8 @@ int zck_compress(zckCtx *zck, const char *src, const size_t src_size) {
 int zck_end_chunk(zckCtx *zck) {
     VALIDATE(zck);
 
-    if(!zck->comp.started) {
-        zck_log(ZCK_LOG_ERROR, "Compression hasn't been initialized yet\n");
+    if(!zck->comp.started && !zck_comp_init(zck))
         return False;
-    }
 
     /* No point in compressing empty data */
     if(zck->comp.data_size == 0)

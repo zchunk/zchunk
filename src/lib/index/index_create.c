@@ -249,5 +249,5 @@ int zck_index_finish_chunk(zckCtx *zck) {
 }
 
 int zck_write_index(zckCtx *zck) {
-    return zck_write(zck->fd, zck->index_string, zck->index_size);
+    return write_data(zck->fd, zck->index_string, zck->index_size);
 }

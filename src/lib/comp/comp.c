@@ -73,7 +73,7 @@ int zck_comp_init(zckCtx *zck) {
             if(!zck->comp.compress(comp, zck->comp.dict, zck->comp.dict_size, &dst,
                                    &dst_size, 0))
                 return False;
-            if(!zck_write(zck->temp_fd, dst, dst_size)) {
+            if(!write_data(zck->temp_fd, dst, dst_size)) {
                 free(dst);
                 return False;
             }
@@ -84,7 +84,7 @@ int zck_comp_init(zckCtx *zck) {
 
             if(!zck->comp.end_chunk(comp, &dst, &dst_size, 0))
                 return False;
-            if(!zck_write(zck->temp_fd, dst, dst_size)) {
+            if(!write_data(zck->temp_fd, dst, dst_size)) {
                 free(dst);
                 return False;
             }
@@ -114,7 +114,7 @@ int zck_compress(zckCtx *zck, const char *src, const size_t src_size) {
     size_t dst_size = 0;
     if(!zck->comp.compress(&(zck->comp), src, src_size, &dst, &dst_size, 1))
         return False;
-    if(dst_size > 0 && !zck_write(zck->temp_fd, dst, dst_size)) {
+    if(dst_size > 0 && !write_data(zck->temp_fd, dst, dst_size)) {
         free(dst);
         return False;
     }
@@ -140,7 +140,7 @@ int zck_end_chunk(zckCtx *zck) {
     size_t dst_size = 0;
     if(!zck->comp.end_chunk(&(zck->comp), &dst, &dst_size, 1))
         return False;
-    if(dst_size > 0 && !zck_write(zck->temp_fd, dst, dst_size)) {
+    if(dst_size > 0 && !write_data(zck->temp_fd, dst, dst_size)) {
         free(dst);
         return False;
     }

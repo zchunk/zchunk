@@ -62,13 +62,13 @@ int zck_dl_write_zero(zckCtx *tgt, zckIndexItem *tgt_idx) {
     char buf[BUF_SIZE] = {0};
     size_t tgt_data_offset = tgt->header_size + tgt->index_size;
     size_t to_read = tgt_idx->comp_length;
-    if(!zck_seek(tgt->fd, tgt_data_offset + tgt_idx->start, SEEK_SET))
+    if(!seek_data(tgt->fd, tgt_data_offset + tgt_idx->start, SEEK_SET))
         return False;
     while(to_read > 0) {
         int rb = BUF_SIZE;
         if(rb > to_read)
             rb = to_read;
-        if(!zck_write(tgt->fd, buf, rb))
+        if(!write_data(tgt->fd, buf, rb))
             return False;
         to_read -= rb;
     }
@@ -80,7 +80,7 @@ int zck_dl_write(zckDL *dl, const char *at, size_t length) {
     VALIDATE(dl->priv);
     if(dl->priv->write_in_chunk < length)
         length = dl->priv->write_in_chunk;
-    if(!zck_write(dl->dst_fd, at, length))
+    if(!write_data(dl->dst_fd, at, length))
         return -1;
     dl->priv->write_in_chunk -= length;
     return length;
@@ -160,7 +160,7 @@ int zck_dl_write_range(zckDL *dl, const char *at, size_t length) {
                         dl->priv->write_in_chunk = idx->comp_length;
                         size_t offset = dl->zck->header_size +
                                         dl->zck->index_size;
-                        if(!zck_seek(dl->dst_fd, offset + tgt_idx->start,
+                        if(!seek_data(dl->dst_fd, offset + tgt_idx->start,
                            SEEK_SET))
                             return 0;
                         idx = NULL;
@@ -224,9 +224,9 @@ int zck_dl_write_and_verify(zckRange *info, zckCtx *src, zckCtx *tgt,
     size_t src_data_offset = src->header_size + src->index_size;
     size_t tgt_data_offset = tgt->header_size + tgt->index_size;
     size_t to_read = src_idx->comp_length;
-    if(!zck_seek(src->fd, src_data_offset + src_idx->start, SEEK_SET))
+    if(!seek_data(src->fd, src_data_offset + src_idx->start, SEEK_SET))
         return False;
-    if(!zck_seek(tgt->fd, tgt_data_offset + tgt_idx->start, SEEK_SET))
+    if(!seek_data(tgt->fd, tgt_data_offset + tgt_idx->start, SEEK_SET))
         return False;
     zckHash check_hash = {0};
     if(!zck_hash_init(&check_hash, &(src->chunk_hash_type)))
@@ -235,11 +235,11 @@ int zck_dl_write_and_verify(zckRange *info, zckCtx *src, zckCtx *tgt,
         int rb = BUF_SIZE;
         if(rb > to_read)
             rb = to_read;
-        if(!zck_read(src->fd, buf, rb))
+        if(!read_data(src->fd, buf, rb))
             return False;
         if(!zck_hash_update(&check_hash, buf, rb))
             return False;
-        if(!zck_write(tgt->fd, buf, rb))
+        if(!write_data(tgt->fd, buf, rb))
             return False;
         to_read -= rb;
     }
@@ -412,7 +412,7 @@ int zck_zero_bytes(zckDL *dl, size_t bytes, size_t start, size_t *buffer_len) {
             size_t wb = BUF_SIZE;
             if(write + wb > start + bytes)
                 wb = (start + bytes) - write;
-            if(!zck_write(dl->dst_fd, buf, wb))
+            if(!write_data(dl->dst_fd, buf, wb))
                 return False;
             write += wb;
         }
@@ -448,7 +448,7 @@ int zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url) {
         return False;
     if(!zck_read_initial(zck, dl->dst_fd))
         return False;
-    start = zck_tell(dl->dst_fd);
+    start = tell_data(dl->dst_fd);
 
     /* If we haven't downloaded enough for the index hash plus a few others, do
      * it now */
@@ -469,7 +469,7 @@ int zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url) {
     /* Read and store compression type and index size */
     if(!zck_read_ct_is(zck, dl->dst_fd))
         return False;
-    start = zck_tell(dl->dst_fd);
+    start = tell_data(dl->dst_fd);
     zck_log(ZCK_LOG_DEBUG, "Index size: %llu\n", zck->index_size);
 
     /* Download and read rest of index */

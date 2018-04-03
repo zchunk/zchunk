@@ -43,7 +43,7 @@ int zck_read_initial(zckCtx *zck, int src_fd) {
     }
 
     zck_log(ZCK_LOG_DEBUG, "Reading magic and hash type\n");
-    if(!zck_read(src_fd, header, 5 + MAX_COMP_SIZE)) {
+    if(!read_data(src_fd, header, 5 + MAX_COMP_SIZE)) {
         free(header);
         return False;
     }
@@ -61,7 +61,7 @@ int zck_read_initial(zckCtx *zck, int src_fd) {
         return False;
     if(!zck_hash_setup(&(zck->hash_type), hash_type))
         return False;
-    if(!zck_seek(src_fd, length, SEEK_SET))
+    if(!seek_data(src_fd, length, SEEK_SET))
         return False;
     zck->header_string = header;
     zck->header_size = length;
@@ -91,7 +91,7 @@ int zck_read_index_hash(zckCtx *zck, int src_fd) {
         return False;
     }
     zck_log(ZCK_LOG_DEBUG, "Reading index hash\n");
-    if(!zck_read(src_fd, digest, zck->hash_type.digest_size)) {
+    if(!read_data(src_fd, digest, zck->hash_type.digest_size)) {
         free(digest);
         free(header);
         return False;
@@ -124,7 +124,7 @@ int zck_read_ct_is(zckCtx *zck, int src_fd) {
         return False;
     }
     zck_log(ZCK_LOG_DEBUG, "Reading compression type and index size\n");
-    if(!zck_read(src_fd, header + length, MAX_COMP_SIZE*2))
+    if(!read_data(src_fd, header + length, MAX_COMP_SIZE*2))
         return False;
 
     int tmp = 0;
@@ -142,7 +142,7 @@ int zck_read_ct_is(zckCtx *zck, int src_fd) {
         return False;
     zck->index_size = tmp;
 
-    if(!zck_seek(src_fd, length, SEEK_SET))
+    if(!seek_data(src_fd, length, SEEK_SET))
         return False;
     zck->header_string = header;
     zck->header_size = length;
@@ -157,7 +157,7 @@ int zck_read_index(zckCtx *zck, int src_fd) {
         return False;
     }
     zck_log(ZCK_LOG_DEBUG, "Reading index\n");
-    if(!zck_read(src_fd, index, zck->index_size)) {
+    if(!read_data(src_fd, index, zck->index_size)) {
         free(index);
         return False;
     }
@@ -230,7 +230,7 @@ int zck_header_create(zckCtx *zck) {
 }
 
 int zck_write_header(zckCtx *zck) {
-    if(!zck_write(zck->fd, zck->header_string, zck->header_size))
+    if(!write_data(zck->fd, zck->header_string, zck->header_size))
         return False;
     return True;
 }

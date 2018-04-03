@@ -49,7 +49,7 @@ int zck_write_file(zckCtx *zck) {
     if(!zck_write_index(zck))
         return False;
     zck_log(ZCK_LOG_DEBUG, "Writing chunks\n");
-    if(!zck_chunks_from_temp(zck))
+    if(!chunks_from_temp(zck))
         return False;
     zck_log(ZCK_LOG_DEBUG, "Finished writing file, cleaning up\n");
     zck_index_free(zck);
@@ -373,9 +373,9 @@ int zck_decompress_to_file(zckCtx *zck, int src_fd, int dst_fd) {
             zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n", csize);
             return False;
         }
-        if(!zck_seek(src_fd, start + idx->start, SEEK_SET))
+        if(!seek_data(src_fd, start + idx->start, SEEK_SET))
             return False;
-        if(!zck_read(src_fd, cdata, csize)) {
+        if(!read_data(src_fd, cdata, csize)) {
             free(cdata);
             zck_log(ZCK_LOG_ERROR, "Error reading chunk %i\n", count);
             return False;
@@ -398,7 +398,7 @@ int zck_decompress_to_file(zckCtx *zck, int src_fd, int dst_fd) {
                 return False;
             }
         } else {
-            if(!zck_write(dst_fd, data, size)) {
+            if(!write_data(dst_fd, data, size)) {
                 free(data);
                 zck_log(ZCK_LOG_ERROR, "Unable to write chunk %i\n", count);
                 return False;

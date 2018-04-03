@@ -132,13 +132,13 @@ void zck_index_free_item(zckIndexItem **item);
 int zck_write_index(zckCtx *zck);
 
 /* io.c */
-int zck_seek(int fd, off_t offset, int whence);
-size_t zck_tell(int fd);
-int zck_read(int fd, char *data, size_t length);
-int zck_write(int fd, const char *data, size_t length);
-int zck_write_comp_size(int fd, size_t val);
-int zck_read_comp_size(int fd, size_t *val, size_t *length);
-int zck_chunks_from_temp(zckCtx *zck);
+int seek_data(int fd, off_t offset, int whence);
+size_t tell_data(int fd);
+int read_data(int fd, char *data, size_t length);
+int write_data(int fd, const char *data, size_t length);
+int write_comp_size(int fd, size_t val);
+int read_comp_size(int fd, size_t *val, size_t *length);
+int chunks_from_temp(zckCtx *zck);
 
 /* header.c */
 int zck_read_initial(zckCtx *zck, int src_fd);

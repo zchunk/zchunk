@@ -33,7 +33,7 @@
 
 #include "zck_private.h"
 
-int zck_read(int fd, char *data, size_t length) {
+int read_data(int fd, char *data, size_t length) {
     if(length == 0)
         return True;
     if(data == NULL) {
@@ -51,7 +51,7 @@ int zck_read(int fd, char *data, size_t length) {
     return True;
 }
 
-int zck_write(int fd, const char *data, size_t length) {
+int write_data(int fd, const char *data, size_t length) {
     if(length == 0)
         return True;
     if(data == NULL) {
@@ -69,19 +69,19 @@ int zck_write(int fd, const char *data, size_t length) {
     return True;
 }
 
-int zck_write_comp_size(int fd, size_t val) {
+int write_comp_size(int fd, size_t val) {
     char data[sizeof(size_t)*2] = {0};
     size_t length = 0;
     if(!zck_compint_from_size(data, val, &length))
         return False;
-    return zck_write(fd, data, length);
+    return write_data(fd, data, length);
 }
 
-int zck_read_comp_size(int fd, size_t *val, size_t *length) {
+int read_comp_size(int fd, size_t *val, size_t *length) {
     char data[MAX_COMP_SIZE] = {0};
     int i=0;
-    for(char c=zck_read(fd, data+i, 1); c < 128 && i < MAX_COMP_SIZE;
-        i++,c=zck_read(fd, data+i, 1));
+    for(char c=read_data(fd, data+i, 1); c < 128 && i < MAX_COMP_SIZE;
+        i++,c=read_data(fd, data+i, 1));
     if(i == MAX_COMP_SIZE && data[i] < 128) {
         zck_log(ZCK_LOG_ERROR, "Number too large\n");
         *val = 0;
@@ -90,7 +90,7 @@ int zck_read_comp_size(int fd, size_t *val, size_t *length) {
     return !zck_compint_to_size(val, data, length);
 }
 
-int zck_seek(int fd, off_t offset, int whence) {
+int seek_data(int fd, off_t offset, int whence) {
     if(lseek(fd, offset, whence) == -1) {
         char *wh_str = NULL;
 
@@ -110,11 +110,11 @@ int zck_seek(int fd, off_t offset, int whence) {
     return True;
 }
 
-size_t zck_tell(int fd) {
+size_t tell_data(int fd) {
     return lseek(fd, 0, SEEK_CUR);
 }
 
-int zck_chunks_from_temp(zckCtx *zck) {
+int chunks_from_temp(zckCtx *zck) {
     int read_count;
     char *data = zmalloc(BUF_SIZE);
     if(data == NULL)
@@ -124,7 +124,7 @@ int zck_chunks_from_temp(zckCtx *zck) {
         return False;
 
     while((read_count = read(zck->temp_fd, data, BUF_SIZE)) > 0) {
-        if(read_count == -1 || !zck_write(zck->fd, data, read_count)) {
+        if(read_count == -1 || !write_data(zck->fd, data, read_count)) {
             free(data);
             return False;
         }

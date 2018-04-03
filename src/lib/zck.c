@@ -386,7 +386,7 @@ int zck_decompress_to_file(zckCtx *zck, int src_fd, int dst_fd) {
         }
 
         char *data = NULL;
-        if(!zck_decompress(zck, cdata, csize, &data, size)) {
+        if(!zck_read(zck, cdata, csize, &data, size)) {
             free(cdata);
             zck_log(ZCK_LOG_ERROR, "Unable to decompress chunk %i\n", count);
             return False;

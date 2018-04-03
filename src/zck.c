@@ -162,7 +162,7 @@ int main (int argc, char *argv[]) {
                     }
                     prev_srpm = next_srpm;
                     printf("Compressing %li bytes\n", next-found);
-                    if(!zck_compress(zck, found, next-found))
+                    if(!zck_write(zck, found, next-found))
                         exit(1);
                     if(!zck_end_chunk(zck))
                         exit(1);
@@ -172,7 +172,7 @@ int main (int argc, char *argv[]) {
                         search = data + in_size;
                 } else {
                     printf("Completing %li bytes\n", data+in_size-found);
-                    if(!zck_compress(zck, found, data+in_size-found))
+                    if(!zck_write(zck, found, data+in_size-found))
                         exit(1);
                     if(!zck_end_chunk(zck))
                         exit(1);
@@ -206,7 +206,7 @@ int main (int argc, char *argv[]) {
                     cur_loc = data + in_size;
                 }
                 printf("Completing %li bytes\n", cur_loc-start);
-                if(!zck_compress(zck, start, cur_loc-start))
+                if(!zck_write(zck, start, cur_loc-start))
                     exit(1);
                 if(!zck_end_chunk(zck))
                     exit(1);

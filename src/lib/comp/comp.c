@@ -101,82 +101,6 @@ int zck_comp_init(zckCtx *zck) {
     return True;
 }
 
-int zck_compress(zckCtx *zck, const char *src, const size_t src_size) {
-    VALIDATE(zck);
-
-    if(!zck->comp.started && !zck_comp_init(zck))
-        return False;
-
-    if(src_size == 0)
-        return True;
-
-    char *dst = NULL;
-    size_t dst_size = 0;
-    if(!zck->comp.compress(&(zck->comp), src, src_size, &dst, &dst_size, 1))
-        return False;
-    if(dst_size > 0 && !write_data(zck->temp_fd, dst, dst_size)) {
-        free(dst);
-        return False;
-    }
-    if(!zck_index_add_to_chunk(zck, dst, dst_size, src_size)) {
-        free(dst);
-        return False;
-    }
-    free(dst);
-    return True;
-}
-
-int zck_end_chunk(zckCtx *zck) {
-    VALIDATE(zck);
-
-    if(!zck->comp.started && !zck_comp_init(zck))
-        return False;
-
-    /* No point in compressing empty data */
-    if(zck->comp.data_size == 0)
-        return True;
-
-    char *dst = NULL;
-    size_t dst_size = 0;
-    if(!zck->comp.end_chunk(&(zck->comp), &dst, &dst_size, 1))
-        return False;
-    if(dst_size > 0 && !write_data(zck->temp_fd, dst, dst_size)) {
-        free(dst);
-        return False;
-    }
-    if(!zck_index_add_to_chunk(zck, dst, dst_size, 0)) {
-        free(dst);
-        return False;
-    }
-    if(!zck_index_finish_chunk(zck)) {
-        free(dst);
-        return False;
-    }
-    free(dst);
-    return True;
-}
-
-int zck_decompress(zckCtx *zck, const char *src, const size_t src_size,
-                   char **dst, size_t dst_size) {
-    VALIDATE(zck);
-
-    zckComp *comp = &(zck->comp);
-    *dst = NULL;
-
-    if(!zck->comp.started) {
-        zck_log(ZCK_LOG_ERROR, "Compression hasn't been initialized yet\n");
-        return False;
-    }
-
-    if(src_size == 0)
-        return True;
-
-    if(!zck->comp.decompress(comp, src, src_size, dst, dst_size, 1))
-        return False;
-
-    return True;
-}
-
 int zck_comp_close(zckCtx *zck) {
     VALIDATE(zck);
 
@@ -246,4 +170,80 @@ const char *zck_comp_name_from_type(int comp_type) {
         return unknown;
     }
     return COMP_NAME[comp_type];
+}
+
+int zck_write(zckCtx *zck, const char *src, const size_t src_size) {
+    VALIDATE(zck);
+
+    if(!zck->comp.started && !zck_comp_init(zck))
+        return False;
+
+    if(src_size == 0)
+        return True;
+
+    char *dst = NULL;
+    size_t dst_size = 0;
+    if(!zck->comp.compress(&(zck->comp), src, src_size, &dst, &dst_size, 1))
+        return False;
+    if(dst_size > 0 && !write_data(zck->temp_fd, dst, dst_size)) {
+        free(dst);
+        return False;
+    }
+    if(!zck_index_add_to_chunk(zck, dst, dst_size, src_size)) {
+        free(dst);
+        return False;
+    }
+    free(dst);
+    return True;
+}
+
+int zck_end_chunk(zckCtx *zck) {
+    VALIDATE(zck);
+
+    if(!zck->comp.started && !zck_comp_init(zck))
+        return False;
+
+    /* No point in compressing empty data */
+    if(zck->comp.data_size == 0)
+        return True;
+
+    char *dst = NULL;
+    size_t dst_size = 0;
+    if(!zck->comp.end_chunk(&(zck->comp), &dst, &dst_size, 1))
+        return False;
+    if(dst_size > 0 && !write_data(zck->temp_fd, dst, dst_size)) {
+        free(dst);
+        return False;
+    }
+    if(!zck_index_add_to_chunk(zck, dst, dst_size, 0)) {
+        free(dst);
+        return False;
+    }
+    if(!zck_index_finish_chunk(zck)) {
+        free(dst);
+        return False;
+    }
+    free(dst);
+    return True;
+}
+
+int zck_read(zckCtx *zck, const char *src, const size_t src_size, char **dst,
+             size_t dst_size) {
+    VALIDATE(zck);
+
+    zckComp *comp = &(zck->comp);
+    *dst = NULL;
+
+    if(!zck->comp.started) {
+        zck_log(ZCK_LOG_ERROR, "Compression hasn't been initialized yet\n");
+        return False;
+    }
+
+    if(src_size == 0)
+        return True;
+
+    if(!zck->comp.decompress(comp, src, src_size, dst, dst_size, 1))
+        return False;
+
+    return True;
 }

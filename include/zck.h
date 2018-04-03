@@ -117,13 +117,13 @@ int zck_comp_init(zckCtx *zck);
  * type and parameters */
 int zck_comp_close(zckCtx *zck);
 /* Compress data src of size src_size, and write to chunk */
-int zck_compress(zckCtx *zck, const char *src, const size_t src_size);
+int zck_write(zckCtx *zck, const char *src, const size_t src_size);
 /* Finish compressing chunk */
 int zck_end_chunk(zckCtx *zck);
 /* Decompress data src of size src_size, and write to dst, while setting
  * dst_size */
-int zck_decompress(zckCtx *zck, const char *src, const size_t src_size,
-                   char **dst, size_t dst_size);
+int zck_read(zckCtx *zck, const char *src, const size_t src_size, char **dst,
+             size_t dst_size);
 
 /*******************************************************************
  * Creating a zchunk file

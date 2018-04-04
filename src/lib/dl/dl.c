@@ -193,7 +193,7 @@ char *zck_dl_get_range_char(unsigned int start, unsigned int end) {
     return range_header;
 }
 
-static size_t write_data(void *ptr, size_t l, size_t c, void *dl_v) {
+static size_t dl_write_data(void *ptr, size_t l, size_t c, void *dl_v) {
     if(dl_v == NULL)
         return 0;
     zckDL *dl = (zckDL*)dl_v;
@@ -334,7 +334,7 @@ int zck_dl_range_chk_chunk(zckDL *dl, char *url, int is_chunk) {
         curl_easy_setopt(dl->priv->curl_ctx, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(dl->priv->curl_ctx, CURLOPT_HEADERFUNCTION, get_header);
         curl_easy_setopt(dl->priv->curl_ctx, CURLOPT_HEADERDATA, dl);
-        curl_easy_setopt(dl->priv->curl_ctx, CURLOPT_WRITEFUNCTION, write_data);
+        curl_easy_setopt(dl->priv->curl_ctx, CURLOPT_WRITEFUNCTION, dl_write_data);
         curl_easy_setopt(dl->priv->curl_ctx, CURLOPT_WRITEDATA, dl);
         curl_easy_setopt(dl->priv->curl_ctx, CURLOPT_HTTPHEADER, header);
         res = curl_easy_perform(dl->priv->curl_ctx);

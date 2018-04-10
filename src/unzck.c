@@ -34,6 +34,8 @@
 #include <unistd.h>
 #include <zck.h>
 
+#define BLK_SIZE 32768
+
 int main (int argc, char *argv[]) {
     char *out_name;
 
@@ -62,20 +64,36 @@ int main (int argc, char *argv[]) {
         exit(1);
     }
 
-    zckCtx *zck = zck_create();
+    zckCtx *zck = zck_init_read(src_fd);
     if(zck == NULL)
         exit(1);
 
-    if(!zck_decompress_to_file(zck, src_fd, dst_fd)) {
-        unlink(out_name);
-        free(out_name);
-        close(src_fd);
-        close(dst_fd);
-        zck_free(&zck);
-        exit(1);
+    char *data = malloc(BLK_SIZE);
+    int good_exit = False;
+    while(True) {
+        ssize_t read = zck_read(zck, data, BLK_SIZE);
+        if(read < 0)
+            goto error;
+        if(read == 0)
+            break;
+        if(read > BLK_SIZE)
+            printf("read: %lu\n", read);
+        if(write(dst_fd, data, read) != read) {
+            printf("Error writing to %s\n", out_name);
+            goto error;
+        }
     }
+    good_exit = True;
+error:
+    free(data);
+    if(!good_exit)
+        unlink(out_name);
     free(out_name);
+    zck_close(zck);
     close(src_fd);
     close(dst_fd);
     zck_free(&zck);
+    if(!good_exit)
+        exit(1);
+    exit(0);
 }

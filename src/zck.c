@@ -86,11 +86,11 @@ int main (int argc, char *argv[]) {
     }
     free(out_name);
 
-    zckCtx *zck = zck_create();
-    if(zck == NULL)
+    zckCtx *zck = zck_init_write(dst_fd);
+    if(zck == NULL) {
+        printf("Unable to write to %s\n", out_name);
         exit(1);
-    if(!zck_init_write(zck, dst_fd))
-        exit(1);
+    }
 
     /*if(!zck_set_compression_type(zck, ZCK_COMP_NONE)) {
         perror("Unable to set compression type\n");
@@ -162,9 +162,9 @@ int main (int argc, char *argv[]) {
                     }
                     prev_srpm = next_srpm;
                     printf("Compressing %li bytes\n", next-found);
-                    if(!zck_write(zck, found, next-found))
+                    if(zck_write(zck, found, next-found) < 0)
                         exit(1);
-                    if(!zck_end_chunk(zck))
+                    if(zck_end_chunk(zck) < 0)
                         exit(1);
                     found = next;
                     search = next + 1;
@@ -172,9 +172,9 @@ int main (int argc, char *argv[]) {
                         search = data + in_size;
                 } else {
                     printf("Completing %li bytes\n", data+in_size-found);
-                    if(!zck_write(zck, found, data+in_size-found))
+                    if(zck_write(zck, found, data+in_size-found) < 0)
                         exit(1);
-                    if(!zck_end_chunk(zck))
+                    if(zck_end_chunk(zck) < 0)
                         exit(1);
                     search = NULL;
                 }
@@ -206,16 +206,16 @@ int main (int argc, char *argv[]) {
                     cur_loc = data + in_size;
                 }
                 printf("Completing %li bytes\n", cur_loc-start);
-                if(!zck_write(zck, start, cur_loc-start))
+                if(zck_write(zck, start, cur_loc-start) < 0)
                     exit(1);
-                if(!zck_end_chunk(zck))
+                if(zck_end_chunk(zck) < 0)
                     exit(1);
                 start = cur_loc;
             }
         }
         free(data);
     }
-    if(!zck_write_file(zck))
+    if(!zck_close(zck))
         exit(1);
     zck_free(&zck);
     close(dst_fd);

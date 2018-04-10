@@ -34,8 +34,6 @@
 #include <zck.h>
 
 int main (int argc, char *argv[]) {
-    zckCtx *zck = zck_create();
-
     zck_set_log_level(ZCK_LOG_DEBUG);
 
     if(argc != 2) {
@@ -49,10 +47,12 @@ int main (int argc, char *argv[]) {
         perror("");
         exit(1);
     }
-    if(!zck_read_header(zck, src_fd)) {
+    zckCtx *zck = zck_init_read(src_fd);
+    if(zck == NULL) {
         perror("Unable to read header\n");
         exit(1);
     }
+    zck_close(zck);
     close(src_fd);
 
     printf("Overall checksum type: %s\n", zck_hash_name_from_type(zck_get_full_hash_type(zck)));

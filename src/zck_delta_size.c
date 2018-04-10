@@ -35,11 +35,6 @@
 #include <zck.h>
 
 int main (int argc, char *argv[]) {
-    zckCtx *zck_src = zck_create();
-    zckCtx *zck_tgt = zck_create();
-
-    /*zck_set_log_level(ZCK_LOG_DEBUG);*/
-
     if(argc != 3) {
         printf("Usage: %s <source> <target>\n", argv[0]);
         exit(1);
@@ -51,11 +46,12 @@ int main (int argc, char *argv[]) {
         perror("");
         exit(1);
     }
-    if(!zck_read_header(zck_src, src_fd)) {
+    zckCtx *zck_src = zck_init_read(src_fd);
+    if(zck_src == NULL) {
         printf("Unable to open %s\n", argv[1]);
         exit(1);
     }
-    close(src_fd);
+    zck_close(zck_src);
 
     int tgt_fd = open(argv[2], O_RDONLY);
     if(tgt_fd < 0) {
@@ -63,11 +59,12 @@ int main (int argc, char *argv[]) {
         perror("");
         exit(1);
     }
-    if(!zck_read_header(zck_tgt, tgt_fd)) {
+    zckCtx *zck_tgt = zck_init_read(tgt_fd);
+    if(zck_tgt == NULL) {
         printf("Unable to open %s\n", argv[2]);
         exit(1);
     }
-    close(tgt_fd);
+    zck_close(zck_tgt);
 
     if(zck_get_chunk_hash_type(zck_tgt) != zck_get_chunk_hash_type(zck_src)) {
         printf("ERROR: Chunk hash types don't match:\n");

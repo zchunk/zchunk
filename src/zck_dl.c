@@ -37,10 +37,9 @@
 #include <zck.h>
 
 int main (int argc, char *argv[]) {
-    zckCtx *zck_src = zck_create();
     zckCtx *zck_tgt = zck_create();
 
-    if(zck_src == NULL || zck_tgt == NULL)
+    if(zck_tgt == NULL)
         exit(1);
 
     zck_dl_global_init();
@@ -57,7 +56,8 @@ int main (int argc, char *argv[]) {
         perror("");
         exit(1);
     }
-    if(!zck_read_header(zck_src, src_fd)) {
+    zckCtx *zck_src = zck_init_read(src_fd);
+    if(zck_src == NULL) {
         printf("Unable to open %s\n", argv[1]);
         exit(1);
     }

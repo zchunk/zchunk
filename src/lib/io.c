@@ -33,22 +33,19 @@
 
 #include "zck_private.h"
 
-int read_data(int fd, char *data, size_t length) {
+ssize_t read_data(int fd, char *data, size_t length) {
     if(length == 0)
-        return True;
+        return 0;
     if(data == NULL) {
         zck_log(ZCK_LOG_ERROR, "Unable to read to NULL data pointer\n");
-        return False;
+        return -1;
     }
     ssize_t read_bytes = read(fd, data, length);
     if(read_bytes == -1) {
         zck_log(ZCK_LOG_ERROR, "Error reading data: %s\n", strerror(errno));
-        return False;
-    } else if(read_bytes != length) {
-        zck_log(ZCK_LOG_ERROR, "Short read\n");
-        return False;
+        return -1;
     }
-    return True;
+    return read_bytes;
 }
 
 int write_data(int fd, const char *data, size_t length) {
@@ -110,8 +107,9 @@ int seek_data(int fd, off_t offset, int whence) {
     return True;
 }
 
-size_t tell_data(int fd) {
-    return lseek(fd, 0, SEEK_CUR);
+ssize_t tell_data(int fd) {
+    ssize_t loc = lseek(fd, 0, SEEK_CUR);
+    return loc;
 }
 
 int chunks_from_temp(zckCtx *zck) {

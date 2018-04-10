@@ -286,7 +286,6 @@ int zck_dl_copy_src_chunks(zckRange *info, zckCtx *src, zckCtx *tgt) {
             return False;
         if(!found && !zck_range_add(info, tgt_idx, tgt))
             return False;
-
         tgt_idx = tgt_idx->next;
     }
     return True;
@@ -446,7 +445,7 @@ int zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url) {
     /* Download first hundred bytes and read magic and hash type */
     if(!zck_dl_bytes(dl, url, 100, start, &buffer_len))
         return False;
-    if(!zck_read_initial(zck, dl->dst_fd))
+    if(!zck_read_initial(zck))
         return False;
     start = tell_data(dl->dst_fd);
 
@@ -456,7 +455,7 @@ int zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url) {
                      start, &buffer_len))
         return False;
     /* Read and store the index hash */
-    if(!zck_read_index_hash(zck, dl->dst_fd))
+    if(!zck_read_index_hash(zck))
         return False;
     start += zck->hash_type.digest_size;
     char *digest = zck_get_index_digest(zck);
@@ -467,7 +466,7 @@ int zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url) {
     zck_log(ZCK_LOG_DEBUG, "\n");
 
     /* Read and store compression type and index size */
-    if(!zck_read_ct_is(zck, dl->dst_fd))
+    if(!zck_read_ct_is(zck))
         return False;
     start = tell_data(dl->dst_fd);
     zck_log(ZCK_LOG_DEBUG, "Index size: %llu\n", zck->index_size);
@@ -476,7 +475,7 @@ int zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url) {
     if(!zck_dl_bytes(dl, url, zck->index_size, start,
                      &buffer_len))
         return False;
-    if(!zck_read_index(zck, dl->dst_fd))
+    if(!zck_read_index(zck))
         return False;
 
     /* Write zeros to rest of file */

@@ -32,8 +32,29 @@
 
 #include "zck_private.h"
 
+#define VALIDATE(f)     if(!f) { \
+                            zck_log(ZCK_LOG_ERROR, \
+                                    "zckCtx not initialized\n"); \
+                            return False; \
+                        }
 
-int zck_read_initial(zckCtx *zck, int src_fd) {
+#define VALIDATE_READ(f)    VALIDATE(f); \
+                            if(f->mode != ZCK_MODE_READ) { \
+                                zck_log(ZCK_LOG_ERROR, \
+                                        "zckCtx not opened for reading\n"); \
+                                return False; \
+                            }
+
+#define VALIDATE_WRITE(f)   VALIDATE(f); \
+                            if(f->mode != ZCK_MODE_WRITE) { \
+                                zck_log(ZCK_LOG_ERROR, \
+                                        "zckCtx not opened for writing\n"); \
+                                return False; \
+                            }
+
+int zck_read_initial(zckCtx *zck) {
+    VALIDATE_READ(zck);
+
     char *header = zmalloc(5 + MAX_COMP_SIZE);
     size_t length = 0;
     if(header == NULL) {
@@ -43,7 +64,7 @@ int zck_read_initial(zckCtx *zck, int src_fd) {
     }
 
     zck_log(ZCK_LOG_DEBUG, "Reading magic and hash type\n");
-    if(!read_data(src_fd, header, 5 + MAX_COMP_SIZE)) {
+    if(!read_data(zck->fd, header, 5 + MAX_COMP_SIZE)) {
         free(header);
         return False;
     }
@@ -61,14 +82,18 @@ int zck_read_initial(zckCtx *zck, int src_fd) {
         return False;
     if(!zck_hash_setup(&(zck->hash_type), hash_type))
         return False;
-    if(!seek_data(src_fd, length, SEEK_SET))
+    if(!zck_hash_init(&(zck->check_full_hash), &(zck->hash_type)))
+        return False;
+    if(!seek_data(zck->fd, length, SEEK_SET))
         return False;
     zck->header_string = header;
     zck->header_size = length;
     return True;
 }
 
-int zck_read_index_hash(zckCtx *zck, int src_fd) {
+int zck_read_index_hash(zckCtx *zck) {
+    VALIDATE_READ(zck);
+
     if(zck->header_string == NULL) {
         zck_log(ZCK_LOG_ERROR,
                 "Reading index hash before initial bytes are read\n");
@@ -91,7 +116,7 @@ int zck_read_index_hash(zckCtx *zck, int src_fd) {
         return False;
     }
     zck_log(ZCK_LOG_DEBUG, "Reading index hash\n");
-    if(!read_data(src_fd, digest, zck->hash_type.digest_size)) {
+    if(!read_data(zck->fd, digest, zck->hash_type.digest_size)) {
         free(digest);
         free(header);
         return False;
@@ -106,7 +131,9 @@ int zck_read_index_hash(zckCtx *zck, int src_fd) {
     return True;
 }
 
-int zck_read_ct_is(zckCtx *zck, int src_fd) {
+int zck_read_ct_is(zckCtx *zck) {
+    VALIDATE_READ(zck);
+
     if(zck->header_string == NULL) {
         zck_log(ZCK_LOG_ERROR,
                 "Reading compression type before hash type is read\n");
@@ -124,7 +151,7 @@ int zck_read_ct_is(zckCtx *zck, int src_fd) {
         return False;
     }
     zck_log(ZCK_LOG_DEBUG, "Reading compression type and index size\n");
-    if(!read_data(src_fd, header + length, MAX_COMP_SIZE*2))
+    if(!read_data(zck->fd, header + length, MAX_COMP_SIZE*2))
         return False;
 
     int tmp = 0;
@@ -142,14 +169,16 @@ int zck_read_ct_is(zckCtx *zck, int src_fd) {
         return False;
     zck->index_size = tmp;
 
-    if(!seek_data(src_fd, length, SEEK_SET))
+    if(!seek_data(zck->fd, length, SEEK_SET))
         return False;
     zck->header_string = header;
     zck->header_size = length;
     return True;
 }
 
-int zck_read_index(zckCtx *zck, int src_fd) {
+int zck_read_index(zckCtx *zck) {
+    VALIDATE_READ(zck);
+
     char *index = zmalloc(zck->index_size);
     if(!index) {
         zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
@@ -157,7 +186,7 @@ int zck_read_index(zckCtx *zck, int src_fd) {
         return False;
     }
     zck_log(ZCK_LOG_DEBUG, "Reading index\n");
-    if(!read_data(src_fd, index, zck->index_size)) {
+    if(!read_data(zck->fd, index, zck->index_size)) {
         free(index);
         return False;
     }
@@ -169,19 +198,18 @@ int zck_read_index(zckCtx *zck, int src_fd) {
     return True;
 }
 
-int zck_read_header(zckCtx *zck, int src_fd) {
-    if(zck == NULL) {
-        zck_log(ZCK_LOG_ERROR, "zckCtx not initialized\n");
+int zck_read_header(zckCtx *zck) {
+    VALIDATE_READ(zck);
+
+    if(!zck_read_initial(zck))
         return False;
-    }
-    zck->fd = src_fd;
-    if(!zck_read_initial(zck, src_fd))
+    if(!zck_read_index_hash(zck))
         return False;
-    if(!zck_read_index_hash(zck, src_fd))
+    if(!zck_read_ct_is(zck))
         return False;
-    if(!zck_read_ct_is(zck, src_fd))
+    if(!zck_read_index(zck))
         return False;
-    if(!zck_read_index(zck, src_fd))
+    if(!zck_import_dict(zck))
         return False;
     return True;
 }
@@ -230,6 +258,8 @@ int zck_header_create(zckCtx *zck) {
 }
 
 int zck_write_header(zckCtx *zck) {
+    VALIDATE_WRITE(zck);
+
     if(!write_data(zck->fd, zck->header_string, zck->header_size))
         return False;
     return True;

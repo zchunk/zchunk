@@ -80,66 +80,107 @@ typedef struct zckDL {
 } zckDL;
 
 /*******************************************************************
- * Zchunk contexts
+ * Reading a zchunk file
  *******************************************************************/
-/* Get a zchunk context that can be used for creating or reading a zchunk
- * file.  Must be freed using zck_free */
-zckCtx *zck_create();
-/* Free a zchunk context.  You must pass the address of the context, and the
- * context will automatically be set to null after it is freed */
-void zck_free(zckCtx **zck);
-/* Clear a zchunk context so it may be reused */
-void zck_clear(zckCtx *zck);
+/* Initialize zchunk for reading */
+zckCtx *zck_init_read (int src_fd);
+/* Decompress dst_size bytes from zchunk file to dst, while verifying hashes */
+ssize_t zck_read(zckCtx *zck, char *dst, size_t dst_size);
+
 
 /*******************************************************************
- * Miscellaneous utilities
+ * Writing a zchunk file
  *******************************************************************/
-/* Set logging level */
-void zck_set_log_level(log_type ll);
-/* Get header length (header + index) */
-ssize_t zck_get_header_length(zckCtx *zck);
-/* Get temporary fd that will disappear when fd is closed */
-int zck_get_tmp_fd();
+/* Initialize zchunk for writing */
+zckCtx *zck_init_write (int dst_fd);
+/* Compress data src of size src_size, and write to zchunk file
+ * Due to the nature of zchunk files and how they are built, no data will
+ * actually appear in the zchunk file until zck_close() is called */
+ssize_t zck_write(zckCtx *zck, const char *src, const size_t src_size);
+/* Create a chunk boundary */
+ssize_t zck_end_chunk(zckCtx *zck);
+
+
+/*******************************************************************
+ * Common functions for finishing a zchunk file
+ *******************************************************************/
+/* Close a zchunk file so it may no longer be read from or written to. The
+ * context still contains information about the file */
+int zck_close(zckCtx *zck);
+/* Free a zchunk context.  You must pass the address of the context, and the
+ * context will automatically be set to NULL after it is freed */
+void zck_free(zckCtx **zck);
+
 
 /*******************************************************************
  * Compression
  *******************************************************************/
 /* Set compression type */
 int zck_set_compression_type(zckCtx *zck, int comp_type);
-/* Get name of compression type */
-const char *zck_comp_name_from_type(int comp_type);
 /* Set compression parameter */
 int zck_set_comp_parameter(zckCtx *zck, int option, void *value);
+
+
+/*******************************************************************
+ * Hashing
+ *******************************************************************/
+/* Set overall hash type */
+int zck_set_full_hash_type(zckCtx *zck, int hash_type);
+/* Set chunk hash type */
+int zck_set_chunk_hash_type(zckCtx *zck, int hash_type);
+
+
+/*******************************************************************
+ * Miscellaneous utilities
+ *******************************************************************/
+/* Set logging level */
+void zck_set_log_level(log_type ll);
+
+
+/*******************************************************************
+ * The functions should be all you need to read and write a zchunk
+ * file.  After this point are advanced functions with an unstable
+ * API, so use them with care.
+ *******************************************************************/
+
+
+/*******************************************************************
+ * Advanced miscellaneous zchunk functions
+ *******************************************************************/
+/* Initialize zchunk context */
+zckCtx *zck_create();
+/* Get header length (header + index) */
+ssize_t zck_get_header_length(zckCtx *zck);
+/* Get data length */
+ssize_t zck_get_data_length(zckCtx *zck);
+/* Get temporary fd that will disappear when fd is closed */
+int zck_get_tmp_fd();
+
+
+/*******************************************************************
+ * Advanced compression functions
+ *******************************************************************/
+/* Get name of compression type */
+const char *zck_comp_name_from_type(int comp_type);
 /* Initialize compression.  Compression type and parameters *must* be done
  * before this is called */
 int zck_comp_init(zckCtx *zck);
 /* Release compression resources.  After this is run, you may change compression
  * type and parameters */
 int zck_comp_close(zckCtx *zck);
-/* Compress data src of size src_size, and write to chunk */
-int zck_write(zckCtx *zck, const char *src, const size_t src_size);
-/* Finish compressing chunk */
-int zck_end_chunk(zckCtx *zck);
-/* Decompress data src of size src_size, and write to dst, while setting
- * dst_size */
-int zck_read(zckCtx *zck, const char *src, const size_t src_size, char **dst,
-             size_t dst_size);
+/* Reset compression configuration without losing buffered compressed data.
+ * After this is run, you may change compression type and parameters */
+int zck_comp_reset(zckCtx *zck);
+
 
 /*******************************************************************
- * Creating a zchunk file
+ * Advanced zchunk reading functions
  *******************************************************************/
-/* Initialize zchunk for writing */
-int zck_init_write (zckCtx *zck, int dst_fd);
-/* Write everything to disk */
-int zck_write_file(zckCtx *zck);
+/* Initialize zchunk for reading using advanced options */
+zckCtx *zck_init_adv_read (int src_fd);
+/* Read zchunk header */
+int zck_read_header(zckCtx *zck);
 
-/*******************************************************************
- * Reading a zchunk file
- *******************************************************************/
-/* Read zchunk header from src_fd */
-int zck_read_header(zckCtx *zck, int src_fd);
-/* Decompress zchunk file pointed to by src_fd into dst_fd */
-int zck_decompress_to_file (zckCtx *zck, int src_fd, int dst_fd);
 
 /*******************************************************************
  * Indexes
@@ -149,11 +190,10 @@ ssize_t zck_get_index_count(zckCtx *zck);
 /* Get index */
 zckIndex *zck_get_index(zckCtx *zck);
 
+
 /*******************************************************************
- * Hashing
+ * Advanced hash functions
  *******************************************************************/
-/* Set overall hash type */
-int zck_set_full_hash_type(zckCtx *zck, int hash_type);
 /* Get overall hash type */
 int zck_get_full_hash_type(zckCtx *zck);
 /* Get digest size of overall hash type */
@@ -162,8 +202,6 @@ int zck_get_full_digest_size(zckCtx *zck);
 char *zck_get_index_digest(zckCtx *zck);
 /* Get index digest (uses overall hash type) */
 char *zck_get_data_digest(zckCtx *zck);
-/* Set chunk hash type */
-int zck_set_chunk_hash_type(zckCtx *zck, int hash_type);
 /* Get chunk hash type */
 int zck_get_chunk_hash_type(zckCtx *zck);
 /* Get digest size of chunk hash type */
@@ -172,6 +210,7 @@ int zck_get_chunk_digest_size(zckCtx *zck);
 const char *zck_hash_name_from_type(int hash_type);
 /* Check data hash */
 int zck_hash_check_data(zckCtx *zck, int dst_fd);
+
 
 /*******************************************************************
  * Ranges
@@ -187,6 +226,7 @@ int zck_range_get_need_dl(zckRange *info, zckCtx *zck_src, zckCtx *zck_tgt);
 int zck_range_get_array(zckRange *info, char **ra);
 /* Free any resources in zckRange */
 void zck_range_close(zckRange *info);
+
 
 /*******************************************************************
  * Downloading (should this go in a separate header and library?)

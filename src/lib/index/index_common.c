@@ -31,6 +31,18 @@
 
 #include "zck_private.h"
 
+zckIndexItem *zck_get_index_of_loc(zckIndex *index, size_t loc) {
+    zckIndexItem *idx = index->first;
+    while(idx != NULL) {
+        if(loc >= idx->start && loc < idx->start + idx->comp_length)
+            return idx;
+        idx = idx->next;
+    }
+    zck_log(ZCK_LOG_ERROR, "Unable to find index that contains position %lu\n",
+            loc);
+    return NULL;
+}
+
 void zck_index_free_item(zckIndexItem **item) {
     if(*item == NULL)
         return;

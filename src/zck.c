@@ -97,13 +97,11 @@ int main (int argc, char *argv[]) {
         exit(1);
     }*/
     if(dict_size > 0) {
-        if(!zck_set_comp_parameter(zck, ZCK_COMMON_DICT, dict))
-            exit(1);
         if(!zck_set_comp_parameter(zck, ZCK_COMMON_DICT_SIZE, &dict_size))
             exit(1);
+        if(!zck_set_comp_parameter(zck, ZCK_COMMON_DICT, dict))
+            exit(1);
     }
-    if(!zck_comp_init(zck))
-        exit(1);
     free(dict);
 
     char *data;

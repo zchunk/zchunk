@@ -181,6 +181,8 @@ int zck_set_compression_type(zckCtx *zck, int type) {
 
     /* Set all values to 0 before setting compression type */
     memset(comp, 0, sizeof(zckComp));
+    zck_log(ZCK_LOG_DEBUG, "Setting compression to %s\n",
+            zck_comp_name_from_type(type));
     if(type == ZCK_COMP_NONE) {
         return zck_nocomp_setup(comp);
 #ifdef ZCHUNK_ZSTD
@@ -192,8 +194,6 @@ int zck_set_compression_type(zckCtx *zck, int type) {
                 zck_comp_name_from_type(type));
         return False;
     }
-    zck_log(ZCK_LOG_DEBUG, "Setting compression to %s\n",
-            zck_comp_name_from_type(type));
     return True;
 }
 
@@ -207,7 +207,19 @@ int zck_set_comp_parameter(zckCtx *zck, int option, void *value) {
         return False;
     }
     if(option == ZCK_COMMON_DICT) {
-        zck->comp.dict = value;
+        if(zck->comp.dict_size == 0) {
+            zck_log(ZCK_LOG_ERROR,
+                    "Dict size must be set before adding dict\n");
+            return False;
+        }
+        char *dict = zmalloc(zck->comp.dict_size);
+        if(dict == NULL) {
+            zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
+                    zck->comp.dict_size);
+            return False;
+        }
+        memcpy(dict, value, zck->comp.dict_size);
+        zck->comp.dict = dict;
     }else if(option == ZCK_COMMON_DICT_SIZE) {
         zck->comp.dict_size = *(size_t*)value;
     }else {
@@ -251,7 +263,7 @@ int zck_comp_add_to_dc(zckComp *comp, const char *src, size_t src_size) {
     /* Get rid of any already read data and allocate space for new data */
     char *temp = zmalloc(comp->dc_data_size - comp->dc_data_loc + src_size);
     if(temp == NULL) {
-        zck_log(ZCK_LOG_ERROR, "Unable to reallocate %lu bytes\n",
+        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
                 comp->dc_data_size - comp->dc_data_loc + src_size);
         return False;
     }

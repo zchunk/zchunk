@@ -313,11 +313,11 @@ int zck_import_dict(zckCtx *zck) {
     zck_log(ZCK_LOG_DEBUG, "Resetting compression\n");
     if(!zck_comp_reset(zck))
         return False;
-    zck_log(ZCK_LOG_DEBUG, "setting dict 1\n");
-    if(!zck_set_comp_parameter(zck, ZCK_COMMON_DICT, data))
-        return False;
-    zck_log(ZCK_LOG_DEBUG, "setting dict 2\n");
+    zck_log(ZCK_LOG_DEBUG, "Setting dict size\n");
     if(!zck_set_comp_parameter(zck, ZCK_COMMON_DICT_SIZE, &size))
+        return False;
+    zck_log(ZCK_LOG_DEBUG, "Setting dict\n");
+    if(!zck_set_comp_parameter(zck, ZCK_COMMON_DICT, data))
         return False;
     if(!zck_comp_init(zck))
         return False;

@@ -128,6 +128,8 @@ int zck_comp_init(zckCtx *zck) {
             }
             zck_index_add_to_chunk(zck, dst, dst_size, 0);
             zck_index_finish_chunk(zck);
+            free(comp->dict);
+            comp->dict_size = 0;
             free(dst);
         } else {
             zck_index_finish_chunk(zck);

@@ -33,11 +33,11 @@
 
 static log_type log_level = ZCK_LOG_ERROR;
 
-void zck_set_log_level(log_type ll) {
+void PUBLIC zck_set_log_level(log_type ll) {
     log_level = ll;
 }
 
-void zck_log(log_type lt, const char *format, ...) {
+void PUBLIC zck_log(log_type lt, const char *format, ...) {
     if(lt >= log_level) {
         va_list args;
         va_start(args, format);

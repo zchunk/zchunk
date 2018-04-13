@@ -1,4 +1,5 @@
 sources = []
+add_global_arguments('-fvisibility=hidden', language : 'c')
 subdir('comp')
 subdir('hash')
 subdir('index')

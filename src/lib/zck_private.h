@@ -14,6 +14,8 @@
 
 #define zmalloc(x) calloc(1, x)
 
+#define PUBLIC __attribute__((visibility("default")))
+
 struct zckComp;
 
 typedef int (*finit)(struct zckComp *comp);

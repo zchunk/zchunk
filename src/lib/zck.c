@@ -39,7 +39,7 @@
                             return False; \
                         }
 
-int zck_close(zckCtx *zck) {
+int PUBLIC zck_close(zckCtx *zck) {
     VALIDATE(zck);
 
     if(zck->mode == ZCK_MODE_WRITE) {
@@ -96,7 +96,7 @@ void zck_clear(zckCtx *zck) {
     }
 }
 
-void zck_free(zckCtx **zck) {
+void PUBLIC zck_free(zckCtx **zck) {
     if(*zck == NULL)
         return;
     zck_clear(*zck);
@@ -104,7 +104,7 @@ void zck_free(zckCtx **zck) {
     *zck = NULL;
 }
 
-zckCtx *zck_create() {
+zckCtx PUBLIC *zck_create() {
     zckCtx *zck = zmalloc(sizeof(zckCtx));
     if(zck == NULL) {
         zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
@@ -114,7 +114,7 @@ zckCtx *zck_create() {
     return zck;
 }
 
-zckCtx *zck_init_adv_read (int src_fd) {
+zckCtx PUBLIC *zck_init_adv_read (int src_fd) {
     zckCtx *zck = zck_create();
     if(zck == NULL)
         return NULL;
@@ -124,7 +124,7 @@ zckCtx *zck_init_adv_read (int src_fd) {
     return zck;
 }
 
-zckCtx *zck_init_read (int src_fd) {
+zckCtx PUBLIC *zck_init_read (int src_fd) {
     zckCtx *zck = zck_init_adv_read(src_fd);
     if(zck == NULL)
         return NULL;
@@ -135,7 +135,7 @@ zckCtx *zck_init_read (int src_fd) {
     return zck;
 }
 
-zckCtx *zck_init_write (int dst_fd) {
+zckCtx PUBLIC *zck_init_write (int dst_fd) {
     zckCtx *zck = zck_create();
     if(zck == NULL)
         return NULL;
@@ -165,7 +165,7 @@ iw_error:
     return NULL;
 }
 
-int zck_set_full_hash_type(zckCtx *zck, int hash_type) {
+int PUBLIC zck_set_full_hash_type(zckCtx *zck, int hash_type) {
     VALIDATE(zck);
     zck_log(ZCK_LOG_INFO, "Setting full hash to %s\n",
             zck_hash_name_from_type(hash_type));
@@ -182,7 +182,7 @@ int zck_set_full_hash_type(zckCtx *zck, int hash_type) {
     return True;
 }
 
-int zck_set_chunk_hash_type(zckCtx *zck, int hash_type) {
+int PUBLIC zck_set_chunk_hash_type(zckCtx *zck, int hash_type) {
     VALIDATE(zck);
     memset(&(zck->chunk_hash_type), 0, sizeof(zckHashType));
     zck_log(ZCK_LOG_INFO, "Setting chunk hash to %s\n",
@@ -197,55 +197,55 @@ int zck_set_chunk_hash_type(zckCtx *zck, int hash_type) {
     return True;
 }
 
-int zck_get_full_digest_size(zckCtx *zck) {
+int PUBLIC zck_get_full_digest_size(zckCtx *zck) {
     if(zck == NULL)
         return -1;
     return zck->hash_type.digest_size;
 }
 
-int zck_get_chunk_digest_size(zckCtx *zck) {
+int PUBLIC zck_get_chunk_digest_size(zckCtx *zck) {
     if(zck == NULL || zck->index.digest_size == 0)
         return -1;
     return zck->index.digest_size;
 }
 
-int zck_get_full_hash_type(zckCtx *zck) {
+int PUBLIC zck_get_full_hash_type(zckCtx *zck) {
     if(zck == NULL)
         return -1;
     return zck->hash_type.type;
 }
 
-int zck_get_chunk_hash_type(zckCtx *zck) {
+int PUBLIC zck_get_chunk_hash_type(zckCtx *zck) {
     if(zck == NULL)
         return -1;
     return zck->index.hash_type;
 }
 
-ssize_t zck_get_index_count(zckCtx *zck) {
+ssize_t PUBLIC zck_get_index_count(zckCtx *zck) {
     if(zck == NULL)
         return -1;
     return zck->index.count;
 }
 
-zckIndex *zck_get_index(zckCtx *zck) {
+zckIndex PUBLIC *zck_get_index(zckCtx *zck) {
     if(zck == NULL)
         return NULL;
     return &(zck->index);
 }
 
-char *zck_get_index_digest(zckCtx *zck) {
+char PUBLIC *zck_get_index_digest(zckCtx *zck) {
     if(zck == NULL)
         return NULL;
     return zck->index_digest;
 }
 
-char *zck_get_data_digest(zckCtx *zck) {
+char PUBLIC *zck_get_data_digest(zckCtx *zck) {
     if(zck == NULL)
         return NULL;
     return zck->full_hash_digest;
 }
 
-ssize_t zck_get_header_length(zckCtx *zck) {
+ssize_t PUBLIC zck_get_header_length(zckCtx *zck) {
     if(zck == NULL)
         return -1;
     return zck->header_size + zck->index_size;

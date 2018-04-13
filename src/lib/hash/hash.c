@@ -130,7 +130,7 @@ void zck_hash_close(zckHash *hash) {
 }
 
 /* Returns 1 if data hash matches, 0 if it doesn't and -1 if failure */
-int zck_hash_check_data(zckCtx *zck, int dst_fd) {
+int PUBLIC zck_hash_check_data(zckCtx *zck, int dst_fd) {
     if(!seek_data(dst_fd, zck->header_size + zck->index_size, SEEK_SET))
         return -1;
     if(!zck_hash_init(&(zck->check_full_hash), &(zck->hash_type)))
@@ -175,7 +175,7 @@ char *zck_hash_finalize(zckHash *hash) {
     return NULL;
 }
 
-const char *zck_hash_name_from_type(int hash_type) {
+const char PUBLIC *zck_hash_name_from_type(int hash_type) {
     if(hash_type > 1) {
         snprintf(unknown+8, 21, "%i)", hash_type);
         return unknown;

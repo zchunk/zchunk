@@ -169,7 +169,7 @@ int zck_comp_close(zckCtx *zck) {
     return zck_comp_reset(zck);
 }
 
-int zck_set_compression_type(zckCtx *zck, int type) {
+int PUBLIC zck_set_compression_type(zckCtx *zck, int type) {
     VALIDATE(zck);
 
     zckComp *comp = &(zck->comp);
@@ -199,7 +199,7 @@ int zck_set_compression_type(zckCtx *zck, int type) {
     return True;
 }
 
-int zck_set_comp_parameter(zckCtx *zck, int option, void *value) {
+int PUBLIC zck_set_comp_parameter(zckCtx *zck, int option, void *value) {
     VALIDATE(zck);
 
     /* Cannot change compression parameters after compression has started */
@@ -235,7 +235,7 @@ int zck_set_comp_parameter(zckCtx *zck, int option, void *value) {
     return True;
 }
 
-const char *zck_comp_name_from_type(int comp_type) {
+const char PUBLIC *zck_comp_name_from_type(int comp_type) {
     if(comp_type > 2) {
         snprintf(unknown+8, 21, "%i)", comp_type);
         return unknown;
@@ -304,7 +304,7 @@ int zck_comp_add_to_data(zckComp *comp, const char *src, size_t src_size) {
     return True;
 }
 
-ssize_t zck_write(zckCtx *zck, const char *src, const size_t src_size) {
+ssize_t PUBLIC zck_write(zckCtx *zck, const char *src, const size_t src_size) {
     VALIDATE_WRITE_SIZE(zck);
 
     if(!zck->comp.started && !zck_comp_init(zck))
@@ -329,7 +329,7 @@ ssize_t zck_write(zckCtx *zck, const char *src, const size_t src_size) {
     return src_size;
 }
 
-ssize_t zck_end_chunk(zckCtx *zck) {
+ssize_t PUBLIC zck_end_chunk(zckCtx *zck) {
     VALIDATE_WRITE_SIZE(zck);
 
     if(!zck->comp.started && !zck_comp_init(zck))
@@ -467,7 +467,7 @@ zck_hash_error:
     return -2;
 }
 
-ssize_t zck_read(zckCtx *zck, char *dst, size_t dst_size) {
+ssize_t PUBLIC zck_read(zckCtx *zck, char *dst, size_t dst_size) {
     VALIDATE_READ_SIZE(zck);
 
     return comp_read(zck, dst, dst_size, 1);

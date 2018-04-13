@@ -42,7 +42,7 @@ void zck_range_remove(zckRangeItem *range) {
     free(range);
 }
 
-void zck_range_close(zckRange *info) {
+void PUBLIC zck_range_close(zckRange *info) {
     zckRangeItem *next = info->first;
     while(next) {
         zckRangeItem *tmp = next;
@@ -147,7 +147,7 @@ int zck_range_add(zckRange *info, zckIndexItem *idx, zckCtx *zck) {
     return True;
 }
 
-int zck_range_calc_segments(zckRange *info, unsigned int max_ranges) {
+int PUBLIC zck_range_calc_segments(zckRange *info, unsigned int max_ranges) {
     if(max_ranges == 0)
         return False;
     info->segments = (info->count + max_ranges - 1) / max_ranges;

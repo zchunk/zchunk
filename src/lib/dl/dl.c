@@ -263,7 +263,7 @@ int zck_dl_write_and_verify(zckRange *info, zckCtx *src, zckCtx *tgt,
     return True;
 }
 
-int zck_dl_copy_src_chunks(zckRange *info, zckCtx *src, zckCtx *tgt) {
+int PUBLIC zck_dl_copy_src_chunks(zckRange *info, zckCtx *src, zckCtx *tgt) {
     zckIndex *tgt_info = zck_get_index(tgt);
     zckIndex *src_info = zck_get_index(src);
     zckIndexItem *tgt_idx = tgt_info->first;
@@ -358,7 +358,7 @@ int zck_dl_range_chk_chunk(zckDL *dl, char *url, int is_chunk) {
     return True;
 }
 
-int zck_dl_range(zckDL *dl, char *url) {
+int PUBLIC zck_dl_range(zckDL *dl, char *url) {
     return zck_dl_range_chk_chunk(dl, url, 1);
 }
 
@@ -429,7 +429,7 @@ int zck_zero_bytes(zckDL *dl, size_t bytes, size_t start, size_t *buffer_len) {
 }
 
 /* Download header */
-int zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url) {
+int PUBLIC zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url) {
     if(zck == NULL) {
         zck_log(ZCK_LOG_ERROR, "zckCtx not initialized\n");
         return False;
@@ -487,21 +487,21 @@ int zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url) {
     return True;
 }
 
-size_t zck_dl_get_bytes_downloaded(zckDL *dl) {
+size_t PUBLIC zck_dl_get_bytes_downloaded(zckDL *dl) {
     VALIDATE(dl);
     return dl->dl;
 }
 
-size_t zck_dl_get_bytes_uploaded(zckDL *dl) {
+size_t PUBLIC zck_dl_get_bytes_uploaded(zckDL *dl) {
     VALIDATE(dl);
     return dl->ul;
 }
 
-void zck_dl_global_init() {
+void PUBLIC zck_dl_global_init() {
     curl_global_init(CURL_GLOBAL_ALL);
 }
 
-void zck_dl_global_cleanup() {
+void PUBLIC zck_dl_global_cleanup() {
     curl_global_cleanup();
 }
 
@@ -519,7 +519,7 @@ void zck_dl_clear_regex(zckDL *dl) {
 }
 
 /* Initialize zckDL.  When finished, zckDL *must* be freed by zck_dl_free() */
-zckDL *zck_dl_init() {
+zckDL PUBLIC *zck_dl_init() {
     zckDL *dl = zmalloc(sizeof(zckDL));
     if(!dl) {
         zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes for zckDL\n",
@@ -549,7 +549,7 @@ zckDL *zck_dl_init() {
 }
 
 /* Free zckDL and set pointer to NULL */
-void zck_dl_free(zckDL **dl) {
+void PUBLIC zck_dl_free(zckDL **dl) {
     if(!*dl)
         return;
     if((*dl)->priv) {

@@ -25,6 +25,7 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 #include <sys/types.h>
@@ -54,7 +55,6 @@ int PUBLIC zck_close(zckCtx *zck) {
         if(!chunks_from_temp(zck))
             return False;
         zck_log(ZCK_LOG_DEBUG, "Finished writing file, cleaning up\n");
-        zck_index_free(zck);
         zck_comp_close(zck);
         if(zck->temp_fd) {
             close(zck->temp_fd);
@@ -233,16 +233,24 @@ zckIndex PUBLIC *zck_get_index(zckCtx *zck) {
     return &(zck->index);
 }
 
+char *get_digest_string(const char *digest, int size) {
+    char *str = zmalloc(size*2+1);
+
+    for(int i=0; i<size; i++)
+        snprintf(str + i*2, 3, "%02x", (unsigned char)digest[i]);
+    return str;
+}
+
 char PUBLIC *zck_get_index_digest(zckCtx *zck) {
     if(zck == NULL)
         return NULL;
-    return zck->index_digest;
+    return get_digest_string(zck->index_digest, zck->hash_type.digest_size);
 }
 
 char PUBLIC *zck_get_data_digest(zckCtx *zck) {
     if(zck == NULL)
         return NULL;
-    return zck->full_hash_digest;
+    return get_digest_string(zck->full_hash_digest, zck->hash_type.digest_size);
 }
 
 ssize_t PUBLIC zck_get_header_length(zckCtx *zck) {

@@ -458,12 +458,11 @@ int PUBLIC zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url) {
     if(!zck_read_index_hash(zck))
         return False;
     start += zck->hash_type.digest_size;
-    char *digest = zck_get_index_digest(zck);
     zck_log(ZCK_LOG_DEBUG, "Index hash: (%s)",
             zck_hash_name_from_type(zck_get_full_hash_type(zck)));
-    for(int i=0; i<zck_get_full_digest_size(zck); i++)
-        zck_log(ZCK_LOG_DEBUG, "%02x", (unsigned char)digest[i]);
-    zck_log(ZCK_LOG_DEBUG, "\n");
+    char *digest = zck_get_index_digest(zck);
+    zck_log(ZCK_LOG_DEBUG, "%s\n", digest);
+    free(digest);
 
     /* Read and store compression type and index size */
     if(!zck_read_ct_is(zck))

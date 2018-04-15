@@ -177,7 +177,7 @@ static int close(zckComp *comp) {
     return True;
 }
 
-static int set_parameter(zckComp *comp, int option, void *value) {
+static int set_parameter(zckComp *comp, int option, const void *value) {
     if(option == ZCK_ZCK_COMP_LEVEL) {
         if(*(int*)value >= 0 && *(int*)value <= ZSTD_maxCLevel()) {
             comp->level = *(int*)value;

@@ -81,7 +81,7 @@ static int close(zckComp *comp) {
 
 /* Nocomp doesn't support any parameters, so return error if setting a parameter
  * was attempted */
-static int set_parameter(zckComp *comp, int option, void *value) {
+static int set_parameter(zckComp *comp, int option, const void *value) {
     zck_log(ZCK_LOG_ERROR, "Invalid compression parameter for ZCK_COMP_NONE\n");
     return False;
 }

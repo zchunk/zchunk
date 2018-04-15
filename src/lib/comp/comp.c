@@ -199,7 +199,7 @@ int PUBLIC zck_set_compression_type(zckCtx *zck, int type) {
     return True;
 }
 
-int PUBLIC zck_set_comp_parameter(zckCtx *zck, int option, void *value) {
+int PUBLIC zck_set_comp_parameter(zckCtx *zck, int option, const void *value) {
     VALIDATE(zck);
 
     /* Cannot change compression parameters after compression has started */

@@ -118,7 +118,7 @@ void zck_free(zckCtx **zck);
 /* Set compression type */
 int zck_set_compression_type(zckCtx *zck, int comp_type);
 /* Set compression parameter */
-int zck_set_comp_parameter(zckCtx *zck, int option, void *value);
+int zck_set_comp_parameter(zckCtx *zck, int option, const void *value);
 
 
 /*******************************************************************

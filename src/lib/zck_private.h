@@ -19,7 +19,7 @@
 struct zckComp;
 
 typedef int (*finit)(struct zckComp *comp);
-typedef int (*fparam)(struct zckComp *comp, int option, void *value);
+typedef int (*fparam)(struct zckComp *comp, int option, const void *value);
 typedef int (*fccompend)(struct zckComp *comp, char **dst, size_t *dst_size,
                          int use_dict);
 typedef ssize_t (*fcomp)(struct zckComp *comp, const char *src,

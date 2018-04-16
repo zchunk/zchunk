@@ -40,6 +40,8 @@ typedef enum zck_log_type {
     ZCK_LOG_ERROR
 } zck_log_type;
 
+typedef struct zckCtx zckCtx;
+typedef struct zckHash zckHash;
 
 /* Contains an index item pointing to a chunk */
 typedef struct zckIndexItem {
@@ -61,38 +63,6 @@ typedef struct zckIndex {
     zckIndexItem *first;
 } zckIndex;
 
-/* Contains a single range */
-typedef struct zckRangeItem {
-    size_t start;
-    size_t end;
-    struct zckRangeItem *next;
-    struct zckRangeItem *prev;
-} zckRangeItem;
-
-/* Contains a series of ranges, information about them, a link to the first
- * range item, and an index describing what information is in the ranges */
-typedef struct zckRange {
-    unsigned int count;
-    unsigned int segments;
-    unsigned int max_ranges;
-    zckRangeItem *first;
-    zckIndex index;
-} zckRange;
-
-typedef struct zckDLPriv zckDLPriv;
-typedef struct zckCtx zckCtx;
-typedef struct zckHash zckHash;
-
-/* Contains a zchunk download context */
-typedef struct zckDL {
-    size_t dl;
-    size_t ul;
-    int dst_fd;
-    char *boundary;
-    zckRange info;
-    zckDLPriv *priv;
-    struct zckCtx *zck;
-} zckDL;
 
 /*******************************************************************
  * Reading a zchunk file
@@ -221,6 +191,40 @@ int zck_hash_check_data(zckCtx *zck, int dst_fd);
 
 
 /*******************************************************************
+ * Downloading (should this go in a separate header and library?)
+ *******************************************************************/
+/* Contains a single range */
+typedef struct zckRangeItem {
+    size_t start;
+    size_t end;
+    struct zckRangeItem *next;
+    struct zckRangeItem *prev;
+} zckRangeItem;
+
+/* Contains a series of ranges, information about them, a link to the first
+ * range item, and an index describing what information is in the ranges */
+typedef struct zckRange {
+    unsigned int count;
+    unsigned int segments;
+    unsigned int max_ranges;
+    zckRangeItem *first;
+    zckIndex index;
+} zckRange;
+
+typedef struct zckDLPriv zckDLPriv;
+
+/* Contains a zchunk download context */
+typedef struct zckDL {
+    size_t dl;
+    size_t ul;
+    int dst_fd;
+    char *boundary;
+    zckRange info;
+    zckDLPriv *priv;
+    struct zckCtx *zck;
+} zckDL;
+
+/*******************************************************************
  * Ranges
  *******************************************************************/
 /* Update info with the maximum number of ranges in a single request */
@@ -237,7 +241,7 @@ void zck_range_close(zckRange *info);
 
 
 /*******************************************************************
- * Downloading (should this go in a separate header and library?)
+ * Downloading
  *******************************************************************/
 /* Initialize curl stuff, should be run at beginning of any program using any
  * following functions */

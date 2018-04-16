@@ -34,8 +34,12 @@
 #include "sha1/sha1.h"
 #include "sha2/sha2.h"
 
+#define VALIDATE(f)     if(!f) { \
+                            zck_log(ZCK_LOG_ERROR, "zckCtx not initialized\n"); \
+                            return False; \
+                        }
+
 static char unknown[] = "Unknown(\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
-static char hash_text[BUF_SIZE] = {0};
 
 const static char *HASH_NAME[] = {
     "SHA-1",
@@ -183,17 +187,34 @@ const char PUBLIC *zck_hash_name_from_type(int hash_type) {
     return HASH_NAME[hash_type];
 }
 
-const char *zck_hash_get_printable(const char *digest, zckHashType *type) {
-    if(digest == NULL || type == NULL) {
-        zck_log(ZCK_LOG_ERROR,
-                "digest or zckHashType haven't been initialized\n");
+int set_full_hash_type(zckCtx *zck, int hash_type) {
+    VALIDATE(zck);
+    zck_log(ZCK_LOG_INFO, "Setting full hash to %s\n",
+            zck_hash_name_from_type(hash_type));
+    if(!zck_hash_setup(&(zck->hash_type), hash_type)) {
+        zck_log(ZCK_LOG_ERROR, "Unable to set full hash to %s\n",
+                zck_hash_name_from_type(hash_type));
         return False;
     }
-    for(int i=0; i<type->digest_size; i++) {
-        if(snprintf(hash_text + (i*2), 3, "%02x", (unsigned char)digest[i]) < 0) {
-            zck_log(ZCK_LOG_ERROR, "Unable to generate printable hash\n");
-            return NULL;
-        }
+    zck_hash_close(&(zck->full_hash));
+    if(!zck_hash_init(&(zck->full_hash), &(zck->hash_type))) {
+        zck_log(ZCK_LOG_ERROR, "Unable initialize full hash\n");
+        return False;
     }
-    return hash_text;
+    return True;
+}
+
+int set_chunk_hash_type(zckCtx *zck, int hash_type) {
+    VALIDATE(zck);
+    memset(&(zck->chunk_hash_type), 0, sizeof(zckHashType));
+    zck_log(ZCK_LOG_INFO, "Setting chunk hash to %s\n",
+            zck_hash_name_from_type(hash_type));
+    if(!zck_hash_setup(&(zck->chunk_hash_type), hash_type)) {
+        zck_log(ZCK_LOG_ERROR, "Unable to set chunk hash to %s\n",
+                zck_hash_name_from_type(hash_type));
+        return False;
+    }
+    zck->index.hash_type = zck->chunk_hash_type.type;
+    zck->index.digest_size = zck->chunk_hash_type.digest_size;
+    return True;
 }

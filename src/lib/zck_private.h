@@ -30,7 +30,7 @@ typedef int (*fdcompend)(struct zckComp *comp, const int use_dict,
                          const size_t fd_size);
 typedef int (*fcclose)(struct zckComp *comp);
 
-typedef enum log_type log_type;
+typedef enum zck_log_type zck_log_type;
 
 typedef struct zckHashType {
     int type;
@@ -129,6 +129,7 @@ int zck_import_dict(zckCtx *zck);
 int zck_validate_file(zckCtx *zck);
 int zck_validate_current_chunk(zckCtx *zck);
 void zck_clear_work_index(zckCtx *zck);
+char *get_digest_string(const char *digest, int size);
 
 /* hash/hash.h */
 int zck_hash_setup(zckHashType *ht, int h);
@@ -137,6 +138,8 @@ int zck_hash_update(zckHash *hash, const char *message, const size_t size);
 char *zck_hash_finalize(zckHash *hash);
 void zck_hash_close(zckHash *hash);
 const char *zck_hash_get_printable(const char *digest, zckHashType *type);
+int set_full_hash_type(zckCtx *zck, int hash_type);
+int set_chunk_hash_type(zckCtx *zck, int hash_type);
 
 /* index/index.c */
 int zck_index_read(zckCtx *zck, char *data, size_t size);
@@ -175,6 +178,8 @@ int zck_comp_add_to_dc(zckComp *comp, const char *src, size_t src_size);
 int zck_comp_add_to_data(zckComp *comp, const char *src, size_t src_size);
 size_t zck_comp_read_from_dc(zckComp *comp, char *dst, size_t dst_size);
 ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, int use_dict);
+int comp_ioption(zckCtx *zck, zck_ioption option, ssize_t value);
+int comp_soption(zckCtx *zck, zck_soption option, const void *value);
 
 /* dl/range.c */
 char *zck_range_get_char(zckRangeItem **range, int max_ranges);
@@ -196,5 +201,5 @@ int zck_compint_to_size(size_t *val, const char *compint, size_t *length);
 
 
 /* log.c */
-void zck_log(log_type lt, const char *format, ...);
+void zck_log(zck_log_type lt, const char *format, ...);
 #endif

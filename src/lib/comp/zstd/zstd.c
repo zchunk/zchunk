@@ -178,7 +178,7 @@ static int close(zckComp *comp) {
 }
 
 static int set_parameter(zckComp *comp, int option, const void *value) {
-    if(option == ZCK_ZCK_COMP_LEVEL) {
+    if(option == ZCK_ZSTD_COMP_LEVEL) {
         if(*(int*)value >= 0 && *(int*)value <= ZSTD_maxCLevel()) {
             comp->level = *(int*)value;
             return True;
@@ -191,7 +191,7 @@ static int set_parameter(zckComp *comp, int option, const void *value) {
 static int set_default_parameters(zckComp *comp) {
     /* Set default compression level to 16 */
     int level=16;
-    return set_parameter(comp, ZCK_ZCK_COMP_LEVEL, &level);
+    return set_parameter(comp, ZCK_ZSTD_COMP_LEVEL, &level);
 }
 
 int zck_zstd_setup(zckComp *comp) {

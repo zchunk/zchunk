@@ -31,13 +31,13 @@
 
 #include "zck_private.h"
 
-static log_type log_level = ZCK_LOG_ERROR;
+static zck_log_type log_level = ZCK_LOG_ERROR;
 
-void PUBLIC zck_set_log_level(log_type ll) {
+void PUBLIC zck_set_log_level(zck_log_type ll) {
     log_level = ll;
 }
 
-void PUBLIC zck_log(log_type lt, const char *format, ...) {
+void PUBLIC zck_log(zck_log_type lt, const char *format, ...) {
     if(lt >= log_level) {
         va_list args;
         va_start(args, format);

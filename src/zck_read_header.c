@@ -56,7 +56,7 @@ int main (int argc, char *argv[]) {
     close(src_fd);
 
     printf("Overall checksum type: %s\n", zck_hash_name_from_type(zck_get_full_hash_type(zck)));
-    char *digest = zck_get_index_digest(zck);
+    char *digest = zck_get_header_digest(zck);
     printf("Header checksum: %s\n", digest);
     free(digest);
     digest = zck_get_data_digest(zck);
@@ -69,11 +69,12 @@ int main (int argc, char *argv[]) {
         exit(1);
     zckIndexItem *idx = idxi->first;
     while(idx) {
-        for(int i=0; i<zck_get_chunk_digest_size(zck); i++)
-            printf("%02x", (unsigned char)idx->digest[i]);
-        printf(" %12lu %12lu %12lu\n", idx->start + zck_get_header_length(zck), idx->comp_length, idx->length);
+        char *digest = zck_get_chunk_digest(idx);
+        if(digest == NULL)
+            exit(1);
+        printf("%s %12lu %12lu %12lu\n", digest, idx->start + zck_get_header_length(zck), idx->comp_length, idx->length);
+        free(digest);
         idx = idx->next;
     }
-
     zck_free(&zck);
 }

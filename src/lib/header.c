@@ -159,7 +159,7 @@ int zck_read_ct_is(zckCtx *zck) {
     /* Read and initialize compression type */
     if(!zck_compint_to_int(&tmp, header + length, &length))
         return False;
-    if(!zck_set_compression_type(zck, tmp))
+    if(!zck_set_ioption(zck, ZCK_COMP_TYPE, tmp))
         return False;
     if(!zck_comp_init(zck))
         return False;

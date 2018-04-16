@@ -128,13 +128,12 @@ int zck_comp_init(zckCtx *zck) {
             }
             zck_index_add_to_chunk(zck, dst, dst_size, 0);
             zck_index_finish_chunk(zck);
-            free(comp->dict);
-            comp->dict_size = 0;
             free(dst);
         } else {
             zck_index_finish_chunk(zck);
         }
     }
+    free(zck->comp.dict);
     zck->comp.dict = NULL;
     zck->comp.dict_size = 0;
     zck->comp.started = True;
@@ -169,7 +168,7 @@ int zck_comp_close(zckCtx *zck) {
     return zck_comp_reset(zck);
 }
 
-int PUBLIC zck_set_compression_type(zckCtx *zck, int type) {
+static int set_comp_type(zckCtx *zck, ssize_t type) {
     VALIDATE(zck);
 
     zckComp *comp = &(zck->comp);
@@ -182,7 +181,14 @@ int PUBLIC zck_set_compression_type(zckCtx *zck, int type) {
     }
 
     /* Set all values to 0 before setting compression type */
+    char *dc_data = comp->dc_data;
+    size_t dc_data_loc = comp->dc_data_loc;
+    size_t dc_data_size = comp->dc_data_size;
     memset(comp, 0, sizeof(zckComp));
+    comp->dc_data = dc_data;
+    comp->dc_data_loc = dc_data_loc;
+    comp->dc_data_size = dc_data_size;
+
     zck_log(ZCK_LOG_DEBUG, "Setting compression to %s\n",
             zck_comp_name_from_type(type));
     if(type == ZCK_COMP_NONE) {
@@ -199,7 +205,7 @@ int PUBLIC zck_set_compression_type(zckCtx *zck, int type) {
     return True;
 }
 
-int PUBLIC zck_set_comp_parameter(zckCtx *zck, int option, const void *value) {
+int comp_ioption(zckCtx *zck, zck_ioption option, ssize_t value) {
     VALIDATE(zck);
 
     /* Cannot change compression parameters after compression has started */
@@ -208,7 +214,31 @@ int PUBLIC zck_set_comp_parameter(zckCtx *zck, int option, const void *value) {
                 "Unable to set compression parameters after initialization\n");
         return False;
     }
-    if(option == ZCK_COMMON_DICT) {
+    if(option == ZCK_COMP_TYPE) {
+        return set_comp_type(zck, value);
+    } else if(option == ZCK_COMP_DICT_SIZE) {
+        zck->comp.dict_size = value;
+    } else {
+        if(zck && zck->comp.set_parameter)
+            return zck->comp.set_parameter(&(zck->comp), option, &value);
+
+        zck_log(ZCK_LOG_ERROR, "Unsupported compression parameter: %i\n",
+                option);
+        return False;
+    }
+    return True;
+}
+
+int comp_soption(zckCtx *zck, zck_soption option, const void *value) {
+    VALIDATE(zck);
+
+    /* Cannot change compression parameters after compression has started */
+    if(zck && zck->comp.started) {
+        zck_log(ZCK_LOG_ERROR,
+                "Unable to set compression parameters after initialization\n");
+        return False;
+    }
+    if(option == ZCK_COMP_DICT) {
         if(zck->comp.dict_size == 0) {
             zck_log(ZCK_LOG_ERROR,
                     "Dict size must be set before adding dict\n");
@@ -222,9 +252,7 @@ int PUBLIC zck_set_comp_parameter(zckCtx *zck, int option, const void *value) {
         }
         memcpy(dict, value, zck->comp.dict_size);
         zck->comp.dict = dict;
-    }else if(option == ZCK_COMMON_DICT_SIZE) {
-        zck->comp.dict_size = *(size_t*)value;
-    }else {
+    } else {
         if(zck && zck->comp.set_parameter)
             return zck->comp.set_parameter(&(zck->comp), option, value);
 

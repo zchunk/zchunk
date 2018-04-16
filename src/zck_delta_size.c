@@ -80,7 +80,7 @@ int main (int argc, char *argv[]) {
         exit(1);
     zckIndexItem *tgt_idx = tgt_info->first;
     zckIndexItem *src_idx = src_info->first;
-    if(memcmp(tgt_idx->digest, src_idx->digest, zck_get_chunk_digest_size(zck_tgt)) != 0)
+    if(memcmp(tgt_idx->digest, src_idx->digest, tgt_idx->digest_size) != 0)
         printf("WARNING: Dicts don't match\n");
     ssize_t dl_size = zck_get_header_length(zck_tgt);
     if(dl_size < 0)
@@ -92,7 +92,7 @@ int main (int argc, char *argv[]) {
         src_idx = src_info->first;
 
         while(src_idx) {
-            if(memcmp(tgt_idx->digest, src_idx->digest, zck_get_chunk_digest_size(zck_tgt)) == 0) {
+            if(memcmp(tgt_idx->digest, src_idx->digest, tgt_idx->digest_size) == 0) {
                 found = True;
                 break;
             }

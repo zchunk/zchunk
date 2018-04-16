@@ -165,7 +165,7 @@ int zck_range_get_need_dl(zckRange *info, zckCtx *zck_src, zckCtx *zck_tgt) {
         src_idx = src_info->first;
 
         while(src_idx) {
-            if(memcmp(tgt_idx->digest, src_idx->digest, zck_get_chunk_digest_size(zck_tgt)) == 0) {
+            if(memcmp(tgt_idx->digest, src_idx->digest, tgt_idx->digest_size) == 0) {
                 found = True;
                 break;
             }

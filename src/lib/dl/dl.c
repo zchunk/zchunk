@@ -246,10 +246,12 @@ int zck_dl_write_and_verify(zckRange *info, zckCtx *src, zckCtx *tgt,
     char *digest = zck_hash_finalize(&check_hash);
     /* If chunk is invalid, overwrite with zeros and add to download range */
     if(memcmp(digest, src_idx->digest, src_idx->digest_size) != 0) {
-        zck_log(ZCK_LOG_WARNING, "Source hash: %s\n",
-                zck_hash_get_printable(src_idx->digest, &(src->chunk_hash_type)));
-        zck_log(ZCK_LOG_WARNING, "Target hash: %s\n",
-                zck_hash_get_printable(digest, &(src->chunk_hash_type)));
+        char *pdigest = zck_get_chunk_digest(src_idx);
+        zck_log(ZCK_LOG_WARNING, "Source hash: %s\n", pdigest);
+        free(pdigest);
+        pdigest = get_digest_string(digest, src_idx->digest_size);
+        zck_log(ZCK_LOG_WARNING, "Target hash: %s\n", pdigest);
+        free(pdigest);
         if(!zck_dl_write_zero(tgt, tgt_idx))
             return False;
         if(!zck_range_add(info, tgt_idx, tgt))
@@ -275,7 +277,7 @@ int PUBLIC zck_dl_copy_src_chunks(zckRange *info, zckCtx *src, zckCtx *tgt) {
         while(src_idx) {
             if(tgt_idx->comp_length == src_idx->comp_length &&
                memcmp(tgt_idx->digest, src_idx->digest,
-                      zck_get_chunk_digest_size(tgt)) == 0) {
+                      tgt_idx->digest_size) == 0) {
                 found = True;
                 break;
             }
@@ -458,9 +460,9 @@ int PUBLIC zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url) {
     if(!zck_read_index_hash(zck))
         return False;
     start += zck->hash_type.digest_size;
-    zck_log(ZCK_LOG_DEBUG, "Index hash: (%s)",
+    zck_log(ZCK_LOG_DEBUG, "Header hash: (%s)",
             zck_hash_name_from_type(zck_get_full_hash_type(zck)));
-    char *digest = zck_get_index_digest(zck);
+    char *digest = zck_get_header_digest(zck);
     zck_log(ZCK_LOG_DEBUG, "%s\n", digest);
     free(digest);
 

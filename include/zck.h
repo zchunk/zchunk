@@ -7,26 +7,41 @@
 #define ZCK_VER_REVISION 1
 #define ZCK_VER_SUBREVISION 0
 
-#define ZCK_COMP_NONE 0
-#define ZCK_COMP_ZSTD 2
-
-#define ZCK_HASH_SHA1   0
-#define ZCK_HASH_SHA256 1
-
-#define ZCK_COMMON_DICT 1
-#define ZCK_COMMON_DICT_SIZE 2
-
-#define ZCK_ZCK_COMP_LEVEL 20
-
 #define True 1
 #define False 0
 
-typedef enum log_type { ZCK_LOG_DEBUG,
-                        ZCK_LOG_INFO,
-                        ZCK_LOG_WARNING,
-                        ZCK_LOG_ERROR } log_type;
+typedef enum zck_hash {
+    ZCK_HASH_SHA1,
+    ZCK_HASH_SHA256
+} zck_hash;
 
-/* Contains an index item */
+typedef enum zck_comp {
+    ZCK_COMP_NONE,
+    ZCK_COMP_GZIP, /* Not implemented yet */
+    ZCK_COMP_ZSTD
+} zck_comp;
+
+typedef enum zck_ioption {
+    ZCK_HASH_FULL_TYPE = 0,     /* Set full file hash type, using zck_hash */
+    ZCK_HASH_CHUNK_TYPE,        /* Set chunk hash type using zck_hash */
+    ZCK_COMP_TYPE = 100,        /* Set compression type using zck_comp */
+    ZCK_COMP_DICT_SIZE,         /* Set compression dictionary size */
+    ZCK_ZSTD_COMP_LEVEL = 1000  /* Set zstd compression level */
+} zck_ioption;
+
+typedef enum zck_soption {
+    ZCK_COMP_DICT = 100         /* Set compression dictionary */
+} zck_soption;
+
+typedef enum zck_log_type {
+    ZCK_LOG_DEBUG,
+    ZCK_LOG_INFO,
+    ZCK_LOG_WARNING,
+    ZCK_LOG_ERROR
+} zck_log_type;
+
+
+/* Contains an index item pointing to a chunk */
 typedef struct zckIndexItem {
     char *digest;
     int digest_size;
@@ -113,28 +128,19 @@ void zck_free(zckCtx **zck);
 
 
 /*******************************************************************
- * Compression
+ * Options
  *******************************************************************/
-/* Set compression type */
-int zck_set_compression_type(zckCtx *zck, int comp_type);
-/* Set compression parameter */
-int zck_set_comp_parameter(zckCtx *zck, int option, const void *value);
-
-
-/*******************************************************************
- * Hashing
- *******************************************************************/
-/* Set overall hash type */
-int zck_set_full_hash_type(zckCtx *zck, int hash_type);
-/* Set chunk hash type */
-int zck_set_chunk_hash_type(zckCtx *zck, int hash_type);
+/* Set string option */
+int zck_set_soption(zckCtx *zck, zck_soption option, const void *value);
+/* Set integer option */
+int zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t value);
 
 
 /*******************************************************************
  * Miscellaneous utilities
  *******************************************************************/
 /* Set logging level */
-void zck_set_log_level(log_type ll);
+void zck_set_log_level(zck_log_type ll);
 
 
 /*******************************************************************
@@ -153,6 +159,10 @@ zckCtx *zck_create();
 ssize_t zck_get_header_length(zckCtx *zck);
 /* Get data length */
 ssize_t zck_get_data_length(zckCtx *zck);
+/* Get index digest */
+char *zck_get_header_digest(zckCtx *zck);
+/* Get data digest */
+char *zck_get_data_digest(zckCtx *zck);
 /* Get temporary fd that will disappear when fd is closed */
 int zck_get_tmp_fd();
 
@@ -189,6 +199,8 @@ int zck_read_header(zckCtx *zck);
 ssize_t zck_get_index_count(zckCtx *zck);
 /* Get index */
 zckIndex *zck_get_index(zckCtx *zck);
+/* Get chunk digest */
+char *zck_get_chunk_digest(zckIndexItem *item);
 
 
 /*******************************************************************
@@ -198,10 +210,6 @@ zckIndex *zck_get_index(zckCtx *zck);
 int zck_get_full_hash_type(zckCtx *zck);
 /* Get digest size of overall hash type */
 int zck_get_full_digest_size(zckCtx *zck);
-/* Get index digest (uses overall hash type) */
-char *zck_get_index_digest(zckCtx *zck);
-/* Get index digest (uses overall hash type) */
-char *zck_get_data_digest(zckCtx *zck);
 /* Get chunk hash type */
 int zck_get_chunk_hash_type(zckCtx *zck);
 /* Get digest size of chunk hash type */

@@ -40,6 +40,47 @@
                             return False; \
                         }
 
+int PUBLIC zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t value) {
+    /* Set hash type */
+    if(option == ZCK_HASH_FULL_TYPE) {
+        return set_full_hash_type(zck, value);
+    } else if(option == ZCK_HASH_CHUNK_TYPE) {
+        return set_chunk_hash_type(zck, value);
+
+    /* Hash options */
+    } else if(option < 100) {
+        /* Currently no hash options other than setting hash type, so bail */
+        zck_log(ZCK_LOG_ERROR, "Unknown option %lu\n", value);
+        return False;
+
+    /* Compression options */
+    } else if(option < 2000) {
+        return comp_ioption(zck, option, value);
+
+    /* Unknown options */
+    } else {
+        zck_log(ZCK_LOG_ERROR, "Unknown option %lu\n", value);
+        return False;
+    }
+}
+
+int PUBLIC zck_set_soption(zckCtx *zck, zck_soption option, const void *value) {
+    /* Hash options */
+    if(option < 100) {
+        /* Currently no hash options other than setting hash type, so bail */
+        zck_log(ZCK_LOG_ERROR, "Unknown option %lu\n", value);
+        return False;
+
+    /* Compression options */
+    } else if(option < 2000) {
+        return comp_soption(zck, option, value);
+
+    /* Unknown options */
+    } else {
+        zck_log(ZCK_LOG_ERROR, "Unknown option %lu\n", value);
+        return False;
+    }
+}
 int PUBLIC zck_close(zckCtx *zck) {
     VALIDATE(zck);
 
@@ -147,15 +188,15 @@ zckCtx PUBLIC *zck_init_write (int dst_fd) {
 
     /* Set defaults */
 #ifdef ZCHUNK_ZSTD
-    if(!zck_set_compression_type(zck, ZCK_COMP_ZSTD))
+    if(!zck_set_ioption(zck, ZCK_COMP_TYPE, ZCK_COMP_ZSTD))
         goto iw_error;
 #else
-    if(!zck_set_compression_type(zck, ZCK_COMP_NONE))
+    if(!zck_set_ioption(zck, ZCK_COMP_TYPE, ZCK_COMP_NONE))
         goto iw_error;
 #endif
-    if(!zck_set_full_hash_type(zck, ZCK_HASH_SHA256))
+    if(!zck_set_ioption(zck, ZCK_HASH_FULL_TYPE, ZCK_HASH_SHA256))
         goto iw_error;
-    if(!zck_set_chunk_hash_type(zck, ZCK_HASH_SHA1))
+    if(!zck_set_ioption(zck, ZCK_HASH_CHUNK_TYPE, ZCK_HASH_SHA1))
         goto iw_error;
     zck->fd = dst_fd;
 
@@ -163,50 +204,6 @@ zckCtx PUBLIC *zck_init_write (int dst_fd) {
 iw_error:
     free(zck);
     return NULL;
-}
-
-int PUBLIC zck_set_full_hash_type(zckCtx *zck, int hash_type) {
-    VALIDATE(zck);
-    zck_log(ZCK_LOG_INFO, "Setting full hash to %s\n",
-            zck_hash_name_from_type(hash_type));
-    if(!zck_hash_setup(&(zck->hash_type), hash_type)) {
-        zck_log(ZCK_LOG_ERROR, "Unable to set full hash to %s\n",
-                zck_hash_name_from_type(hash_type));
-        return False;
-    }
-    zck_hash_close(&(zck->full_hash));
-    if(!zck_hash_init(&(zck->full_hash), &(zck->hash_type))) {
-        zck_log(ZCK_LOG_ERROR, "Unable initialize full hash\n");
-        return False;
-    }
-    return True;
-}
-
-int PUBLIC zck_set_chunk_hash_type(zckCtx *zck, int hash_type) {
-    VALIDATE(zck);
-    memset(&(zck->chunk_hash_type), 0, sizeof(zckHashType));
-    zck_log(ZCK_LOG_INFO, "Setting chunk hash to %s\n",
-            zck_hash_name_from_type(hash_type));
-    if(!zck_hash_setup(&(zck->chunk_hash_type), hash_type)) {
-        zck_log(ZCK_LOG_ERROR, "Unable to set chunk hash to %s\n",
-                zck_hash_name_from_type(hash_type));
-        return False;
-    }
-    zck->index.hash_type = zck->chunk_hash_type.type;
-    zck->index.digest_size = zck->chunk_hash_type.digest_size;
-    return True;
-}
-
-int PUBLIC zck_get_full_digest_size(zckCtx *zck) {
-    if(zck == NULL)
-        return -1;
-    return zck->hash_type.digest_size;
-}
-
-int PUBLIC zck_get_chunk_digest_size(zckCtx *zck) {
-    if(zck == NULL || zck->index.digest_size == 0)
-        return -1;
-    return zck->index.digest_size;
 }
 
 int PUBLIC zck_get_full_hash_type(zckCtx *zck) {
@@ -241,7 +238,7 @@ char *get_digest_string(const char *digest, int size) {
     return str;
 }
 
-char PUBLIC *zck_get_index_digest(zckCtx *zck) {
+char PUBLIC *zck_get_header_digest(zckCtx *zck) {
     if(zck == NULL)
         return NULL;
     return get_digest_string(zck->index_digest, zck->hash_type.digest_size);
@@ -251,6 +248,12 @@ char PUBLIC *zck_get_data_digest(zckCtx *zck) {
     if(zck == NULL)
         return NULL;
     return get_digest_string(zck->full_hash_digest, zck->hash_type.digest_size);
+}
+
+char PUBLIC *zck_get_chunk_digest(zckIndexItem *item) {
+    if(item == NULL)
+        return NULL;
+    return get_digest_string(item->digest, item->digest_size);
 }
 
 ssize_t PUBLIC zck_get_header_length(zckCtx *zck) {
@@ -322,10 +325,10 @@ int zck_import_dict(zckCtx *zck) {
     if(!zck_comp_reset(zck))
         return False;
     zck_log(ZCK_LOG_DEBUG, "Setting dict size\n");
-    if(!zck_set_comp_parameter(zck, ZCK_COMMON_DICT_SIZE, &size))
+    if(!zck_set_ioption(zck, ZCK_COMP_DICT_SIZE, size))
         return False;
     zck_log(ZCK_LOG_DEBUG, "Setting dict\n");
-    if(!zck_set_comp_parameter(zck, ZCK_COMMON_DICT, data))
+    if(!zck_set_soption(zck, ZCK_COMP_DICT, data))
         return False;
     if(!zck_comp_init(zck))
         return False;
@@ -386,16 +389,15 @@ int zck_validate_current_chunk(zckCtx *zck) {
                 "Unable to calculate %s checksum for chunk\n");
         return False;
     }
+    if(zck->comp.data_idx->comp_length == 0)
+        memset(digest, 0, zck->comp.data_idx->digest_size);
     zck_log(ZCK_LOG_DEBUG, "Checking chunk checksum\n");
-    zck_log(ZCK_LOG_DEBUG, "Expected chunk checksum: ");
-    for(int i=0; i<zck->chunk_hash_type.digest_size; i++)
-        zck_log(ZCK_LOG_DEBUG, "%02x",
-                (unsigned char)zck->comp.data_idx->digest[i]);
-    zck_log(ZCK_LOG_DEBUG, "\n");
-    zck_log(ZCK_LOG_DEBUG, "Calculated chunk checksum: ");
-    for(int i=0; i<zck->chunk_hash_type.digest_size; i++)
-        zck_log(ZCK_LOG_DEBUG, "%02x", (unsigned char)digest[i]);
-    zck_log(ZCK_LOG_DEBUG, "\n");
+    char *pdigest = zck_get_chunk_digest(zck->comp.data_idx);
+    zck_log(ZCK_LOG_DEBUG, "Expected chunk checksum: %s\n", pdigest);
+    free(pdigest);
+    pdigest = get_digest_string(digest, zck->comp.data_idx->digest_size);
+    zck_log(ZCK_LOG_DEBUG, "Calculated chunk checksum: %s\n", pdigest);
+    free(pdigest);
     if(memcmp(digest, zck->comp.data_idx->digest,
               zck->chunk_hash_type.digest_size) != 0) {
         free(digest);

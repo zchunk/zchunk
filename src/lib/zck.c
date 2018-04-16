@@ -85,6 +85,8 @@ int PUBLIC zck_close(zckCtx *zck) {
     VALIDATE(zck);
 
     if(zck->mode == ZCK_MODE_WRITE) {
+        if(zck_end_chunk(zck) < 0)
+            return False;
         zck_index_finalize(zck);
         zck_log(ZCK_LOG_DEBUG, "Writing header\n");
         if(!zck_write_header(zck))

@@ -127,7 +127,10 @@ int main (int argc, char *argv[]) {
     }
     if(in_size > 0) {
         data = malloc(in_size);
-        read(in_fd, data, in_size);
+        if(read(in_fd, data, in_size) < in_size) {
+            printf("Unable to read from input file\n");
+            exit(1);
+        }
         close(in_fd);
 
         /* Chunk based on string in argv[2] (Currently with ugly hack to group srpms together) */

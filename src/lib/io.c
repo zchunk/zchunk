@@ -78,7 +78,7 @@ int read_comp_size(int fd, size_t *val, size_t *length) {
     int i=0;
     for(char c=read_data(fd, data+i, 1); c < 128 && i < MAX_COMP_SIZE;
         i++,c=read_data(fd, data+i, 1));
-    if(i == MAX_COMP_SIZE && data[i] < 128) {
+    if(i == MAX_COMP_SIZE) {
         zck_log(ZCK_LOG_ERROR, "Number too large\n");
         *val = 0;
         return False;

@@ -123,81 +123,130 @@ typedef struct zckCtx {
     size_t data_size;
 } zckCtx;
 
-const char *zck_hash_name_from_type(int hash_type);
-int zck_get_tmp_fd();
-int zck_import_dict(zckCtx *zck);
-int zck_validate_file(zckCtx *zck);
-int zck_validate_current_chunk(zckCtx *zck);
+const char *zck_hash_name_from_type(int hash_type)
+    __attribute__ ((warn_unused_result));
+int zck_get_tmp_fd()
+    __attribute__ ((warn_unused_result));
+int zck_import_dict(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
+int zck_validate_file(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
+int zck_validate_current_chunk(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 void zck_clear_work_index(zckCtx *zck);
-char *get_digest_string(const char *digest, int size);
+char *get_digest_string(const char *digest, int size)
+    __attribute__ ((warn_unused_result));
 
 /* hash/hash.h */
-int zck_hash_setup(zckHashType *ht, int h);
-int zck_hash_init(zckHash *hash, zckHashType *hash_type);
-int zck_hash_update(zckHash *hash, const char *message, const size_t size);
-char *zck_hash_finalize(zckHash *hash);
+int zck_hash_setup(zckHashType *ht, int h)
+    __attribute__ ((warn_unused_result));
+int zck_hash_init(zckHash *hash, zckHashType *hash_type)
+    __attribute__ ((warn_unused_result));
+int zck_hash_update(zckHash *hash, const char *message, const size_t size)
+    __attribute__ ((warn_unused_result));
+char *zck_hash_finalize(zckHash *hash)
+    __attribute__ ((warn_unused_result));
 void zck_hash_close(zckHash *hash);
-const char *zck_hash_get_printable(const char *digest, zckHashType *type);
-int set_full_hash_type(zckCtx *zck, int hash_type);
-int set_chunk_hash_type(zckCtx *zck, int hash_type);
+const char *zck_hash_get_printable(const char *digest, zckHashType *type)
+    __attribute__ ((warn_unused_result));
+int set_full_hash_type(zckCtx *zck, int hash_type)
+    __attribute__ ((warn_unused_result));
+int set_chunk_hash_type(zckCtx *zck, int hash_type)
+    __attribute__ ((warn_unused_result));
 
 /* index/index.c */
-int zck_index_read(zckCtx *zck, char *data, size_t size);
-int zck_index_finalize(zckCtx *zck);
+int zck_index_read(zckCtx *zck, char *data, size_t size)
+    __attribute__ ((warn_unused_result));
+int zck_index_finalize(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 int zck_index_new_chunk(zckIndex *index, char *digest, int digest_size,
-                        size_t comp_size, size_t orig_size, int finished);
+                        size_t comp_size, size_t orig_size, int finished)
+    __attribute__ ((warn_unused_result));
 int zck_index_add_to_chunk(zckCtx *zck, char *data, size_t comp_size,
-                        size_t orig_size);
-int zck_index_finish_chunk(zckCtx *zck);
+                        size_t orig_size)
+    __attribute__ ((warn_unused_result));
+int zck_index_finish_chunk(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 void zck_index_clean(zckIndex *index);
 void zck_index_free(zckCtx *zck);
 void zck_index_free_item(zckIndexItem **item);
-int zck_write_index(zckCtx *zck);
-zckIndexItem *zck_get_index_of_loc(zckIndex *index, size_t loc);
+int zck_write_index(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
+zckIndexItem *zck_get_index_of_loc(zckIndex *index, size_t loc)
+    __attribute__ ((warn_unused_result));
 
 /* io.c */
-int seek_data(int fd, off_t offset, int whence);
-ssize_t tell_data(int fd);
-ssize_t read_data(int fd, char *data, size_t length);
-int write_data(int fd, const char *data, size_t length);
-int write_comp_size(int fd, size_t val);
-int read_comp_size(int fd, size_t *val, size_t *length);
-int chunks_from_temp(zckCtx *zck);
+int seek_data(int fd, off_t offset, int whence)
+    __attribute__ ((warn_unused_result));
+ssize_t tell_data(int fd)
+    __attribute__ ((warn_unused_result));
+ssize_t read_data(int fd, char *data, size_t length)
+    __attribute__ ((warn_unused_result));
+int write_data(int fd, const char *data, size_t length)
+    __attribute__ ((warn_unused_result));
+int write_comp_size(int fd, size_t val)
+    __attribute__ ((warn_unused_result));
+int read_comp_size(int fd, size_t *val, size_t *length)
+    __attribute__ ((warn_unused_result));
+int chunks_from_temp(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 
 /* header.c */
-int zck_read_initial(zckCtx *zck);
-int zck_read_index_hash(zckCtx *zck);
-int zck_read_ct_is(zckCtx *zck);
-int zck_read_index(zckCtx *zck);
-int zck_read_header(zckCtx *zck);
-int zck_header_create(zckCtx *zck);
-int zck_write_header(zckCtx *zck);
+int zck_read_initial(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
+int zck_read_index_hash(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
+int zck_read_ct_is(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
+int zck_read_index(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
+int zck_read_header(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
+int zck_header_create(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
+int zck_write_header(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 
 /* comp/comp.c */
-int zck_comp_add_to_dc(zckComp *comp, const char *src, size_t src_size);
-int zck_comp_add_to_data(zckComp *comp, const char *src, size_t src_size);
-size_t zck_comp_read_from_dc(zckComp *comp, char *dst, size_t dst_size);
-ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, int use_dict);
-int comp_ioption(zckCtx *zck, zck_ioption option, ssize_t value);
-int comp_soption(zckCtx *zck, zck_soption option, const void *value);
+int zck_comp_add_to_dc(zckComp *comp, const char *src, size_t src_size)
+    __attribute__ ((warn_unused_result));
+int zck_comp_add_to_data(zckComp *comp, const char *src, size_t src_size)
+    __attribute__ ((warn_unused_result));
+size_t zck_comp_read_from_dc(zckComp *comp, char *dst, size_t dst_size)
+    __attribute__ ((warn_unused_result));
+ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, int use_dict)
+    __attribute__ ((warn_unused_result));
+int comp_ioption(zckCtx *zck, zck_ioption option, ssize_t value)
+    __attribute__ ((warn_unused_result));
+int comp_soption(zckCtx *zck, zck_soption option, const void *value)
+    __attribute__ ((warn_unused_result));
 
 /* dl/range.c */
-char *zck_range_get_char(zckRangeItem **range, int max_ranges);
-int zck_range_add(zckRange *info, zckIndexItem *idx, zckCtx *zck);
+char *zck_range_get_char(zckRangeItem **range, int max_ranges)
+    __attribute__ ((warn_unused_result));
+int zck_range_add(zckRange *info, zckIndexItem *idx, zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 
 /* dl/multipart.c */
-size_t zck_multipart_extract(zckDL *dl, char *b, size_t l);
-size_t zck_multipart_get_boundary(zckDL *dl, char *b, size_t size);
+size_t zck_multipart_extract(zckDL *dl, char *b, size_t l)
+    __attribute__ ((warn_unused_result));
+size_t zck_multipart_get_boundary(zckDL *dl, char *b, size_t size)
+    __attribute__ ((warn_unused_result));
 
 /* dl/dl.c */
-int zck_dl_write_range(zckDL *dl, const char *at, size_t length);
-int zck_dl_range_chk_chunk(zckDL *dl, char *url, int is_chunk);
+int zck_dl_write_range(zckDL *dl, const char *at, size_t length)
+    __attribute__ ((warn_unused_result));
+int zck_dl_range_chk_chunk(zckDL *dl, char *url, int is_chunk)
+    __attribute__ ((warn_unused_result));
 
 /* compint.c */
-int zck_compint_from_int(char *compint, int val, size_t *length);
-int zck_compint_from_size(char *compint, size_t val, size_t *length);
-int zck_compint_to_int(int *val, const char *compint, size_t *length);
-int zck_compint_to_size(size_t *val, const char *compint, size_t *length);
+int zck_compint_from_int(char *compint, int val, size_t *length)
+    __attribute__ ((warn_unused_result));
+void zck_compint_from_size(char *compint, size_t val, size_t *length);
+int zck_compint_to_int(int *val, const char *compint, size_t *length)
+    __attribute__ ((warn_unused_result));
+int zck_compint_to_size(size_t *val, const char *compint, size_t *length)
+    __attribute__ ((warn_unused_result));
 
 
 /* log.c */

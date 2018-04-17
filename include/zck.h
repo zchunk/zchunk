@@ -68,22 +68,27 @@ typedef struct zckIndex {
  * Reading a zchunk file
  *******************************************************************/
 /* Initialize zchunk for reading */
-zckCtx *zck_init_read (int src_fd);
+zckCtx *zck_init_read (int src_fd)
+    __attribute__ ((warn_unused_result));
 /* Decompress dst_size bytes from zchunk file to dst, while verifying hashes */
-ssize_t zck_read(zckCtx *zck, char *dst, size_t dst_size);
+ssize_t zck_read(zckCtx *zck, char *dst, size_t dst_size)
+    __attribute__ ((warn_unused_result));
 
 
 /*******************************************************************
  * Writing a zchunk file
  *******************************************************************/
 /* Initialize zchunk for writing */
-zckCtx *zck_init_write (int dst_fd);
+zckCtx *zck_init_write (int dst_fd)
+    __attribute__ ((warn_unused_result));
 /* Compress data src of size src_size, and write to zchunk file
  * Due to the nature of zchunk files and how they are built, no data will
  * actually appear in the zchunk file until zck_close() is called */
-ssize_t zck_write(zckCtx *zck, const char *src, const size_t src_size);
+ssize_t zck_write(zckCtx *zck, const char *src, const size_t src_size)
+    __attribute__ ((warn_unused_result));
 /* Create a chunk boundary */
-ssize_t zck_end_chunk(zckCtx *zck);
+ssize_t zck_end_chunk(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 
 
 /*******************************************************************
@@ -91,7 +96,8 @@ ssize_t zck_end_chunk(zckCtx *zck);
  *******************************************************************/
 /* Close a zchunk file so it may no longer be read from or written to. The
  * context still contains information about the file */
-int zck_close(zckCtx *zck);
+int zck_close(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 /* Free a zchunk context.  You must pass the address of the context, and the
  * context will automatically be set to NULL after it is freed */
 void zck_free(zckCtx **zck);
@@ -101,9 +107,11 @@ void zck_free(zckCtx **zck);
  * Options
  *******************************************************************/
 /* Set string option */
-int zck_set_soption(zckCtx *zck, zck_soption option, const void *value);
+int zck_set_soption(zckCtx *zck, zck_soption option, const void *value)
+    __attribute__ ((warn_unused_result));
 /* Set integer option */
-int zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t value);
+int zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t value)
+    __attribute__ ((warn_unused_result));
 
 
 /*******************************************************************
@@ -124,70 +132,91 @@ void zck_set_log_level(zck_log_type ll);
  * Advanced miscellaneous zchunk functions
  *******************************************************************/
 /* Initialize zchunk context */
-zckCtx *zck_create();
+zckCtx *zck_create()
+    __attribute__ ((warn_unused_result));
 /* Get header length (header + index) */
-ssize_t zck_get_header_length(zckCtx *zck);
+ssize_t zck_get_header_length(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 /* Get data length */
-ssize_t zck_get_data_length(zckCtx *zck);
+ssize_t zck_get_data_length(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 /* Get index digest */
-char *zck_get_header_digest(zckCtx *zck);
+char *zck_get_header_digest(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 /* Get data digest */
-char *zck_get_data_digest(zckCtx *zck);
+char *zck_get_data_digest(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 /* Get temporary fd that will disappear when fd is closed */
-int zck_get_tmp_fd();
+int zck_get_tmp_fd()
+    __attribute__ ((warn_unused_result));
 
 
 /*******************************************************************
  * Advanced compression functions
  *******************************************************************/
 /* Get name of compression type */
-const char *zck_comp_name_from_type(int comp_type);
+const char *zck_comp_name_from_type(int comp_type)
+    __attribute__ ((warn_unused_result));
 /* Initialize compression.  Compression type and parameters *must* be done
  * before this is called */
-int zck_comp_init(zckCtx *zck);
+int zck_comp_init(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 /* Release compression resources.  After this is run, you may change compression
  * type and parameters */
-int zck_comp_close(zckCtx *zck);
+int zck_comp_close(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 /* Reset compression configuration without losing buffered compressed data.
  * After this is run, you may change compression type and parameters */
-int zck_comp_reset(zckCtx *zck);
+int zck_comp_reset(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 
 
 /*******************************************************************
  * Advanced zchunk reading functions
  *******************************************************************/
 /* Initialize zchunk for reading using advanced options */
-zckCtx *zck_init_adv_read (int src_fd);
+zckCtx *zck_init_adv_read (int src_fd)
+    __attribute__ ((warn_unused_result));
 /* Read zchunk header */
-int zck_read_header(zckCtx *zck);
+int zck_read_header(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 
 
 /*******************************************************************
  * Indexes
  *******************************************************************/
 /* Get index count */
-ssize_t zck_get_index_count(zckCtx *zck);
+ssize_t zck_get_index_count(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 /* Get index */
-zckIndex *zck_get_index(zckCtx *zck);
+zckIndex *zck_get_index(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 /* Get chunk digest */
-char *zck_get_chunk_digest(zckIndexItem *item);
+char *zck_get_chunk_digest(zckIndexItem *item)
+    __attribute__ ((warn_unused_result));
 
 
 /*******************************************************************
  * Advanced hash functions
  *******************************************************************/
 /* Get overall hash type */
-int zck_get_full_hash_type(zckCtx *zck);
+int zck_get_full_hash_type(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 /* Get digest size of overall hash type */
-int zck_get_full_digest_size(zckCtx *zck);
+int zck_get_full_digest_size(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 /* Get chunk hash type */
-int zck_get_chunk_hash_type(zckCtx *zck);
+int zck_get_chunk_hash_type(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 /* Get digest size of chunk hash type */
-int zck_get_chunk_digest_size(zckCtx *zck);
+int zck_get_chunk_digest_size(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 /* Get name of hash type */
-const char *zck_hash_name_from_type(int hash_type);
+const char *zck_hash_name_from_type(int hash_type)
+    __attribute__ ((warn_unused_result));
 /* Check data hash */
-int zck_hash_check_data(zckCtx *zck, int dst_fd);
+int zck_hash_check_data(zckCtx *zck, int dst_fd)
+    __attribute__ ((warn_unused_result));
 
 
 /*******************************************************************
@@ -228,14 +257,18 @@ typedef struct zckDL {
  * Ranges
  *******************************************************************/
 /* Update info with the maximum number of ranges in a single request */
-int zck_range_calc_segments(zckRange *info, unsigned int max_ranges);
+int zck_range_calc_segments(zckRange *info, unsigned int max_ranges)
+    __attribute__ ((warn_unused_result));
 /* Get any matching chunks from src and put them in the right place in tgt */
-int zck_dl_copy_src_chunks(zckRange *info, zckCtx *src, zckCtx *tgt);
+int zck_dl_copy_src_chunks(zckRange *info, zckCtx *src, zckCtx *tgt)
+    __attribute__ ((warn_unused_result));
 /* Get index of chunks not available in src, and put them in info */
-int zck_range_get_need_dl(zckRange *info, zckCtx *zck_src, zckCtx *zck_tgt);
+int zck_range_get_need_dl(zckRange *info, zckCtx *zck_src, zckCtx *zck_tgt)
+    __attribute__ ((warn_unused_result));
 /* Get array of range request strings.  ra must be allocated to size
  * info->segments, and the strings must be freed by the caller after use */
-int zck_range_get_array(zckRange *info, char **ra);
+int zck_range_get_array(zckRange *info, char **ra)
+    __attribute__ ((warn_unused_result));
 /* Free any resources in zckRange */
 void zck_range_close(zckRange *info);
 
@@ -251,19 +284,25 @@ void zck_dl_global_init();
 void zck_dl_global_cleanup();
 
 /* Initialize zchunk download context */
-zckDL *zck_dl_init();
+zckDL *zck_dl_init()
+    __attribute__ ((warn_unused_result));
 /* Free zchunk download context */
 void zck_dl_free(zckDL **dl);
 /* Clear regex used for extracting download ranges from multipart download */
 void zck_dl_clear_regex(zckDL *dl);
 /* Download and process the header from url */
-int zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url);
+int zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url)
+    __attribute__ ((warn_unused_result));
 /* Get number of bytes downloaded using download context */
-size_t zck_dl_get_bytes_downloaded(zckDL *dl);
+size_t zck_dl_get_bytes_downloaded(zckDL *dl)
+    __attribute__ ((warn_unused_result));
 /* Get number of bytes uploaded using download context */
-size_t zck_dl_get_bytes_uploaded(zckDL *dl);
+size_t zck_dl_get_bytes_uploaded(zckDL *dl)
+    __attribute__ ((warn_unused_result));
 /* Download ranges specified in dl->info from url */
-int zck_dl_range(zckDL *dl, char *url);
+int zck_dl_range(zckDL *dl, char *url)
+    __attribute__ ((warn_unused_result));
 /* Return string with range request from start to end (inclusive) */
-char *zck_dl_get_range(unsigned int start, unsigned int end);
+char *zck_dl_get_range(unsigned int start, unsigned int end)
+    __attribute__ ((warn_unused_result));
 #endif

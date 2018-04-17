@@ -1,3 +1,4 @@
+add_global_arguments('-Wunused-result', language : 'c')
 subdir('lib')
 executable('zck', ['zck.c'], include_directories: inc, link_with: zcklib, install: true)
 executable('unzck', ['unzck.c'], include_directories: inc, link_with: zcklib, install: true)

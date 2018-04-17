@@ -77,7 +77,7 @@ int main (int argc, char *argv[]) {
         if(read == 0)
             break;
         if(read > BLK_SIZE)
-            printf("read: %lu\n", read);
+            printf("read: %lu\n", (long unsigned)read);
         if(write(dst_fd, data, read) != read) {
             printf("Error writing to %s\n", out_name);
             goto error;

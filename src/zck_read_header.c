@@ -63,7 +63,7 @@ int main (int argc, char *argv[]) {
     digest = zck_get_data_digest(zck);
     printf("Data checksum: %s\n", digest);
     free(digest);
-    printf("Index count: %lu\n", zck_get_index_count(zck));
+    printf("Index count: %lu\n", (long unsigned)zck_get_index_count(zck));
     printf("Chunk checksum type: %s\n", zck_hash_name_from_type(zck_get_chunk_hash_type(zck)));
     zckIndex *idxi = zck_get_index(zck);
     if(idxi == NULL)
@@ -73,7 +73,9 @@ int main (int argc, char *argv[]) {
         char *digest = zck_get_chunk_digest(idx);
         if(digest == NULL)
             exit(1);
-        printf("%s %12lu %12lu %12lu\n", digest, idx->start + zck_get_header_length(zck), idx->comp_length, idx->length);
+        printf("%s %12lu %12lu %12lu\n", digest,
+               (long unsigned)(idx->start + zck_get_header_length(zck)),
+               (long unsigned)idx->comp_length, (long unsigned)idx->length);
         free(digest);
         idx = idx->next;
     }

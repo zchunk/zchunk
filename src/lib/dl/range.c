@@ -197,7 +197,8 @@ char *zck_range_get_char(zckRangeItem **range, int max_ranges) {
     int count=0;
     while(*range) {
         int length = snprintf(output+loc, buf_size-loc, "%lu-%lu,",
-                              (*range)->start, (*range)->end);
+                              (long unsigned)(*range)->start,
+                              (long unsigned)(*range)->end);
         if(length < 0) {
             zck_log(ZCK_LOG_ERROR, "Unable to get range: %s\n",
                     strerror(errno));

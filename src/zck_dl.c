@@ -94,7 +94,8 @@ int main (int argc, char *argv[]) {
         exit(1);
 
 
-    printf("Downloaded %lu bytes\n", zck_dl_get_bytes_downloaded(dl));
+    printf("Downloaded %lu bytes\n",
+           (long unsigned)zck_dl_get_bytes_downloaded(dl));
     int exit_val = 0;
     switch(zck_hash_check_data(dl->zck, dl->dst_fd)) {
         case -1:

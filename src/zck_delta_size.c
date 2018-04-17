@@ -108,8 +108,10 @@ int main (int argc, char *argv[]) {
         total_size += tgt_idx->comp_length;
         tgt_idx = tgt_idx->next;
     }
-    printf("Would download %li of %li bytes\n", dl_size, total_size);
-    printf("Matched %li of %lu chunks\n", matched_chunks, zck_get_index_count(zck_tgt));
+    printf("Would download %li of %li bytes\n", (long)dl_size,
+           (long)total_size);
+    printf("Matched %li of %lu chunks\n", (long)matched_chunks,
+           (long unsigned)zck_get_index_count(zck_tgt));
     zck_free(&zck_tgt);
     zck_free(&zck_src);
 }

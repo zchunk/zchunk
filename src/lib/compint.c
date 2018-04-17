@@ -29,7 +29,7 @@
 #include <zck.h>
 #include "zck_private.h"
 
-int zck_compint_from_size(char *compint, size_t val, size_t *length) {
+void zck_compint_from_size(char *compint, size_t val, size_t *length) {
     for(unsigned char *i = (unsigned char *)compint; ; i++) {
         i[0] = val % 128;
         val = (val - i[0]) / 128;
@@ -39,7 +39,7 @@ int zck_compint_from_size(char *compint, size_t val, size_t *length) {
             break;
         }
     }
-    return True;
+    return;
 }
 
 int zck_compint_to_size(size_t *val, const char *compint, size_t *length) {
@@ -81,7 +81,8 @@ int zck_compint_from_int(char *compint, int val, size_t *length) {
         return False;
     }
 
-    return zck_compint_from_size(compint, (size_t)val, length);
+    zck_compint_from_size(compint, (size_t)val, length);
+    return True;
 }
 
 int zck_compint_to_int(int *val, const char *compint, size_t *length) {

@@ -225,10 +225,7 @@ int zck_header_create(zckCtx *zck) {
     size_t length = 0;
     memcpy(header+length, "\0ZCK1", 5);
     length += 5;
-    if(!zck_compint_from_size(header+length, zck->hash_type.type, &length)) {
-        free(header);
-        return False;
-    }
+    zck_compint_from_size(header+length, zck->hash_type.type, &length);
 
     /* If we have the digest, write it in, otherwise write zeros */
     if(zck->index_digest)
@@ -241,10 +238,7 @@ int zck_header_create(zckCtx *zck) {
         free(header);
         return False;
     }
-    if(!zck_compint_from_size(header+length, zck->index_size, &length)) {
-        free(header);
-        return False;
-    }
+    zck_compint_from_size(header+length, zck->index_size, &length);
     header = realloc(header, length);
     if(header == NULL) {
         zck_log(ZCK_LOG_ERROR, "Unable to reallocate %lu bytes\n", length);

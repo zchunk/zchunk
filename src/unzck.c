@@ -83,13 +83,14 @@ int main (int argc, char *argv[]) {
             goto error;
         }
     }
+    if(!zck_close(zck))
+        goto error;
     good_exit = True;
 error:
     free(data);
     if(!good_exit)
         unlink(out_name);
     free(out_name);
-    zck_close(zck);
     close(src_fd);
     close(dst_fd);
     zck_free(&zck);

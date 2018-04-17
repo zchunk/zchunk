@@ -69,7 +69,11 @@ int main (int argc, char *argv[]) {
             exit(1);
         }
         dict = malloc(dict_size);
-        read(dict_fd, dict, dict_size);
+        if(read(dict_fd, dict, dict_size) < dict_size) {
+            free(dict);
+            perror("Error reading dict:");
+            exit(1);
+        }
         close(dict_fd);
     }
 

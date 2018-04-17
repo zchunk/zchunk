@@ -52,7 +52,8 @@ int main (int argc, char *argv[]) {
         perror("Unable to read header\n");
         exit(1);
     }
-    zck_close(zck);
+    if(!zck_close(zck))
+        exit(1);
     close(src_fd);
 
     printf("Overall checksum type: %s\n", zck_hash_name_from_type(zck_get_full_hash_type(zck)));

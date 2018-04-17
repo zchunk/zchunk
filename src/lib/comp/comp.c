@@ -115,7 +115,11 @@ int zck_comp_init(zckCtx *zck) {
                 free(dst);
                 return False;
             }
-            zck_index_add_to_chunk(zck, dst, dst_size, zck->comp.dict_size);
+            if(!zck_index_add_to_chunk(zck, dst, dst_size,
+                                       zck->comp.dict_size)) {
+                free(dst);
+                return False;
+            }
             free(dst);
             dst = NULL;
             dst_size = 0;
@@ -126,11 +130,15 @@ int zck_comp_init(zckCtx *zck) {
                 free(dst);
                 return False;
             }
-            zck_index_add_to_chunk(zck, dst, dst_size, 0);
-            zck_index_finish_chunk(zck);
+            if(!zck_index_add_to_chunk(zck, dst, dst_size, 0) ||
+               !zck_index_finish_chunk(zck)) {
+                free(dst);
+                return False;
+            }
             free(dst);
         } else {
-            zck_index_finish_chunk(zck);
+            if(!zck_index_finish_chunk(zck))
+                return False;
         }
     }
     free(zck->comp.dict);
@@ -394,7 +402,8 @@ ssize_t comp_end_dchunk(zckCtx *zck, int use_dict, size_t fd_size) {
         return -1;
     zck->comp.data_loc = 0;
     zck->comp.data_idx = zck->comp.data_idx->next;
-    zck_hash_init(&(zck->check_chunk_hash), &(zck->chunk_hash_type));
+    if(!zck_hash_init(&(zck->check_chunk_hash), &(zck->chunk_hash_type)))
+        return -1;
     return rb;
 }
 
@@ -445,7 +454,8 @@ ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, int use_dict) {
         /* End decompression chunk if we're on a chunk boundary */
         if(zck->comp.data_idx == NULL) {
             zck->comp.data_idx = zck->index.first;
-            zck_hash_init(&(zck->check_chunk_hash), &(zck->chunk_hash_type));
+            if(!zck_hash_init(&(zck->check_chunk_hash), &(zck->chunk_hash_type)))
+                goto zck_hash_error;
             zck->comp.data_loc = 0;
         }
         if(zck->comp.data_loc == zck->comp.data_idx->comp_length) {
@@ -480,9 +490,9 @@ ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, int use_dict) {
             zck_log(ZCK_LOG_DEBUG, "EOF\n");
             finished_rd = True;
         }
-        zck_hash_update(&(zck->check_full_hash), src, rb);
-        zck_hash_update(&(zck->check_chunk_hash), src, rb);
-        if(!zck_comp_add_to_data(&(zck->comp), src, rb))
+        if(!zck_hash_update(&(zck->check_full_hash), src, rb) ||
+           !zck_hash_update(&(zck->check_chunk_hash), src, rb) ||
+           !zck_comp_add_to_data(&(zck->comp), src, rb))
             goto zck_read_error;
     }
     free(src);

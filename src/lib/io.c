@@ -69,8 +69,7 @@ int write_data(int fd, const char *data, size_t length) {
 int write_comp_size(int fd, size_t val) {
     char data[sizeof(size_t)*2] = {0};
     size_t length = 0;
-    if(!zck_compint_from_size(data, val, &length))
-        return False;
+    zck_compint_from_size(data, val, &length);
     return write_data(fd, data, length);
 }
 

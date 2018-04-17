@@ -87,7 +87,8 @@ int PUBLIC zck_close(zckCtx *zck) {
     if(zck->mode == ZCK_MODE_WRITE) {
         if(zck_end_chunk(zck) < 0)
             return False;
-        zck_index_finalize(zck);
+        if(!zck_index_finalize(zck))
+            return False;
         zck_log(ZCK_LOG_DEBUG, "Writing header\n");
         if(!zck_write_header(zck))
             return False;
@@ -98,7 +99,8 @@ int PUBLIC zck_close(zckCtx *zck) {
         if(!chunks_from_temp(zck))
             return False;
         zck_log(ZCK_LOG_DEBUG, "Finished writing file, cleaning up\n");
-        zck_comp_close(zck);
+        if(!zck_comp_close(zck))
+            return False;
         if(zck->temp_fd) {
             close(zck->temp_fd);
             zck->temp_fd = 0;
@@ -120,7 +122,8 @@ void zck_clear(zckCtx *zck) {
     if(zck == NULL)
         return;
     zck_index_free(zck);
-    zck_comp_close(zck);
+    if(!zck_comp_close(zck))
+        zck_log(ZCK_LOG_WARNING, "Unable to close compression\n");
     zck_hash_close(&(zck->full_hash));
     zck_hash_close(&(zck->check_full_hash));
     zck_hash_close(&(zck->check_chunk_hash));

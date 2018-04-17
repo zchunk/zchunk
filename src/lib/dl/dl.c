@@ -383,7 +383,8 @@ int zck_dl_bytes(zckDL *dl, char *url, size_t bytes, size_t start,
         idx.start = *buffer_len;
         idx.comp_length = start+bytes-*buffer_len;
         zck_range_close(&(dl->info));
-        zck_range_add(&(dl->info), &idx, NULL);
+        if(!zck_range_add(&(dl->info), &idx, NULL))
+            return False;
         if(!zck_dl_range_chk_chunk(dl, url, 0))
             return False;
         zck_range_close(&(dl->info));

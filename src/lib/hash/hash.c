@@ -150,7 +150,8 @@ int PUBLIC zck_hash_check_data(zckCtx *zck, int dst_fd) {
                 rb = to_read;
             if(!read_data(dst_fd, buf, rb))
                 return -1;
-            zck_hash_update(&(zck->check_full_hash), buf, rb);
+            if(!zck_hash_update(&(zck->check_full_hash), buf, rb))
+                return -1;
             to_read -= rb;
         }
         idx = idx->next;

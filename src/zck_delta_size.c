@@ -51,7 +51,8 @@ int main (int argc, char *argv[]) {
         printf("Unable to open %s\n", argv[1]);
         exit(1);
     }
-    zck_close(zck_src);
+    if(!zck_close(zck_src))
+        exit(1);
 
     int tgt_fd = open(argv[2], O_RDONLY);
     if(tgt_fd < 0) {
@@ -64,7 +65,8 @@ int main (int argc, char *argv[]) {
         printf("Unable to open %s\n", argv[2]);
         exit(1);
     }
-    zck_close(zck_tgt);
+    if(!zck_close(zck_tgt))
+        exit(1);
 
     if(zck_get_chunk_hash_type(zck_tgt) != zck_get_chunk_hash_type(zck_src)) {
         printf("ERROR: Chunk hash types don't match:\n");

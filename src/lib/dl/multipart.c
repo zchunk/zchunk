@@ -169,7 +169,7 @@ size_t zck_multipart_extract(zckDL *dl, char *b, size_t l) {
             continue;
 
         /* Run regex against download range string */
-        regmatch_t match[4] = {0};
+        regmatch_t match[4] = {{0}};
         if(regexec(dl->priv->dl_regex, i, 3, match, 0) != 0) {
             if(regexec(dl->priv->end_regex, i, 3, match, 0) != 0)
                 zck_log(ZCK_LOG_ERROR, "Unable to find multipart download range\n");
@@ -228,7 +228,7 @@ size_t zck_multipart_get_boundary(zckDL *dl, char *b, size_t size) {
     memcpy(buf, b, size);
 
     /* Check whether this header contains the boundary and set it if it does */
-    regmatch_t match[2] = {0};
+    regmatch_t match[2] = {{0}};
     if(regexec(dl->priv->hdr_regex, buf, 2, match, 0) == 0) {
         reset_mp(dl->priv->mp);
         char *boundary = zmalloc(match[1].rm_eo - match[1].rm_so + 1);

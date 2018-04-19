@@ -176,7 +176,7 @@ zckCtx PUBLIC *zck_init_read (int src_fd) {
         return NULL;
 
     if(!zck_read_header(zck))
-        return False;
+        return NULL;
 
     return zck;
 }

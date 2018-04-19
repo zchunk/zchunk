@@ -91,7 +91,7 @@ int zck_read_initial(zckCtx *zck) {
     return True;
 }
 
-int zck_read_index_hash(zckCtx *zck) {
+int zck_read_header_hash(zckCtx *zck) {
     VALIDATE_READ(zck);
 
     if(zck->header_string == NULL) {
@@ -203,7 +203,7 @@ int zck_read_header(zckCtx *zck) {
 
     if(!zck_read_initial(zck))
         return False;
-    if(!zck_read_index_hash(zck))
+    if(!zck_read_header_hash(zck))
         return False;
     if(!zck_read_ct_is(zck))
         return False;

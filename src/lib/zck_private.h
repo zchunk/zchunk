@@ -194,7 +194,7 @@ int chunks_from_temp(zckCtx *zck)
 /* header.c */
 int zck_read_initial(zckCtx *zck)
     __attribute__ ((warn_unused_result));
-int zck_read_index_hash(zckCtx *zck)
+int zck_read_header_hash(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 int zck_read_ct_is(zckCtx *zck)
     __attribute__ ((warn_unused_result));

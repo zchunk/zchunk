@@ -458,7 +458,7 @@ int PUBLIC zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url) {
                      start, &buffer_len))
         return False;
     /* Read and store the index hash */
-    if(!zck_read_index_hash(zck))
+    if(!zck_read_header_hash(zck))
         return False;
     start += zck->hash_type.digest_size;
     zck_log(ZCK_LOG_DEBUG, "Header hash: (%s)",

@@ -42,7 +42,6 @@ typedef struct zckHash {
     void *ctx;
 } zckHash;
 
-/*typedef struct zckIndexItem zckIndexItem;*/
 typedef void CURL;
 
 typedef struct zckMP {
@@ -97,27 +96,51 @@ typedef struct zckComp {
     fcclose close;
 } zckComp;
 
+typedef struct zckSig {
+    zckHashType hash_type;
+    size_t length;
+    char *signature;
+    void *ctx;
+} zckSig;
+
+typedef struct zckSigCollection {
+    int count;
+    zckSig *sig;
+} zckSigCollection;
+
 typedef struct zckCtx {
     int temp_fd;
     int fd;
     int mode;
 
     char *full_hash_digest;
+    char *header_digest;
+    char *hdr_buf;
+    size_t hdr_buf_size;
+    size_t hdr_buf_read;
     char *header_string;
     size_t header_size;
+    char *sig_string;
+    size_t sig_size;
     char *index_string;
     size_t index_size;
+    size_t data_offset;
     zckIndex index;
     zckIndexItem *work_index_item;
     zckHash work_index_hash;
+    size_t stream;
+    int has_streams;
 
-    char *index_digest;
+    char *read_buf;
+    size_t read_buf_size;
+
     zckHash full_hash;
     zckHash check_full_hash;
     zckHash check_chunk_hash;
     zckComp comp;
     zckHashType hash_type;
     zckHashType chunk_hash_type;
+    zckSigCollection sigs;
 
     char *data;
     size_t data_size;
@@ -132,6 +155,8 @@ int zck_import_dict(zckCtx *zck)
 int zck_validate_file(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 int zck_validate_current_chunk(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
+int zck_validate_header(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 void zck_clear_work_index(zckCtx *zck);
 char *get_digest_string(const char *digest, int size)
@@ -190,6 +215,12 @@ int read_comp_size(int fd, size_t *val, size_t *length)
     __attribute__ ((warn_unused_result));
 int chunks_from_temp(zckCtx *zck)
     __attribute__ ((warn_unused_result));
+ssize_t read_header(zckCtx *zck, char **data, size_t length)
+    __attribute__ ((warn_unused_result));
+int read_header_unread(zckCtx *zck, size_t length)
+    __attribute__ ((warn_unused_result));
+int close_read_header(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 
 /* header.c */
 int zck_read_initial(zckCtx *zck)
@@ -198,13 +229,21 @@ int zck_read_header_hash(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 int zck_read_ct_is(zckCtx *zck)
     __attribute__ ((warn_unused_result));
+int zck_header_hash(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 int zck_read_index(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
+int zck_read_sig(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 int zck_read_header(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 int zck_header_create(zckCtx *zck)
     __attribute__ ((warn_unused_result));
+int zck_sig_create(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 int zck_write_header(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
+int zck_write_sigs(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 
 /* comp/comp.c */
@@ -240,12 +279,12 @@ int zck_dl_range_chk_chunk(zckDL *dl, char *url, int is_chunk)
     __attribute__ ((warn_unused_result));
 
 /* compint.c */
-int zck_compint_from_int(char *compint, int val, size_t *length)
+int compint_from_int(char *compint, int val, size_t *length)
     __attribute__ ((warn_unused_result));
-void zck_compint_from_size(char *compint, size_t val, size_t *length);
-int zck_compint_to_int(int *val, const char *compint, size_t *length)
+void compint_from_size(char *compint, size_t val, size_t *length);
+int compint_to_int(int *val, const char *compint, size_t *length)
     __attribute__ ((warn_unused_result));
-int zck_compint_to_size(size_t *val, const char *compint, size_t *length)
+int compint_to_size(size_t *val, const char *compint, size_t *length)
     __attribute__ ((warn_unused_result));
 
 

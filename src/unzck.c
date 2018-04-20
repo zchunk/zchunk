@@ -64,36 +64,37 @@ int main (int argc, char *argv[]) {
         exit(1);
     }
 
+    int good_exit = False;
+
     zckCtx *zck = zck_init_read(src_fd);
     if(zck == NULL)
-        exit(1);
+        goto error1;
 
     char *data = malloc(BLK_SIZE);
-    int good_exit = False;
     while(True) {
         ssize_t read = zck_read(zck, data, BLK_SIZE);
         if(read < 0)
-            goto error;
+            goto error2;
         if(read == 0)
             break;
-        if(read > BLK_SIZE)
-            printf("read: %lu\n", (long unsigned)read);
         if(write(dst_fd, data, read) != read) {
             printf("Error writing to %s\n", out_name);
-            goto error;
+            goto error2;
         }
     }
     if(!zck_close(zck))
-        goto error;
+        goto error2;
+
     good_exit = True;
-error:
+error2:
     free(data);
+    zck_free(&zck);
+error1:
     if(!good_exit)
         unlink(out_name);
     free(out_name);
     close(src_fd);
     close(dst_fd);
-    zck_free(&zck);
     if(!good_exit)
         exit(1);
     exit(0);

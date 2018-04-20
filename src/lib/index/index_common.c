@@ -88,8 +88,20 @@ void zck_index_free(zckCtx *zck) {
         free(zck->header_string);
         zck->header_string = NULL;
     }
-    if(zck->index_digest) {
-        free(zck->index_digest);
-        zck->index_digest = NULL;
+    zck->header_size = 0;
+    if(zck->sig_string) {
+        free(zck->sig_string);
+        zck->sig_string = NULL;
+    }
+    zck->sig_size = 0;
+    if(zck->hdr_buf) {
+        free(zck->hdr_buf);
+        zck->hdr_buf = NULL;
+    }
+    zck->hdr_buf_read = 0;
+    zck->hdr_buf_size = 0;
+    if(zck->header_digest) {
+        free(zck->header_digest);
+        zck->header_digest = NULL;
     }
 }

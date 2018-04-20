@@ -33,6 +33,57 @@
 
 #include "zck_private.h"
 
+int read_header_unread(zckCtx *zck, size_t length) {
+    if(zck->hdr_buf_size < length) {
+        zck_log(ZCK_LOG_ERROR,
+                "Attempting to unread %lu bytes while only %lu were read\n",
+                length, zck->hdr_buf_size);
+        return False;
+    }
+    zck->hdr_buf_size -= length;
+    return True;
+}
+
+ssize_t read_header(zckCtx *zck, char **data, size_t length) {
+    while(zck->hdr_buf_size + length > zck->hdr_buf_read) {
+        zck->hdr_buf = realloc(zck->hdr_buf, zck->hdr_buf_size + length);
+        if(zck->hdr_buf == NULL) {
+            zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
+                    zck->hdr_buf_size + length);
+            return -1;
+        }
+        ssize_t rd = read_data(zck->fd, zck->hdr_buf + zck->hdr_buf_read,
+                               zck->hdr_buf_size + length - zck->hdr_buf_read);
+        if(rd < 0)
+            return -1;
+        zck->hdr_buf_read = zck->hdr_buf_read + rd;
+        length = zck->hdr_buf_read - zck->hdr_buf_size;
+    }
+    *data = zck->hdr_buf + zck->hdr_buf_size;
+    zck->hdr_buf_size += length;
+    return length;
+}
+
+int close_read_header(zckCtx *zck) {
+    if(zck->hdr_buf_read > zck->hdr_buf_size) {
+        zck->comp.data = zmalloc(zck->hdr_buf_read - zck->hdr_buf_size);
+        if(zck->comp.data == NULL) {
+            zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
+                    zck->hdr_buf_read - zck->hdr_buf_size);
+            return False;
+        }
+        memcpy(zck->comp.data, zck->hdr_buf + zck->hdr_buf_size,
+               zck->hdr_buf_read - zck->hdr_buf_size);
+        zck->comp.data_size = zck->hdr_buf_read - zck->hdr_buf_size;
+        zck->comp.data_loc = zck->comp.data_size;
+    }
+    free(zck->hdr_buf);
+    zck->hdr_buf = NULL;
+    zck->hdr_buf_read = 0;
+    zck->hdr_buf_size = 0;
+    return True;
+}
+
 ssize_t read_data(int fd, char *data, size_t length) {
     if(length == 0)
         return 0;
@@ -69,7 +120,7 @@ int write_data(int fd, const char *data, size_t length) {
 int write_comp_size(int fd, size_t val) {
     char data[sizeof(size_t)*2] = {0};
     size_t length = 0;
-    zck_compint_from_size(data, val, &length);
+    compint_from_size(data, val, &length);
     return write_data(fd, data, length);
 }
 
@@ -83,7 +134,7 @@ int read_comp_size(int fd, size_t *val, size_t *length) {
         *val = 0;
         return False;
     }
-    return !zck_compint_to_size(val, data, length);
+    return !compint_to_size(val, data, length);
 }
 
 int seek_data(int fd, off_t offset, int whence) {

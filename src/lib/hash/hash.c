@@ -135,7 +135,7 @@ void zck_hash_close(zckHash *hash) {
 
 /* Returns 1 if data hash matches, 0 if it doesn't and -1 if failure */
 int PUBLIC zck_hash_check_data(zckCtx *zck, int dst_fd) {
-    if(!seek_data(dst_fd, zck->header_size + zck->index_size, SEEK_SET))
+    if(!seek_data(dst_fd, zck->data_offset, SEEK_SET))
         return -1;
     if(!zck_hash_init(&(zck->check_full_hash), &(zck->hash_type)))
         return -1;

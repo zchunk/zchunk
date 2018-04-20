@@ -454,18 +454,29 @@ ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, int use_dict) {
         /* End decompression chunk if we're on a chunk boundary */
         if(zck->comp.data_idx == NULL) {
             zck->comp.data_idx = zck->index.first;
+            /* Skip first chunk if it's an empty dict */
+            if(zck->comp.data_idx->comp_length == 0)
+                zck->comp.data_idx = zck->comp.data_idx->next;
             if(!zck_hash_init(&(zck->check_chunk_hash), &(zck->chunk_hash_type)))
                 goto zck_hash_error;
-            zck->comp.data_loc = 0;
+            if(zck->comp.data_loc > 0) {
+                if(!zck_hash_update(&(zck->check_full_hash), zck->comp.data,
+                                    zck->comp.data_loc))
+                    goto zck_hash_error;
+                if(!zck_hash_update(&(zck->check_chunk_hash), zck->comp.data,
+                                    zck->comp.data_loc))
+                    goto zck_hash_error;
+            }
+            if(zck->comp.data_idx == NULL) {
+                free(src);
+                return 0;
+            }
         }
         if(zck->comp.data_loc == zck->comp.data_idx->comp_length) {
             if(comp_end_dchunk(zck, use_dict, zck->comp.data_idx->length) < 0)
                 return -1;
-            if(zck->comp.data_idx == NULL) {
-                if(!zck_validate_file(zck))
-                    goto zck_hash_error;
+            if(zck->comp.data_idx == NULL)
                 zck->comp.data_eof = True;
-            }
             continue;
         }
 

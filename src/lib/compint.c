@@ -29,7 +29,7 @@
 #include <zck.h>
 #include "zck_private.h"
 
-void zck_compint_from_size(char *compint, size_t val, size_t *length) {
+void compint_from_size(char *compint, size_t val, size_t *length) {
     for(unsigned char *i = (unsigned char *)compint; ; i++) {
         i[0] = val % 128;
         val = (val - i[0]) / 128;
@@ -42,7 +42,7 @@ void zck_compint_from_size(char *compint, size_t val, size_t *length) {
     return;
 }
 
-int zck_compint_to_size(size_t *val, const char *compint, size_t *length) {
+int compint_to_size(size_t *val, const char *compint, size_t *length) {
     *val = 0;
     size_t old_val = 0;
     const unsigned char *i = (unsigned char *)compint;
@@ -75,19 +75,19 @@ int zck_compint_to_size(size_t *val, const char *compint, size_t *length) {
     return True;
 }
 
-int zck_compint_from_int(char *compint, int val, size_t *length) {
+int compint_from_int(char *compint, int val, size_t *length) {
     if(val < 0) {
         zck_log(ZCK_LOG_ERROR, "Unable to compress negative integers\n");
         return False;
     }
 
-    zck_compint_from_size(compint, (size_t)val, length);
+    compint_from_size(compint, (size_t)val, length);
     return True;
 }
 
-int zck_compint_to_int(int *val, const char *compint, size_t *length) {
+int compint_to_int(int *val, const char *compint, size_t *length) {
     size_t new = (size_t)*val;
-    if(!zck_compint_to_size(&new, compint, length))
+    if(!compint_to_size(&new, compint, length))
         return False;
     *val = (int)new;
     if(*val < 0) {

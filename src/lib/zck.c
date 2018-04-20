@@ -95,6 +95,9 @@ int PUBLIC zck_close(zckCtx *zck) {
         zck_log(ZCK_LOG_DEBUG, "Writing index\n");
         if(!zck_write_index(zck))
             return False;
+        zck_log(ZCK_LOG_DEBUG, "Writing signatures\n");
+        if(!zck_write_sigs(zck))
+            return False;
         zck_log(ZCK_LOG_DEBUG, "Writing chunks\n");
         if(!chunks_from_temp(zck))
             return False;
@@ -105,7 +108,11 @@ int PUBLIC zck_close(zckCtx *zck) {
             close(zck->temp_fd);
             zck->temp_fd = 0;
         }
+    } else {
+        if(!zck_validate_file(zck))
+            return False;
     }
+
     return True;
 }
 
@@ -132,9 +139,9 @@ void zck_clear(zckCtx *zck) {
         free(zck->full_hash_digest);
         zck->full_hash_digest = NULL;
     }
-    if(zck->index_digest) {
-        free(zck->index_digest);
-        zck->index_digest = NULL;
+    if(zck->header_digest) {
+        free(zck->header_digest);
+        zck->header_digest = NULL;
     }
     if(zck->temp_fd) {
         close(zck->temp_fd);
@@ -175,8 +182,10 @@ zckCtx PUBLIC *zck_init_read (int src_fd) {
     if(zck == NULL)
         return NULL;
 
-    if(!zck_read_header(zck))
+    if(!zck_read_header(zck)) {
+        zck_free(&zck);
         return NULL;
+    }
 
     return zck;
 }
@@ -246,7 +255,7 @@ char *get_digest_string(const char *digest, int size) {
 char PUBLIC *zck_get_header_digest(zckCtx *zck) {
     if(zck == NULL)
         return NULL;
-    return get_digest_string(zck->index_digest, zck->hash_type.digest_size);
+    return get_digest_string(zck->header_digest, zck->hash_type.digest_size);
 }
 
 char PUBLIC *zck_get_data_digest(zckCtx *zck) {
@@ -264,7 +273,7 @@ char PUBLIC *zck_get_chunk_digest(zckIndexItem *item) {
 ssize_t PUBLIC zck_get_header_length(zckCtx *zck) {
     if(zck == NULL)
         return -1;
-    return zck->header_size + zck->index_size;
+    return zck->data_offset;
 }
 
 ssize_t zck_get_data_length(zckCtx *zck) {
@@ -317,6 +326,7 @@ int zck_import_dict(zckCtx *zck) {
     if(size == 0)
         return True;
 
+    zck_log(ZCK_LOG_DEBUG, "Reading compression dict\n");
     char *data = zmalloc(size);
     if(data == NULL) {
         zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n", size);
@@ -423,7 +433,7 @@ int zck_validate_file(zckCtx *zck) {
         return False;
     }
     zck_log(ZCK_LOG_DEBUG, "Checking data checksum\n");
-    zck_log(ZCK_LOG_INFO, "Excpected data checksum: ");
+    zck_log(ZCK_LOG_INFO, "Expected data checksum: ");
     for(int i=0; i<zck->hash_type.digest_size; i++)
         zck_log(ZCK_LOG_INFO, "%02x", (unsigned char)zck->full_hash_digest[i]);
     zck_log(ZCK_LOG_INFO, "\n");
@@ -438,5 +448,36 @@ int zck_validate_file(zckCtx *zck) {
     }
     zck_log(ZCK_LOG_DEBUG, "Data checksum valid\n");
     free(digest);
+    return True;
+}
+
+int zck_validate_header(zckCtx *zck) {
+    VALIDATE(zck);
+    char *digest = zck_hash_finalize(&(zck->check_full_hash));
+    if(digest == NULL) {
+        zck_log(ZCK_LOG_ERROR,
+                "Unable to calculate %s checksum for header\n");
+        return False;
+    }
+    zck_log(ZCK_LOG_DEBUG, "Checking header checksum\n");
+    zck_log(ZCK_LOG_INFO, "Expected header checksum: ");
+    for(int i=0; i<zck->hash_type.digest_size; i++)
+        zck_log(ZCK_LOG_INFO, "%02x", (unsigned char)zck->header_digest[i]);
+    zck_log(ZCK_LOG_INFO, "\n");
+    zck_log(ZCK_LOG_INFO, "Calculated header checksum: ");
+    for(int i=0; i<zck->hash_type.digest_size; i++)
+        zck_log(ZCK_LOG_INFO, "%02x", (unsigned char)digest[i]);
+    zck_log(ZCK_LOG_INFO, "\n");
+    if(memcmp(digest, zck->header_digest, zck->hash_type.digest_size) != 0) {
+        free(digest);
+        zck_log(ZCK_LOG_ERROR, "Header checksum failed!\n");
+        return False;
+    }
+    zck_log(ZCK_LOG_DEBUG, "Header checksum valid\n");
+    free(digest);
+
+    if(!zck_hash_init(&(zck->check_full_hash), &(zck->hash_type)))
+        return False;
+
     return True;
 }

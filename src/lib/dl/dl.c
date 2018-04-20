@@ -60,9 +60,8 @@ void zck_dl_free_dl_regex(zckDL *dl) {
 /* Write zeros to tgt->fd in location of tgt_idx */
 int zck_dl_write_zero(zckCtx *tgt, zckIndexItem *tgt_idx) {
     char buf[BUF_SIZE] = {0};
-    size_t tgt_data_offset = tgt->header_size + tgt->index_size;
     size_t to_read = tgt_idx->comp_length;
-    if(!seek_data(tgt->fd, tgt_data_offset + tgt_idx->start, SEEK_SET))
+    if(!seek_data(tgt->fd, tgt->data_offset + tgt_idx->start, SEEK_SET))
         return False;
     while(to_read > 0) {
         int rb = BUF_SIZE;
@@ -158,10 +157,9 @@ int zck_dl_write_range(zckDL *dl, const char *at, size_t length) {
                                           &(dl->zck->chunk_hash_type)))
                             return 0;
                         dl->priv->write_in_chunk = idx->comp_length;
-                        size_t offset = dl->zck->header_size +
-                                        dl->zck->index_size;
-                        if(!seek_data(dl->dst_fd, offset + tgt_idx->start,
-                           SEEK_SET))
+                        if(!seek_data(dl->dst_fd,
+                                      dl->zck->data_offset + tgt_idx->start,
+                                      SEEK_SET))
                             return 0;
                         idx = NULL;
                         tgt_idx = NULL;
@@ -221,12 +219,10 @@ int zck_dl_write_and_verify(zckRange *info, zckCtx *src, zckCtx *tgt,
                             zckIndexItem *src_idx, zckIndexItem *tgt_idx) {
     static char buf[BUF_SIZE] = {0};
 
-    size_t src_data_offset = src->header_size + src->index_size;
-    size_t tgt_data_offset = tgt->header_size + tgt->index_size;
     size_t to_read = src_idx->comp_length;
-    if(!seek_data(src->fd, src_data_offset + src_idx->start, SEEK_SET))
+    if(!seek_data(src->fd, src->data_offset + src_idx->start, SEEK_SET))
         return False;
-    if(!seek_data(tgt->fd, tgt_data_offset + tgt_idx->start, SEEK_SET))
+    if(!seek_data(tgt->fd, tgt->data_offset + tgt_idx->start, SEEK_SET))
         return False;
     zckHash check_hash = {0};
     if(!zck_hash_init(&check_hash, &(src->chunk_hash_type)))
@@ -276,6 +272,7 @@ int PUBLIC zck_dl_copy_src_chunks(zckRange *info, zckCtx *src, zckCtx *tgt) {
 
         while(src_idx) {
             if(tgt_idx->comp_length == src_idx->comp_length &&
+               tgt_idx->length == src_idx->length &&
                memcmp(tgt_idx->digest, src_idx->digest,
                       tgt_idx->digest_size) == 0) {
                 found = True;
@@ -454,7 +451,7 @@ int PUBLIC zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url) {
 
     /* If we haven't downloaded enough for the index hash plus a few others, do
      * it now */
-    if(!zck_dl_bytes(dl, url, zck->hash_type.digest_size+start+MAX_COMP_SIZE*2,
+    if(!zck_dl_bytes(dl, url, zck->hash_type.digest_size+start+MAX_COMP_SIZE*4,
                      start, &buffer_len))
         return False;
     /* Read and store the index hash */
@@ -477,14 +474,24 @@ int PUBLIC zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url) {
     if(!zck_dl_bytes(dl, url, zck->index_size, start,
                      &buffer_len))
         return False;
+    if(!zck_header_hash(zck))
+        return False;
     if(!zck_read_index(zck))
+        return False;
+
+    /* Read signatures */
+    if(!zck_read_sig(zck))
+        return False;
+    if(!close_read_header(zck))
+        return False;
+    if(!zck_validate_header(zck))
         return False;
 
     /* Write zeros to rest of file */
     zckIndex *info = &(dl->info.index);
     info->hash_type = zck->index.hash_type;
     zck_log(ZCK_LOG_DEBUG, "Writing zeros to rest of file: %llu\n", zck->index.length + zck->index_size + start);
-    if(!zck_zero_bytes(dl, zck->index.length, zck->header_size + zck->index_size, &buffer_len))
+    if(!zck_zero_bytes(dl, zck->index.length, zck->data_offset, &buffer_len))
         return False;
     return True;
 }

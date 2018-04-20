@@ -49,11 +49,9 @@ int main (int argc, char *argv[]) {
     }
     zckCtx *zck = zck_init_read(src_fd);
     if(zck == NULL) {
-        perror("Unable to read header\n");
+        printf("Unable to read header\n");
         exit(1);
     }
-    if(!zck_close(zck))
-        exit(1);
     close(src_fd);
 
     printf("Overall checksum type: %s\n", zck_hash_name_from_type(zck_get_full_hash_type(zck)));

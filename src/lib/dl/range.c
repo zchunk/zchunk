@@ -209,7 +209,6 @@ char *zck_range_get_char(zckRangeItem **range, int max_ranges) {
             buf_size = (int)(buf_size * 1.5);
             output = realloc(output, buf_size);
             if(output == NULL) {
-                free(output);
                 zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
                         buf_size);
                 return NULL;

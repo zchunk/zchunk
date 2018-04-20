@@ -486,6 +486,7 @@ int PUBLIC zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url) {
         return False;
     if(!zck_validate_header(zck))
         return False;
+    zck_hash_close(&(zck->check_full_hash));
 
     /* Write zeros to rest of file */
     zckIndex *info = &(dl->info.index);

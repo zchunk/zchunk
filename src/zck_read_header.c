@@ -34,8 +34,6 @@
 #include <zck.h>
 
 int main (int argc, char *argv[]) {
-    zck_set_log_level(ZCK_LOG_DEBUG);
-
     if(argc != 2) {
         printf("Usage: %s <file>\n", argv[0]);
         exit(1);

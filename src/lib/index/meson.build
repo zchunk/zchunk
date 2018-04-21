@@ -1,1 +1,1 @@
-sources += ['index/index_create.c', 'index/index_read.c', 'index/index_common.c']
+lib_sources += files(['index_create.c', 'index_read.c', 'index_common.c'])

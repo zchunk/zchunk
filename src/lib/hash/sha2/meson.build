@@ -1,1 +1,1 @@
-sources += ['hash/sha2/sha2.c']
+lib_sources += files('sha2.c')

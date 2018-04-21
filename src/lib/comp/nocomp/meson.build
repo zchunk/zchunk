@@ -1,1 +1,1 @@
-sources += ['comp/nocomp/nocomp.c']
+lib_sources += files('nocomp.c')

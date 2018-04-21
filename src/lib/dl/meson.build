@@ -1,1 +1,1 @@
-sources += ['dl/range.c', 'dl/dl.c', 'dl/multipart.c']
+lib_sources += files(['range.c', 'dl.c', 'multipart.c'])

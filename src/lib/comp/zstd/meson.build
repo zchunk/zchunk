@@ -1,1 +1,1 @@
-sources += ['comp/zstd/zstd.c']
+lib_sources += files('zstd.c')

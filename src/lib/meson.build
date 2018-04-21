@@ -1,12 +1,12 @@
-sources = []
+lib_sources = files()
 add_global_arguments('-fvisibility=hidden', language : 'c')
 subdir('comp')
 subdir('hash')
 subdir('index')
 subdir('dl')
-sources += ['zck.c', 'header.c', 'io.c', 'log.c', 'compint.c']
+lib_sources += files('zck.c', 'header.c', 'io.c', 'log.c', 'compint.c')
 zcklib = shared_library('zck',
-                        sources,
+                        lib_sources,
                         include_directories: inc,
                         dependencies: [zstd_dep, curl_dep],
                         install: true,

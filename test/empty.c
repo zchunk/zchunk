@@ -39,6 +39,7 @@
 static char *checksum="42590fea6f55aca71e222ebe2d147ed89d17aac951a997fef8b980b2803a0412";
 
 int main (int argc, char *argv[]) {
+    /* Create empty zchunk file */
     int out = open("empty.zck", O_WRONLY | O_CREAT | O_TRUNC, 0666);
     if(out < 0) {
         perror("Unable to open empty.zck for writing");
@@ -52,6 +53,8 @@ int main (int argc, char *argv[]) {
         exit(1);
     close(out);
     zck_free(&zck);
+
+    /* Open zchunk file and check that checksum matches */
     int in = open("empty.zck", O_RDONLY);
     if(in < 0) {
         perror("Unable to open empty.zck for reading");
@@ -74,6 +77,8 @@ int main (int argc, char *argv[]) {
         printf("Expected checksum: (SHA-256)%s\n", checksum);
         exit(1);
     }
+
+    /* Go back to beginning of file and read data from it */
     if(lseek(in, 0, SEEK_SET) != 0) {
         perror("Unable to seek to beginning of empty.zck");
         exit(1);

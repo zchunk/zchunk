@@ -1,9 +1,9 @@
 #ifndef ZCK_H
 #define ZCK_H
 
-#define ZCK_VERSION "0.3.0"
+#define ZCK_VERSION "0.4.0"
 #define ZCK_VER_MAJOR 0
-#define ZCK_VER_MINOR 3
+#define ZCK_VER_MINOR 4
 #define ZCK_VER_REVISION 0
 #define ZCK_VER_SUBREVISION 0
 

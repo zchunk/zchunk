@@ -443,50 +443,48 @@ int PUBLIC zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url) {
     zck->fd = dl->dst_fd;
 
     /* Download first hundred bytes and read magic and hash type */
-    if(!zck_dl_bytes(dl, url, 100, start, &buffer_len))
+    if(!zck_dl_bytes(dl, url, 200, start, &buffer_len))
         return False;
-    if(!zck_read_initial(zck))
+    if(!read_lead_1(zck))
         return False;
     start = tell_data(dl->dst_fd);
 
-    /* If we haven't downloaded enough for the index hash plus a few others, do
-     * it now */
-    if(!zck_dl_bytes(dl, url, zck->hash_type.digest_size+start+MAX_COMP_SIZE*4,
+    if(!zck_dl_bytes(dl, url, zck->lead_size + zck->hash_type.digest_size,
                      start, &buffer_len))
         return False;
-    /* Read and store the index hash */
-    if(!zck_read_header_hash(zck))
+    if(!read_lead_2(zck))
         return False;
-    start += zck->hash_type.digest_size;
     zck_log(ZCK_LOG_DEBUG, "Header hash: (%s)",
             zck_hash_name_from_type(zck_get_full_hash_type(zck)));
     char *digest = zck_get_header_digest(zck);
     zck_log(ZCK_LOG_DEBUG, "%s\n", digest);
     free(digest);
-
-    /* Read and store compression type and index size */
-    if(!zck_read_ct_is(zck))
-        return False;
     start = tell_data(dl->dst_fd);
+
+    /* If we haven't downloaded enough for the index hash plus a few others, do
+     * it now */
+    if(!zck_dl_bytes(dl, url, zck->lead_size + zck->header_length,
+                     start, &buffer_len))
+        return False;
+
+    /* Verify header checksum */
+    if(!validate_header(zck))
+        return False;
+    zck_hash_close(&(zck->check_full_hash));
+
+    /* Read the header */
+    if(!read_preface(zck))
+        return False;
+    start += zck->preface_size;
     zck_log(ZCK_LOG_DEBUG, "Index size: %llu\n", zck->index_size);
 
-    /* Download and read rest of index */
-    if(!zck_dl_bytes(dl, url, zck->index_size, start,
-                     &buffer_len))
-        return False;
-    if(!zck_header_hash(zck))
-        return False;
-    if(!zck_read_index(zck))
+    /* Read the index */
+    if(!read_index(zck))
         return False;
 
     /* Read signatures */
-    if(!zck_read_sig(zck))
+    if(!read_sig(zck))
         return False;
-    if(!close_read_header(zck))
-        return False;
-    if(!zck_validate_header(zck))
-        return False;
-    zck_hash_close(&(zck->check_full_hash));
 
     /* Write zeros to rest of file */
     zckIndex *info = &(dl->info.index);

@@ -80,26 +80,14 @@ void zck_index_free(zckCtx *zck) {
         free(zck->full_hash.ctx);
         zck->full_hash.ctx = NULL;
     }
-    if(zck->index_string) {
-        free(zck->index_string);
-        zck->index_string = NULL;
-    }
-    if(zck->header_string) {
-        free(zck->header_string);
-        zck->header_string = NULL;
-    }
-    zck->header_size = 0;
-    if(zck->sig_string) {
-        free(zck->sig_string);
-        zck->sig_string = NULL;
-    }
+    zck->lead_string = NULL;
+    zck->lead_size = 0;
+    zck->preface_string = NULL;
+    zck->preface_size = 0;
+    zck->index_string = NULL;
+    zck->index_size = 0;
+    zck->sig_string = NULL;
     zck->sig_size = 0;
-    if(zck->hdr_buf) {
-        free(zck->hdr_buf);
-        zck->hdr_buf = NULL;
-    }
-    zck->hdr_buf_read = 0;
-    zck->hdr_buf_size = 0;
     if(zck->header_digest) {
         free(zck->header_digest);
         zck->header_digest = NULL;

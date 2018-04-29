@@ -115,16 +115,26 @@ typedef struct zckCtx {
 
     char *full_hash_digest;
     char *header_digest;
-    char *hdr_buf;
-    size_t hdr_buf_size;
-    size_t hdr_buf_read;
-    char *header_string;
+    size_t data_offset;
+    size_t header_length;
+
+    char *header;
     size_t header_size;
-    char *sig_string;
-    size_t sig_size;
+    size_t hdr_digest_loc;
+    char *lead_string;
+    size_t lead_size;
+    char *preface_string;
+    size_t preface_size;
     char *index_string;
     size_t index_size;
-    size_t data_offset;
+    char *sig_string;
+    size_t sig_size;
+
+
+    char *prep_digest;
+    int prep_hash_type;
+    ssize_t prep_hdr_size;
+
     zckIndex index;
     zckIndexItem *work_index_item;
     zckHash work_index_hash;
@@ -180,9 +190,9 @@ int set_chunk_hash_type(zckCtx *zck, int hash_type)
     __attribute__ ((warn_unused_result));
 
 /* index/index.c */
-int zck_index_read(zckCtx *zck, char *data, size_t size)
+int zck_index_read(zckCtx *zck, char *data, size_t size, size_t max_length)
     __attribute__ ((warn_unused_result));
-int zck_index_finalize(zckCtx *zck)
+int index_create(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 int zck_index_new_chunk(zckIndex *index, char *digest, int digest_size,
                         size_t comp_size, size_t orig_size, int finished)
@@ -215,25 +225,19 @@ int read_comp_size(int fd, size_t *val, size_t *length)
     __attribute__ ((warn_unused_result));
 int chunks_from_temp(zckCtx *zck)
     __attribute__ ((warn_unused_result));
-ssize_t read_header(zckCtx *zck, char **data, size_t length)
-    __attribute__ ((warn_unused_result));
-int read_header_unread(zckCtx *zck, size_t length)
-    __attribute__ ((warn_unused_result));
-int close_read_header(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
 
 /* header.c */
-int zck_read_initial(zckCtx *zck)
+int read_lead_1(zckCtx *zck)
     __attribute__ ((warn_unused_result));
-int zck_read_header_hash(zckCtx *zck)
+int read_lead_2(zckCtx *zck)
     __attribute__ ((warn_unused_result));
-int zck_read_ct_is(zckCtx *zck)
+int validate_header(zckCtx *zck)
     __attribute__ ((warn_unused_result));
-int zck_header_hash(zckCtx *zck)
+int read_preface(zckCtx *zck)
     __attribute__ ((warn_unused_result));
-int zck_read_index(zckCtx *zck)
+int read_index(zckCtx *zck)
     __attribute__ ((warn_unused_result));
-int zck_read_sig(zckCtx *zck)
+int read_sig(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 int zck_read_header(zckCtx *zck)
     __attribute__ ((warn_unused_result));
@@ -282,9 +286,11 @@ int zck_dl_range_chk_chunk(zckDL *dl, char *url, int is_chunk)
 int compint_from_int(char *compint, int val, size_t *length)
     __attribute__ ((warn_unused_result));
 void compint_from_size(char *compint, size_t val, size_t *length);
-int compint_to_int(int *val, const char *compint, size_t *length)
+int compint_to_int(int *val, const char *compint, size_t *length,
+                   size_t max_length)
     __attribute__ ((warn_unused_result));
-int compint_to_size(size_t *val, const char *compint, size_t *length)
+int compint_to_size(size_t *val, const char *compint, size_t *length,
+                    size_t max_length)
     __attribute__ ((warn_unused_result));
 
 

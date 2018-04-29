@@ -87,16 +87,9 @@ int PUBLIC zck_close(zckCtx *zck) {
     if(zck->mode == ZCK_MODE_WRITE) {
         if(zck_end_chunk(zck) < 0)
             return False;
-        if(!zck_index_finalize(zck))
+        if(!zck_header_create(zck))
             return False;
-        zck_log(ZCK_LOG_DEBUG, "Writing header\n");
         if(!zck_write_header(zck))
-            return False;
-        zck_log(ZCK_LOG_DEBUG, "Writing index\n");
-        if(!zck_write_index(zck))
-            return False;
-        zck_log(ZCK_LOG_DEBUG, "Writing signatures\n");
-        if(!zck_write_sigs(zck))
             return False;
         zck_log(ZCK_LOG_DEBUG, "Writing chunks\n");
         if(!chunks_from_temp(zck))
@@ -129,6 +122,10 @@ void zck_clear(zckCtx *zck) {
     if(zck == NULL)
         return;
     zck_index_free(zck);
+    if(zck->header)
+        free(zck->header);
+    zck->header = NULL;
+    zck->header_size = 0;
     if(!zck_comp_close(zck))
         zck_log(ZCK_LOG_WARNING, "Unable to close compression\n");
     zck_hash_close(&(zck->full_hash));
@@ -164,6 +161,8 @@ zckCtx PUBLIC *zck_create() {
                 sizeof(zckCtx));
         return False;
     }
+    zck->prep_hash_type = -1;
+    zck->prep_hdr_size = -1;
     return zck;
 }
 

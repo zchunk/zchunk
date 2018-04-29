@@ -36,10 +36,9 @@
                             return False; \
                         }
 
-int zck_index_finalize(zckCtx *zck) {
+int index_create(zckCtx *zck) {
     VALIDATE(zck);
 
-    zckHash index_hash;
     char *index;
     size_t index_malloc = 0;
     size_t index_size = 0;
@@ -49,8 +48,8 @@ int zck_index_finalize(zckCtx *zck) {
     if(zck->full_hash_digest == NULL)
         return False;
 
-    index_malloc  = MAX_COMP_SIZE * 2; // Chunk hash type and # of index entries
-    index_malloc += zck->hash_type.digest_size; // Full hash digest
+    /* Set initial malloc size */
+    index_malloc  = MAX_COMP_SIZE * 2;
 
     /* Add digest size + MAX_COMP_SIZE bytes for length of each entry in
      * index */
@@ -66,8 +65,6 @@ int zck_index_finalize(zckCtx *zck) {
     index = zmalloc(index_malloc);
     compint_from_size(index+index_size, zck->index.hash_type, &index_size);
     compint_from_size(index+index_size, zck->index.count, &index_size);
-    memcpy(index+index_size, zck->full_hash_digest, zck->hash_type.digest_size);
-    index_size += zck->hash_type.digest_size;
     if(zck->index.first) {
         zckIndexItem *tmp = zck->index.first;
         while(tmp) {
@@ -91,48 +88,7 @@ int zck_index_finalize(zckCtx *zck) {
     }
     zck->index_string = index;
     zck->index_size = index_size;
-
-    /* Rebuild header without index hash */
-    if(zck->header_digest) {
-        free(zck->header_digest);
-        zck->header_digest = NULL;
-    }
-    if(!zck_header_create(zck))
-        return False;
-
-    /* Rebuild signatures */
-    if(!zck_sig_create(zck))
-        return False;
-
-    /* Calculate hash of header */
-    if(!zck_hash_init(&index_hash, &(zck->hash_type))) {
-        free(index);
-        return False;
-    }
-    if(!zck_hash_update(&index_hash, zck->header_string, zck->header_size)) {
-        free(index);
-        return False;
-    }
-    if(!zck_hash_update(&index_hash, zck->index_string, zck->index_size)) {
-        free(index);
-        return False;
-    }
-    if(!zck_hash_update(&index_hash, zck->sig_string, zck->sig_size)) {
-        free(index);
-        return False;
-    }
-    zck->header_digest = zck_hash_finalize(&index_hash);
-    if(zck->header_digest == NULL) {
-        zck_log(ZCK_LOG_ERROR,
-                "Unable to calculate %s checksum for index\n",
-                zck_hash_name_from_type(zck->hash_type.type));
-        return False;
-    }
-
-    /* Rebuild header string with calculated index hash */
-    if(!zck_header_create(zck))
-        return False;
-
+    zck_log(ZCK_LOG_DEBUG, "Generated index: %lu bytes\n", zck->index_size);
     return True;
 }
 
@@ -254,8 +210,4 @@ int zck_index_finish_chunk(zckCtx *zck) {
     zck->work_index_item = NULL;
     zck_hash_close(&(zck->work_index_hash));
     return True;
-}
-
-int zck_write_index(zckCtx *zck) {
-    return write_data(zck->fd, zck->index_string, zck->index_size);
 }

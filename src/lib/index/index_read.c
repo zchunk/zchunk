@@ -32,45 +32,31 @@
 
 #include "zck_private.h"
 
-int zck_index_read(zckCtx *zck, char *data, size_t size) {
+int zck_index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
     size_t length = 0;
 
-    /* Add index to checksum */
-    if(!zck_hash_update(&(zck->check_full_hash), data, size))
-        return False;
-
-    /* Make sure there's at least enough data for full digest and index count */
-    if(size < zck->hash_type.digest_size + MAX_COMP_SIZE*2) {
-        zck_log(ZCK_LOG_ERROR, "Index is too small to read\n");
-        return False;
-    }
 
     /* Read and configure hash type */
     int hash_type;
-    if(!compint_to_int(&hash_type, data + length, &length))
+    if(!compint_to_int(&hash_type, data + length, &length, max_length))
         return False;
     if(!zck_set_ioption(zck, ZCK_HASH_CHUNK_TYPE, hash_type))
         return False;
 
     /* Read number of index entries */
     size_t index_count;
-    if(!compint_to_size(&index_count, data + length, &length))
+    if(!compint_to_size(&index_count, data + length, &length, max_length))
         return False;
     zck->index.count = index_count;
-
-    /* Read full data hash */
-    zck->full_hash_digest = zmalloc(zck->hash_type.digest_size);
-    if(!zck->full_hash_digest) {
-        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
-                zck->hash_type.digest_size);
-        return False;
-    }
-    memcpy(zck->full_hash_digest, data + length, zck->hash_type.digest_size);
-    length += zck->hash_type.digest_size;
 
     zckIndexItem *prev = zck->index.first;
     size_t idx_loc = 0;
     while(length < size) {
+        if(length + zck->index.digest_size > max_length) {
+            zck_log(ZCK_LOG_ERROR, "Read past end of header\n");
+            return False;
+        }
+
         zckIndexItem *new = zmalloc(sizeof(zckIndexItem));
         if(!new) {
             zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
@@ -91,14 +77,14 @@ int zck_index_read(zckCtx *zck, char *data, size_t size) {
 
         /* Read and store entry length */
         size_t chunk_length = 0;
-        if(!compint_to_size(&chunk_length, data+length, &length))
+        if(!compint_to_size(&chunk_length, data+length, &length, max_length))
             return False;
         new->start = idx_loc;
         new->comp_length = chunk_length;
 
         /* Read and store uncompressed entry length */
         chunk_length = 0;
-        if(!compint_to_size(&chunk_length, data+length, &length))
+        if(!compint_to_size(&chunk_length, data+length, &length, max_length))
             return False;
         new->length = chunk_length;
 

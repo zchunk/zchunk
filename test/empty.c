@@ -36,7 +36,7 @@
 #include "zck_private.h"
 #include "util.h"
 
-static char *checksum="42590fea6f55aca71e222ebe2d147ed89d17aac951a997fef8b980b2803a0412";
+static char *checksum="b09c9fd796877692c1ddf0a9a0201e9a901409a173061caceef80e7484a3ebca";
 
 int main (int argc, char *argv[]) {
     /* Create empty zchunk file */

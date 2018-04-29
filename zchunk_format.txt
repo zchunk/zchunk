@@ -1,19 +1,4 @@
-+-+-+-+-+-+-+-+-+-+====================+=================+
-|   ID    | Flags | Checksum type (ci) | Header checksum |
-+-+-+-+-+-+-+-+-+-+====================+=================+
-
-+========================+=================+=======+
-| Compression type (ci ) | Index size (ci) | Index |
-+========================+=================+=======+
-
-+======================+============+
-| Signature size (ci) | Signatures |
-+======================+============+
-
-+=================+===========+===========+
-| Compressed Dict |   Chunk   |   Chunk   | ==> More chunks
-+=================+===========+===========+
-
+Definitions:
 (ci)
  Compressed (unsigned) integer - An variable length little endian
  integer where the first seven bits of the number are stored in the
@@ -22,15 +7,14 @@
  the top bit of the final byte must be one, indicating the end of the
  number.
 
+The lead:
+
++-+-+-+-+-+====================+=================+==================+
+|   ID    | Checksum type (ci) | Header checksum | Header size (ci) |
++-+-+-+-+-+====================+=================+==================+
+
 ID
  '\0ZCK1', identifies file as zchunk version 1 file
-
-Flags
- 32 bits for flags.  All unused flags MUST be set to 0.  If a decoder sees
- a flag set that it doesn't recognize, it MUST exit with an error.  Flags
-
- Current flags are:
-  bit 0: File has data streams
 
 Checksum type
  This is an integer containing the type of checksum used to generate the
@@ -43,6 +27,33 @@ Checksum type
 Header checksum
  This is the checksum of everything from the beginning of the file
  until the end of the index, ignoring the header checksum.
+
+Header size:
+ This is an integer containing the size of the header, not including the lead
+
+
+The preface:
+
++===============+-+-+-+-+========================+=================+=======+
+| Data checksum | Flags | Compression type (ci ) | Index size (ci) | Index |
++===============+-+-+-+-+========================+=================+=======+
+
++======================+============+
+| Signature count (ci) | Signatures |
++======================+============+
+
+Data checksum
+ This is the checksum of everything after the index, including the
+ compressed dict and all the compressed chunks.  This checksum is
+ generated using the overall checksum type, *not* the chunk checksum
+ type.
+
+Flags
+ 32 bits for flags.  All unused flags MUST be set to 0.  If a decoder sees
+ a flag set that it doesn't recognize, it MUST exit with an error.  Flags
+
+ Current flags are:
+  bit 0: File has data streams
 
 Compression type
  This is an integer containing the type of compression used to
@@ -58,11 +69,19 @@ Index size
 Index
  This is the index, which is described in the next section.
 
-Signature size
- This is an integer countaining the size of the signature section.
+Signature count
+ This is an integer countaining the number of signatures.
 
 Signatures
  These are the signatures, described in a later section.
+
+
+The data:
+
++=================+===========+===========+
+| Compressed Dict |   Chunk   |   Chunk   | ==> More chunks
++=================+===========+===========+
+
 
 Compressed Dict (optional)
  This is a custom dictionary used when compressing each chunk.
@@ -78,9 +97,9 @@ Chunk
 
 The index:
 
-+==========================+==================+===============+
-| Chunk checksum type (ci) | Chunk count (ci) | Data checksum |
-+==========================+==================+===============+
++==========================+==================+
+| Chunk checksum type (ci) | Chunk count (ci) |
++==========================+==================+
 
 +==================+===============+==================+
 | Dict stream (ci) | Dict checksum | Dict length (ci) |
@@ -108,12 +127,6 @@ Chunk checksum type
 
 Chunk count
  This is a count of the number of chunks in the zchunk file.
-
-Checksum of all data
- This is the checksum of everything after the index, including the
- compressed dict and all the compressed chunks.  This checksum is
- generated using the overall checksum type, *not* the chunk checksum
- type.
 
 Dict stream
  If the data streams flag is set, this must always be 0, otherwise don't

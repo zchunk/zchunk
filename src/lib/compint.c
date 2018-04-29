@@ -42,7 +42,8 @@ void compint_from_size(char *compint, size_t val, size_t *length) {
     return;
 }
 
-int compint_to_size(size_t *val, const char *compint, size_t *length) {
+int compint_to_size(size_t *val, const char *compint, size_t *length,
+                    size_t max_length) {
     *val = 0;
     size_t old_val = 0;
     const unsigned char *i = (unsigned char *)compint;
@@ -64,8 +65,12 @@ int compint_to_size(size_t *val, const char *compint, size_t *length) {
             break;
         i++;
         /* Make sure we're not overflowing and fail if we do */
-        if(count > MAX_COMP_SIZE || *val < old_val) {
-            zck_log(ZCK_LOG_ERROR, "Number too large\n");
+        if(count > MAX_COMP_SIZE || count+*length > max_length ||
+           *val < old_val) {
+            if(count > max_length)
+                zck_log(ZCK_LOG_ERROR, "Read past end of header\n");
+            else
+                zck_log(ZCK_LOG_ERROR, "Number too large\n");
             *length -= count;
             *val = 0;
             return False;
@@ -85,9 +90,10 @@ int compint_from_int(char *compint, int val, size_t *length) {
     return True;
 }
 
-int compint_to_int(int *val, const char *compint, size_t *length) {
+int compint_to_int(int *val, const char *compint, size_t *length,
+                   size_t max_length) {
     size_t new = (size_t)*val;
-    if(!compint_to_size(&new, compint, length))
+    if(!compint_to_size(&new, compint, length, max_length))
         return False;
     *val = (int)new;
     if(*val < 0) {

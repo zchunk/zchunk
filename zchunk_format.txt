@@ -1,3 +1,10 @@
+A zchunk file contains two parts, the header and the body.  The header consists
+of four parts:
+ * The lead: Everything necessary to validate the header
+ * The preface: Metadata about the zchunk file
+ * The index: Details about each chunk
+ * The signatures: Signatures used to sign the zchunk file
+
 Definitions:
 (ci)
  Compressed (unsigned) integer - An variable length little endian
@@ -8,7 +15,6 @@ Definitions:
  number.
 
 The lead:
-
 +-+-+-+-+-+====================+=================+==================+
 |   ID    | Checksum type (ci) | Header checksum | Header size (ci) |
 +-+-+-+-+-+====================+=================+==================+
@@ -33,14 +39,9 @@ Header size:
 
 
 The preface:
-
-+===============+-+-+-+-+========================+=================+=======+
-| Data checksum | Flags | Compression type (ci ) | Index size (ci) | Index |
-+===============+-+-+-+-+========================+=================+=======+
-
-+======================+============+
-| Signature count (ci) | Signatures |
-+======================+============+
++===============+-+-+-+-+========================+
+| Data checksum | Flags | Compression type (ci ) |
++===============+-+-+-+-+========================+
 
 Data checksum
  This is the checksum of everything after the index, including the
@@ -63,43 +64,11 @@ Compression type
    0 - Uncompressed
    2 - zstd
 
-Index size
- This is an integer containing the size of the index.
-
-Index
- This is the index, which is described in the next section.
-
-Signature count
- This is an integer countaining the number of signatures.
-
-Signatures
- These are the signatures, described in a later section.
-
-
-The data:
-
-+=================+===========+===========+
-| Compressed Dict |   Chunk   |   Chunk   | ==> More chunks
-+=================+===========+===========+
-
-
-Compressed Dict (optional)
- This is a custom dictionary used when compressing each chunk.
- Because each chunk is compressed completely separately from the
- others, the custom dictionary gives us much better overall
- compression.  The custom dictionary is compressed without a custom
- dictionary (for obvious reasons).
-
-Chunk
- This is a chunk of data, compressed with the custom dictionary
- provided above.
-
 
 The index:
-
-+==========================+==================+
-| Chunk checksum type (ci) | Chunk count (ci) |
-+==========================+==================+
++=================+==========================+==================+
+| Index size (ci) | Chunk checksum type (ci) | Chunk count (ci) |
++=================+==========================+==================+
 
 +==================+===============+==================+
 | Dict stream (ci) | Dict checksum | Dict length (ci) |
@@ -109,13 +78,16 @@ The index:
 | Uncompressed dict length (ci) |
 +===============================+
 
-+===================+================+===================+
-| Chunk stream (ci) | Chunk checksum | Chunk length (ci) |
-+===================+================+===================+
+[+===================+================+===================+
+[| Chunk stream (ci) | Chunk checksum | Chunk length (ci) |
+[+===================+================+===================+
 
-+==========================+
-| Uncompressed length (ci) | ...
-+==========================+
++==========================+]
+| Uncompressed length (ci) |] ...
++==========================+]
+
+Index size
+ This is an integer containing the size of the index.
 
 Chunk checksum type
  This is an integer containing the type of checksum used to generate
@@ -172,9 +144,16 @@ stored in stream 2.
 
 
 The signatures:
-+=====================+=====================+===========+
-| Signature type (ci) | Signature size (ci) | Signature | ...
-+=====================+=====================+===========+
++======================+
+| Signature count (ci) |
++======================+
+
+[+=====================+=====================+===========+]
+[| Signature type (ci) | Signature size (ci) | Signature |] ...
+[+=====================+=====================+===========+]
+
+Signature count
+ This is an integer countaining the number of signatures.
 
 Signature type
  This is an integer containing the type of signature.  Currently there are
@@ -194,3 +173,25 @@ must be recalculated.
 We only sign the header so the signature can be validated independently of the
 data, though the data can then be validated through both the chunk checksums
 and the full data checksum, both of which will be signed by the signatures.
+
+
+
+After the header, we have the body, which has the following:
++=================+
+| Compressed Dict |
++=================+
+
+[+===========================+]
+[|           Chunk           |] ...
+[+===========================+]
+
+Compressed Dict (optional)
+ This is a custom dictionary used when compressing each chunk.
+ Because each chunk is compressed completely separately from the
+ others, the custom dictionary gives us much better overall
+ compression.  The custom dictionary is compressed without a custom
+ dictionary (for obvious reasons).
+
+Chunk
+ This is a chunk of data, compressed with the custom dictionary
+ provided above.

@@ -34,10 +34,8 @@
 #include <unistd.h>
 #include <zck.h>
 
+#include "buzhash/buzhash.h"
 #include "memmem.h"
-
-#define WINDOW_SIZE 4096
-#define MATCH_SUM WINDOW_SIZE-1
 
 int main (int argc, char *argv[]) {
     char *out_name;
@@ -134,7 +132,7 @@ int main (int argc, char *argv[]) {
         close(in_fd);
 
         /* Chunk based on string in argv[2] (Currently with ugly hack to group srpms together) */
-        if(True) {
+        if(False) {
             char *found = data;
             char *search = found;
             char *prev_srpm = memmem(search, in_size - (search-data), "<rpm:sourcerpm", 14);
@@ -185,28 +183,23 @@ int main (int argc, char *argv[]) {
                     search = NULL;
                 }
             }
-        /* Naive (and inefficient) rolling window */
+        /* Buzhash rolling window */
         } else {
             char *cur_loc = data;
             char *start = data;
             char *window_loc;
-            int window_sum;
 
             while(cur_loc < data + in_size) {
-                window_sum = 0;
+                uint32_t bh = 0;
                 window_loc = cur_loc;
-                if(cur_loc + WINDOW_SIZE < data + in_size) {
-                    for(int i=0; i<WINDOW_SIZE; i++) {
-                        window_sum += cur_loc[i];
-                    }
-                    cur_loc += WINDOW_SIZE;
+                if(cur_loc + buzhash_width < data + in_size) {
+                    bh = buzhash(window_loc);
+                    cur_loc += buzhash_width;
                     while(cur_loc < data + in_size) {
-                        window_sum += cur_loc[0];
-                        window_sum -= window_loc[0];
-                        cur_loc++;
-                        window_loc++;
-                        if(((window_sum) & (WINDOW_SIZE - 1)) == 0)
+                        bh = buzhash_update(cur_loc, bh);
+                        if(((bh) & (8192 - 1)) == 0)
                             break;
+                        cur_loc++;
                     }
                 } else {
                     cur_loc = data + in_size;

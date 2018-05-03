@@ -1,7 +1,31 @@
+/*
+ * Copyright (c) 2015, the urlblock developers.
+ * Copyright (c) 2018 Jonathan Dieter <jdieter@gmail.com>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+y
 #include "buzhash.h"
-#include "util.h"
 
 #include <string.h>
+
+#define rol32(v,s) (((v) << (s)) | ((v) >> (32 - (s))))
 
 const uint32_t buzhash_table[] = {
   0x458be752, 0xc10748cc, 0xfbbcdbb8, 0x6ded5b68,
@@ -70,7 +94,7 @@ const uint32_t buzhash_table[] = {
   0x7bf7cabc, 0xf9c18d66, 0x593ade65, 0xd95ddf11,
 };
 
-const size_t buzhash_width = 4;
+const size_t buzhash_width = 4096;
 
 uint32_t
 buzhash (const char *s)
@@ -87,5 +111,5 @@ buzhash (const char *s)
 uint32_t
 buzhash_update (const char *s, uint32_t h)
 {
-  return rol32 (h, 1) ^ rol32 (buzhash_table[(size_t) s[0]], buzhash_width) ^ buzhash_table[(size_t) s[buzhash_width]];
+  return rol32 (h, 1) ^ rol32 (buzhash_table[(size_t) (s-buzhash_width)[0]], buzhash_width) ^ buzhash_table[(size_t) s[0]];
 }

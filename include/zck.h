@@ -1,6 +1,7 @@
 #ifndef ZCK_H
 #define ZCK_H
 
+#define ZCK_NAME "zchunk"
 #define ZCK_VERSION "0.4.0"
 #define ZCK_VER_MAJOR 0
 #define ZCK_VER_MINOR 4
@@ -37,7 +38,8 @@ typedef enum zck_log_type {
     ZCK_LOG_DEBUG,
     ZCK_LOG_INFO,
     ZCK_LOG_WARNING,
-    ZCK_LOG_ERROR
+    ZCK_LOG_ERROR,
+    ZCK_LOG_NONE
 } zck_log_type;
 
 typedef struct zckCtx zckCtx;

@@ -275,7 +275,7 @@ ssize_t PUBLIC zck_get_header_length(zckCtx *zck) {
     return zck->data_offset;
 }
 
-ssize_t zck_get_data_length(zckCtx *zck) {
+ssize_t PUBLIC zck_get_data_length(zckCtx *zck) {
     zckIndexItem *idx = zck->index.first;
     while(idx->next != NULL)
         idx = idx->next;

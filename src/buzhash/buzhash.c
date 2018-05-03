@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-y
+
 #include "buzhash.h"
 
 #include <string.h>
@@ -94,7 +94,7 @@ const uint32_t buzhash_table[] = {
   0x7bf7cabc, 0xf9c18d66, 0x593ade65, 0xd95ddf11,
 };
 
-const size_t buzhash_width = 4096;
+const size_t buzhash_width = 8192;
 
 uint32_t
 buzhash (const char *s)

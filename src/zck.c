@@ -32,20 +32,16 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <zck.h>
 #include <argp.h>
+#include <zck.h>
 
+#include "util_common.h"
 #include "buzhash/buzhash.h"
 #include "memmem.h"
 
 static char doc[] = "zck - Create a new zchunk file";
 
 static char args_doc[] = "<file>";
-
-void version() {
-    printf(ZCK_NAME " " ZCK_VERSION "\nCopyright (c) 2018 Jonathan Dieter\n");
-    exit(0);
-}
 
 static struct argp_option options[] = {
     {"verbose", 'v', 0,        0,

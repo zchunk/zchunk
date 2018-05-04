@@ -1,7 +1,6 @@
 #ifndef ZCK_H
 #define ZCK_H
 
-#define ZCK_NAME "zchunk"
 #define ZCK_VERSION "0.4.0"
 #define ZCK_VER_MAJOR 0
 #define ZCK_VER_MINOR 4

@@ -32,36 +32,101 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <argp.h>
 #include <zck.h>
 
-int main (int argc, char *argv[]) {
-    if(argc != 3) {
-        printf("Usage: %s <source> <target>\n", argv[0]);
-        exit(1);
-    }
+#include "util_common.h"
 
-    int src_fd = open(argv[1], O_RDONLY);
+static char doc[] = "zck_delta_size - Calculate the difference between"
+                    " two zchunk files";
+
+static char args_doc[] = "<file 1> <file 2>";
+
+static struct argp_option options[] = {
+    {"verbose", 'v', 0,        0,
+     "Increase verbosity (can be specified more than once for debugging)"},
+    {"quiet",   'q', 0,        0, "Only show errors"},
+    {"version", 'V', 0,        0, "Show program version"},
+    { 0 }
+};
+
+struct arguments {
+  char *args[2];
+  zck_log_type log_level;
+};
+
+static error_t parse_opt (int key, char *arg, struct argp_state *state) {
+    struct arguments *arguments = state->input;
+
+    switch (key) {
+        case 'v':
+            arguments->log_level -= 1;
+            if(arguments->log_level < ZCK_LOG_DEBUG)
+                arguments->log_level = ZCK_LOG_DEBUG;
+            break;
+        case 'q':
+            arguments->log_level = ZCK_LOG_ERROR;
+            break;
+        case 'V':
+            version();
+            break;
+
+        case ARGP_KEY_ARG:
+            if (state->arg_num >= 2) {
+                argp_usage (state);
+                return EINVAL;
+            }
+            arguments->args[state->arg_num] = arg;
+
+            break;
+
+        case ARGP_KEY_END:
+            if (state->arg_num < 2) {
+                argp_usage (state);
+                return EINVAL;
+            }
+            break;
+
+        default:
+            return ARGP_ERR_UNKNOWN;
+    }
+    return 0;
+}
+
+static struct argp argp = {options, parse_opt, args_doc, doc};
+
+int main (int argc, char *argv[]) {
+    struct arguments arguments = {0};
+
+    /* Defaults */
+    arguments.log_level = ZCK_LOG_WARNING;
+
+    argp_parse (&argp, argc, argv, 0, 0, &arguments);
+
+    zck_set_log_level(arguments.log_level);
+
+    int src_fd = open(arguments.args[0], O_RDONLY);
     if(src_fd < 0) {
-        printf("Unable to open %s\n", argv[1]);
+        printf("Unable to open %s\n", arguments.args[0]);
         perror("");
         exit(1);
     }
     zckCtx *zck_src = zck_init_read(src_fd);
     if(zck_src == NULL) {
-        printf("Unable to read header from %s\n", argv[1]);
+        printf("Unable to read header from %s\n", arguments.args[0]);
         exit(1);
     }
     close(src_fd);
 
-    int tgt_fd = open(argv[2], O_RDONLY);
+    int tgt_fd = open(arguments.args[1], O_RDONLY);
     if(tgt_fd < 0) {
-        printf("Unable to open %s\n", argv[2]);
+        printf("Unable to open %s\n", arguments.args[1]);
         perror("");
         exit(1);
     }
     zckCtx *zck_tgt = zck_init_read(tgt_fd);
     if(zck_tgt == NULL) {
-        printf("Unable to open %s\n", argv[2]);
+        printf("Unable to open %s\n", arguments.args[1]);
         exit(1);
     }
     close(tgt_fd);

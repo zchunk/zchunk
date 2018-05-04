@@ -34,7 +34,74 @@
 #include <unistd.h>
 #include <libgen.h>
 #include <errno.h>
+#include <argp.h>
 #include <zck.h>
+
+#include "util_common.h"
+
+static char doc[] = "zckdl - Download zchunk file";
+
+static char args_doc[] = "<file>";
+
+static struct argp_option options[] = {
+    {"verbose", 'v', 0,        0, "Increase verbosity"},
+    {"quiet",   'q', 0,        0,
+     "Only show warnings (can be specified twice to only show errors)"},
+    {"source",  's', "FILE",   0, "File to use as delta source"},
+    {"version", 'V', 0,        0, "Show program version"},
+    { 0 }
+};
+
+struct arguments {
+  char *args[1];
+  zck_log_type log_level;
+  char *source;
+};
+
+static error_t parse_opt (int key, char *arg, struct argp_state *state) {
+    struct arguments *arguments = state->input;
+
+    switch (key) {
+        case 'v':
+            arguments->log_level = ZCK_LOG_DEBUG;
+            break;
+        case 'q':
+            if(arguments->log_level < ZCK_LOG_INFO)
+                arguments->log_level = ZCK_LOG_INFO;
+            arguments->log_level += 1;
+            if(arguments->log_level > ZCK_LOG_NONE)
+                arguments->log_level = ZCK_LOG_NONE;
+            break;
+        case 's':
+            arguments->source = arg;
+            break;
+        case 'V':
+            version();
+            break;
+
+        case ARGP_KEY_ARG:
+            if (state->arg_num >= 1) {
+                argp_usage (state);
+                return EINVAL;
+            }
+            arguments->args[state->arg_num] = arg;
+
+            break;
+
+        case ARGP_KEY_END:
+            if (state->arg_num < 1) {
+                argp_usage (state);
+                return EINVAL;
+            }
+            break;
+
+        default:
+            return ARGP_ERR_UNKNOWN;
+    }
+    return 0;
+}
+
+static struct argp argp = {options, parse_opt, args_doc, doc};
 
 int main (int argc, char *argv[]) {
     zckCtx *zck_tgt = zck_create();
@@ -43,16 +110,19 @@ int main (int argc, char *argv[]) {
         exit(1);
 
     zck_dl_global_init();
-    zck_set_log_level(ZCK_LOG_DEBUG);
 
-    if(argc != 3) {
-        printf("Usage: %s <source> <target url>\n", argv[0]);
-        exit(1);
-    }
+    struct arguments arguments = {0};
 
-    int src_fd = open(argv[1], O_RDONLY);
+    /* Defaults */
+    arguments.log_level = ZCK_LOG_INFO;
+
+    argp_parse (&argp, argc, argv, 0, 0, &arguments);
+
+    zck_set_log_level(arguments.log_level);
+
+    int src_fd = open(arguments.source, O_RDONLY);
     if(src_fd < 0) {
-        printf("Unable to open %s\n", argv[1]);
+        printf("Unable to open %s\n", arguments.source);
         perror("");
         exit(1);
     }
@@ -67,10 +137,10 @@ int main (int argc, char *argv[]) {
         exit(1);
     dl->zck = zck_tgt;
 
-    char *outname_full = calloc(1, strlen(argv[2])+1);
-    memcpy(outname_full, argv[2], strlen(argv[2]));
+    char *outname_full = calloc(1, strlen(arguments.args[0])+1);
+    memcpy(outname_full, arguments.args[0], strlen(arguments.args[0]));
     char *outname = basename(outname_full);
-    int dst_fd = open(outname, O_EXCL | O_RDWR | O_CREAT, 0644);
+    int dst_fd = open(outname, O_RDWR | O_CREAT, 0644);
     if(dst_fd < 0) {
         printf("Unable to open %s: %s\n", outname, strerror(errno));
         free(outname_full);
@@ -79,7 +149,7 @@ int main (int argc, char *argv[]) {
     free(outname_full);
     dl->dst_fd = dst_fd;
 
-    if(!zck_dl_get_header(zck_tgt, dl, argv[2]))
+    if(!zck_dl_get_header(zck_tgt, dl, arguments.args[0]))
         exit(1);
 
     zck_range_close(&(dl->info));
@@ -90,7 +160,7 @@ int main (int argc, char *argv[]) {
         exit(1);
 
     lseek(dl->dst_fd, 0, SEEK_SET);
-    if(!zck_dl_range(dl, argv[2]))
+    if(!zck_dl_range(dl, arguments.args[0]))
         exit(1);
 
 

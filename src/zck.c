@@ -184,7 +184,7 @@ int main (int argc, char *argv[]) {
     int in_fd = open(arguments.args[0], O_RDONLY);
     off_t in_size = 0;
     if(in_fd < 0) {
-        printf("Unable to open %s for reading", argv[1]);
+        printf("Unable to open %s for reading", arguments.args[0]);
         perror("");
         exit(1);
     }
@@ -210,7 +210,9 @@ int main (int argc, char *argv[]) {
             char *search = found;
             char *prev_srpm = memmem(search, in_size - (search-data), "<rpm:sourcerpm", 14);
             while(search) {
-                char *next = memmem(search, in_size - (search-data), argv[2], strlen(argv[2]));
+                char *next = memmem(search, in_size - (search-data),
+                                    arguments.split_string,
+                                    strlen(arguments.split_string));
                 if(next) {
                     char *next_srpm = memmem(next, in_size - (next-data), "<rpm:sourcerpm", 14);
 

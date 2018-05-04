@@ -133,9 +133,9 @@ int main (int argc, char *argv[]) {
 
     if(zck_get_chunk_hash_type(zck_tgt) != zck_get_chunk_hash_type(zck_src)) {
         printf("ERROR: Chunk hash types don't match:\n");
-        printf("   %s: %s\n", argv[1], zck_hash_name_from_type(zck_get_chunk_hash_type(zck_tgt)));
-        printf("   %s: %s\n", argv[2], zck_hash_name_from_type(zck_get_chunk_hash_type(zck_src)));
-        return 1;
+        printf("   %s: %s\n", arguments.args[0], zck_hash_name_from_type(zck_get_chunk_hash_type(zck_tgt)));
+        printf("   %s: %s\n", arguments.args[1], zck_hash_name_from_type(zck_get_chunk_hash_type(zck_src)));
+        exit(1);
     }
     zckIndex *tgt_info = zck_get_index(zck_tgt);
     if(tgt_info == NULL)

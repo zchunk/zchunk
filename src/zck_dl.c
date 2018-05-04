@@ -128,7 +128,7 @@ int main (int argc, char *argv[]) {
     }
     zckCtx *zck_src = zck_init_read(src_fd);
     if(zck_src == NULL) {
-        printf("Unable to open %s\n", argv[1]);
+        printf("Unable to open %s\n", arguments.source);
         exit(1);
     }
 

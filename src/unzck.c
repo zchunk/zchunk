@@ -32,31 +32,91 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <argp.h>
 #include <zck.h>
+
+#include "util_common.h"
 
 #define BLK_SIZE 32768
 
-int main (int argc, char *argv[]) {
-    char *out_name;
+static char doc[] = "unzck - Decompress a zchunk file";
 
-    zck_set_log_level(ZCK_LOG_DEBUG);
+static char args_doc[] = "<file>";
 
-    if(argc != 2) {
-        printf("Usage: %s <file>\n", argv[0]);
-        exit(1);
+static struct argp_option options[] = {
+    {"verbose", 'v', 0,        0,
+     "Increase verbosity (can be specified more than once for debugging)"},
+    {"quiet",   'q', 0,        0, "Only show errors"},
+    {"version", 'V', 0,        0, "Show program version"},
+    { 0 }
+};
+
+struct arguments {
+  char *args[1];
+  zck_log_type log_level;
+};
+
+static error_t parse_opt (int key, char *arg, struct argp_state *state) {
+    struct arguments *arguments = state->input;
+
+    switch (key) {
+        case 'v':
+            arguments->log_level -= 1;
+            if(arguments->log_level < ZCK_LOG_DEBUG)
+                arguments->log_level = ZCK_LOG_DEBUG;
+            break;
+        case 'q':
+            arguments->log_level = ZCK_LOG_ERROR;
+            break;
+        case 'V':
+            version();
+            break;
+
+        case ARGP_KEY_ARG:
+            if (state->arg_num >= 1) {
+                argp_usage (state);
+                return EINVAL;
+            }
+            arguments->args[state->arg_num] = arg;
+
+            break;
+
+        case ARGP_KEY_END:
+            if (state->arg_num < 1) {
+                argp_usage (state);
+                return EINVAL;
+            }
+            break;
+
+        default:
+            return ARGP_ERR_UNKNOWN;
     }
+    return 0;
+}
 
-    int src_fd = open(argv[1], O_RDONLY);
+static struct argp argp = {options, parse_opt, args_doc, doc};
+
+int main (int argc, char *argv[]) {
+    struct arguments arguments = {0};
+
+    /* Defaults */
+    arguments.log_level = ZCK_LOG_WARNING;
+
+    argp_parse (&argp, argc, argv, 0, 0, &arguments);
+
+    zck_set_log_level(arguments.log_level);
+
+    int src_fd = open(arguments.args[0], O_RDONLY);
     if(src_fd < 0) {
-        printf("Unable to open %s\n", argv[1]);
+        printf("Unable to open %s\n", arguments.args[0]);
         perror("");
         exit(1);
     }
 
-    out_name = malloc(strlen(argv[1]) - 3);
-    snprintf(out_name, strlen(argv[1]) - 3, "%s", argv[1]);
+    char *out_name = malloc(strlen(arguments.args[0]) - 3);
+    snprintf(out_name, strlen(arguments.args[0]) - 3, "%s", arguments.args[0]);
 
-    int dst_fd = open(out_name, O_EXCL | O_WRONLY | O_CREAT, 0644);
+    int dst_fd = open(out_name, O_TRUNC | O_WRONLY | O_CREAT, 0644);
     if(dst_fd < 0) {
         printf("Unable to open %s", out_name);
         perror("");
@@ -71,6 +131,7 @@ int main (int argc, char *argv[]) {
         goto error1;
 
     char *data = malloc(BLK_SIZE);
+    size_t total = 0;
     while(True) {
         ssize_t read = zck_read(zck, data, BLK_SIZE);
         if(read < 0)
@@ -81,10 +142,12 @@ int main (int argc, char *argv[]) {
             printf("Error writing to %s\n", out_name);
             goto error2;
         }
+        total += read;
     }
     if(!zck_close(zck))
         goto error2;
-
+    if(arguments.log_level <= ZCK_LOG_INFO)
+        printf("Decompressed %lu bytes\n", total);
     good_exit = True;
 error2:
     free(data);

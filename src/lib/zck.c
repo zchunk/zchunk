@@ -298,7 +298,7 @@ int zck_get_tmp_fd() {
         return -1;
     }
     strncpy(fname, tmpdir, strlen(tmpdir));
-    strncpy(fname+strlen(tmpdir), "/", 1);
+    strncpy(fname+strlen(tmpdir), "/", 2);
     strncpy(fname+strlen(tmpdir)+1, template, strlen(template));
 
     temp_fd = mkstemp(fname);

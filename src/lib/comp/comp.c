@@ -418,6 +418,11 @@ ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, int use_dict) {
     if(dst_size == 0)
         return 0;
 
+    /* Read dictionary if it exists and hasn't been read yet */
+    if(use_dict && !zck->comp.data_eof && zck->comp.data_idx == NULL &&
+       zck->index.first->length > 0 && !zck_import_dict(zck))
+        return -1;
+
     size_t dc = 0;
     char *src = zmalloc(dst_size - dc);
     if(src == NULL) {
@@ -473,7 +478,7 @@ ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, int use_dict) {
             }
         }
         if(zck->comp.data_loc == zck->comp.data_idx->comp_length) {
-            if(comp_end_dchunk(zck, use_dict, zck->comp.data_idx->length) < 0)
+            if(!comp_end_dchunk(zck, use_dict, zck->comp.data_idx->length))
                 return -1;
             if(zck->comp.data_idx == NULL)
                 zck->comp.data_eof = True;

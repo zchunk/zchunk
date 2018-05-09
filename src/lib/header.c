@@ -341,7 +341,7 @@ int read_sig(zckCtx *zck) {
     return True;
 }
 
-int zck_read_header(zckCtx *zck) {
+int PUBLIC zck_read_header(zckCtx *zck) {
     VALIDATE_READ(zck);
 
     if(!read_lead_1(zck))
@@ -355,8 +355,6 @@ int zck_read_header(zckCtx *zck) {
     if(!read_index(zck))
         return False;
     if(!read_sig(zck))
-        return False;
-    if(!zck_import_dict(zck))
         return False;
     return True;
 }

@@ -319,24 +319,19 @@ int zck_dl_range_chk_chunk(zckDL *dl, char *url, int is_chunk) {
     CURLcode res;
 
     for(int i=0; i<dl->info.segments; i++) {
-        struct curl_slist *header = NULL;
-
         if(dl->priv->dl_regex != NULL)
             zck_dl_free_dl_regex(dl);
         if(dl->boundary != NULL)
             free(dl->boundary);
 
-        zck_log(ZCK_LOG_DEBUG, "%s\n", ra[i]);
-        header = curl_slist_append(header, ra[i]);
         curl_easy_setopt(dl->priv->curl_ctx, CURLOPT_URL, url);
         curl_easy_setopt(dl->priv->curl_ctx, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(dl->priv->curl_ctx, CURLOPT_HEADERFUNCTION, get_header);
         curl_easy_setopt(dl->priv->curl_ctx, CURLOPT_HEADERDATA, dl);
         curl_easy_setopt(dl->priv->curl_ctx, CURLOPT_WRITEFUNCTION, dl_write_data);
         curl_easy_setopt(dl->priv->curl_ctx, CURLOPT_WRITEDATA, dl);
-        curl_easy_setopt(dl->priv->curl_ctx, CURLOPT_HTTPHEADER, header);
+        curl_easy_setopt(dl->priv->curl_ctx, CURLOPT_RANGE, ra[i]);
         res = curl_easy_perform(dl->priv->curl_ctx);
-        curl_slist_free_all(header);
         free(ra[i]);
 
         if(res != CURLE_OK) {

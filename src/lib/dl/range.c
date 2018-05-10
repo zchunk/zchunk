@@ -188,13 +188,8 @@ char *zck_range_get_char(zckRangeItem **range, int max_ranges) {
         return NULL;
     }
 
-    if(snprintf(output, 20, "Range: bytes=") > 20) {
-        free(output);
-        zck_log(ZCK_LOG_ERROR, "Error writing range\n");
-        return NULL;
-    }
-    int loc = strlen(output);
-    int count=0;
+    int loc = 0;
+    int count = 0;
     while(*range) {
         int length = snprintf(output+loc, buf_size-loc, "%lu-%lu,",
                               (long unsigned)(*range)->start,

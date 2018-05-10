@@ -232,6 +232,14 @@ char *zck_range_get_char(zckRangeItem **range, int max_ranges) {
     return output;
 }
 
+char PUBLIC *zck_get_range(size_t start, size_t end) {
+    zckRangeItem range = {0};
+    range.start = start;
+    range.end = end;
+    zckRangeItem *r = &range;
+    return zck_range_get_char(&r, 1);
+}
+
 int zck_range_get_array(zckRange *info, char **ra) {
     if(!info) {
         zck_log(ZCK_LOG_ERROR, "zckRange not allocated\n");

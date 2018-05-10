@@ -272,6 +272,9 @@ int zck_range_get_array(zckRange *info, char **ra)
     __attribute__ ((warn_unused_result));
 /* Free any resources in zckRange */
 void zck_range_close(zckRange *info);
+/* Get range string from start and end location */
+char *zck_get_range(size_t start, size_t end)
+    __attribute__ ((warn_unused_result));
 
 
 /*******************************************************************

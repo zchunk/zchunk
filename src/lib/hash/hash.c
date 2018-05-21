@@ -157,7 +157,6 @@ int PUBLIC zck_hash_check_data(zckCtx *zck, int dst_fd) {
         idx = idx->next;
     }
     return zck_validate_file(zck);
-    return True;
 }
 
 char *zck_hash_finalize(zckHash *hash) {

@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdarg.h>
+#include <unistd.h>
 #include <zck.h>
 
 #include "zck_private.h"
@@ -41,7 +42,7 @@ void PUBLIC zck_log(zck_log_type lt, const char *format, ...) {
     if(lt >= log_level) {
         va_list args;
         va_start(args, format);
-        vprintf(format, args);
+        vdprintf(STDERR_FILENO, format, args);
         va_end(args);
     }
 }

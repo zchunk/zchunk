@@ -45,11 +45,13 @@ static struct argp_option options[] = {
      "Increase verbosity (can be specified more than once for debugging)"},
     {"quiet",   'q', 0,        0, "Only show errors"},
     {"version", 'V', 0,        0, "Show program version"},
+    {"verify",  'f', 0,        0, "Verify full zchunk file"},
     { 0 }
 };
 
 struct arguments {
   char *args[1];
+  int verify;
   zck_log_type log_level;
 };
 
@@ -67,6 +69,9 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
             break;
         case 'V':
             version();
+            break;
+        case 'f':
+            arguments->verify = True;
             break;
 
         case ARGP_KEY_ARG:
@@ -114,6 +119,13 @@ int main (int argc, char *argv[]) {
         printf("Unable to read header\n");
         exit(1);
     }
+
+    int valid_cks = 1;
+    if(arguments.verify) {
+        valid_cks = zck_validate_checksums(zck);
+        if(valid_cks < 0)
+            exit(1);
+    }
     close(src_fd);
 
     printf("Overall checksum type: %s\n", zck_hash_name_from_type(zck_get_full_hash_type(zck)));
@@ -125,6 +137,7 @@ int main (int argc, char *argv[]) {
     free(digest);
     printf("Index count: %lu\n", (long unsigned)zck_get_index_count(zck));
     printf("Chunk checksum type: %s\n", zck_hash_name_from_type(zck_get_chunk_hash_type(zck)));
+
     zckIndex *idxi = zck_get_index(zck);
     if(idxi == NULL)
         exit(1);
@@ -133,11 +146,19 @@ int main (int argc, char *argv[]) {
         char *digest = zck_get_chunk_digest(idx);
         if(digest == NULL)
             exit(1);
-        printf("%s %12lu %12lu %12lu\n", digest,
+        printf("%s %12lu %12lu %12lu", digest,
                (long unsigned)(idx->start + zck_get_header_length(zck)),
                (long unsigned)idx->comp_length, (long unsigned)idx->length);
+        if(arguments.verify) {
+            if(idx->valid)
+                printf("  +");
+            else
+                printf("  !");
+        }
+        printf("\n");
         free(digest);
         idx = idx->next;
     }
     zck_free(&zck);
+    return 1-valid_cks;
 }

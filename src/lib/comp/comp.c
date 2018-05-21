@@ -398,7 +398,7 @@ ssize_t PUBLIC zck_end_chunk(zckCtx *zck) {
 
 ssize_t comp_end_dchunk(zckCtx *zck, int use_dict, size_t fd_size) {
     ssize_t rb = zck->comp.end_dchunk(&(zck->comp), use_dict, fd_size);
-    if(!zck_validate_current_chunk(zck))
+    if(zck_validate_current_chunk(zck) < 1)
         return -1;
     zck->comp.data_loc = 0;
     zck->comp.data_idx = zck->comp.data_idx->next;

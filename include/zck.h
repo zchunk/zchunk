@@ -120,6 +120,9 @@ int zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t value)
  *******************************************************************/
 /* Set logging level */
 void zck_set_log_level(zck_log_type ll);
+/* Validate the chunk and data checksums for the current file.
+ * Returns -1 for error, 0 for invalid checksum and 1 for valid checksum */
+int zck_validate_checksums(zckCtx *zck);
 
 
 /*******************************************************************

@@ -40,6 +40,13 @@
                             return False; \
                         }
 
+#define VALIDATE_READ(f)    VALIDATE(f); \
+                            if(f->mode != ZCK_MODE_READ) { \
+                                zck_log(ZCK_LOG_ERROR, \
+                                        "zckCtx not opened for reading\n"); \
+                                return False; \
+                            }
+
 int PUBLIC zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t value) {
     /* Set hash type */
     if(option == ZCK_HASH_FULL_TYPE) {
@@ -351,76 +358,43 @@ int zck_import_dict(zckCtx *zck) {
     return True;
 }
 
-int zck_validate_chunk(zckCtx *zck, char *data, size_t size, zckIndexItem *idx,
-                       int chk_num) {
+int zck_validate_chunk(zckCtx *zck, zckIndexItem *idx,
+                       zck_log_type bad_checksum) {
     VALIDATE(zck);
     if(idx == NULL) {
-        zck_log(ZCK_LOG_ERROR, "zckIndexItem not initialized\n");
-        return False;
-    }
-    zckHash chunk_hash;
-
-    /* Overall chunk checksum */
-    if(!zck_hash_update(&(zck->check_full_hash), data, size)) {
-        zck_log(ZCK_LOG_ERROR, "Unable to update full file checksum\n");
-        return False;
+        zck_log(ZCK_LOG_ERROR, "Index not initialized\n");
+        return -1;
     }
 
-    /* Check chunk checksum */
-    if(!zck_hash_init(&chunk_hash, &(zck->chunk_hash_type))) {
-        zck_log(ZCK_LOG_ERROR,
-                "Unable to initialize checksum for chunk %i\n", chk_num);
-        return False;
-    }
-    if(!zck_hash_update(&chunk_hash, data, size)) {
-        zck_log(ZCK_LOG_ERROR,
-                "Unable to update checksum for chunk %i\n", chk_num);
-        return False;
-    }
-
-    char *digest = zck_hash_finalize(&chunk_hash);
-    if(!digest) {
-        zck_log(ZCK_LOG_ERROR,
-                "Unable to calculate %s checksum for chunk %i\n",
-                zck_hash_name_from_type(zck->index.hash_type), chk_num);
-        return False;
-    }
-    if(memcmp(digest, idx->digest, zck->index.digest_size) != 0) {
-        free(digest);
-        zck_log(ZCK_LOG_ERROR, "Chunk %i failed %s checksum\n",
-                chk_num, zck_hash_name_from_type(zck->index.hash_type));
-        return False;
-    }
-    free(digest);
-    return True;
-}
-
-int zck_validate_current_chunk(zckCtx *zck) {
-    VALIDATE(zck);
     char *digest = zck_hash_finalize(&(zck->check_chunk_hash));
     if(digest == NULL) {
         zck_log(ZCK_LOG_ERROR,
                 "Unable to calculate %s checksum for chunk\n");
-        return False;
+        return -1;
     }
-    if(zck->comp.data_idx->comp_length == 0)
-        memset(digest, 0, zck->comp.data_idx->digest_size);
+    if(idx->comp_length == 0)
+        memset(digest, 0, idx->digest_size);
     zck_log(ZCK_LOG_DEBUG, "Checking chunk checksum\n");
-    char *pdigest = zck_get_chunk_digest(zck->comp.data_idx);
-    zck_log(ZCK_LOG_DEBUG, "Expected chunk checksum: %s\n", pdigest);
+    char *pdigest = zck_get_chunk_digest(idx);
+    zck_log(ZCK_LOG_DEBUG, "Expected chunk checksum:   %s\n", pdigest);
     free(pdigest);
-    pdigest = get_digest_string(digest, zck->comp.data_idx->digest_size);
+    pdigest = get_digest_string(digest, idx->digest_size);
     zck_log(ZCK_LOG_DEBUG, "Calculated chunk checksum: %s\n", pdigest);
     free(pdigest);
-    if(memcmp(digest, zck->comp.data_idx->digest,
-              zck->chunk_hash_type.digest_size) != 0) {
+    if(memcmp(digest, idx->digest, idx->digest_size) != 0) {
         free(digest);
-        zck_log(ZCK_LOG_ERROR, "Chunk checksum failed!\n");
-        return False;
+        zck_log(bad_checksum, "Chunk checksum failed!\n");
+        return 0;
     }
     zck_log(ZCK_LOG_DEBUG, "Chunk checksum valid\n");
     free(digest);
-    return True;
+    return 1;
+}
+
+int zck_validate_current_chunk(zckCtx *zck) {
+    VALIDATE(zck);
+
+    return zck_validate_chunk(zck, zck->comp.data_idx, ZCK_LOG_ERROR);
 }
 
 int zck_validate_file(zckCtx *zck) {
@@ -429,25 +403,24 @@ int zck_validate_file(zckCtx *zck) {
     if(digest == NULL) {
         zck_log(ZCK_LOG_ERROR,
                 "Unable to calculate %s checksum for full file\n");
-        return False;
+        return -1;
     }
     zck_log(ZCK_LOG_DEBUG, "Checking data checksum\n");
-    zck_log(ZCK_LOG_INFO, "Expected data checksum: ");
-    for(int i=0; i<zck->hash_type.digest_size; i++)
-        zck_log(ZCK_LOG_INFO, "%02x", (unsigned char)zck->full_hash_digest[i]);
-    zck_log(ZCK_LOG_INFO, "\n");
-    zck_log(ZCK_LOG_INFO, "Calculated data checksum: ");
-    for(int i=0; i<zck->hash_type.digest_size; i++)
-        zck_log(ZCK_LOG_INFO, "%02x", (unsigned char)digest[i]);
-    zck_log(ZCK_LOG_INFO, "\n");
+    char *cks = get_digest_string(zck->full_hash_digest,
+                                  zck->hash_type.digest_size);
+    zck_log(ZCK_LOG_INFO, "Expected data checksum:   %s\n", cks);
+    free(cks);
+    cks = get_digest_string(digest, zck->hash_type.digest_size);
+    zck_log(ZCK_LOG_INFO, "Calculated data checksum: %s\n", cks);
+    free(cks);
     if(memcmp(digest, zck->full_hash_digest, zck->hash_type.digest_size) != 0) {
         free(digest);
         zck_log(ZCK_LOG_ERROR, "Data checksum failed!\n");
-        return False;
+        return 0;
     }
     zck_log(ZCK_LOG_DEBUG, "Data checksum valid\n");
     free(digest);
-    return True;
+    return 1;
 }
 
 int zck_validate_header(zckCtx *zck) {
@@ -456,27 +429,94 @@ int zck_validate_header(zckCtx *zck) {
     if(digest == NULL) {
         zck_log(ZCK_LOG_ERROR,
                 "Unable to calculate %s checksum for header\n");
-        return False;
+        return -1;
     }
     zck_log(ZCK_LOG_DEBUG, "Checking header checksum\n");
-    zck_log(ZCK_LOG_INFO, "Expected header checksum: ");
-    for(int i=0; i<zck->hash_type.digest_size; i++)
-        zck_log(ZCK_LOG_INFO, "%02x", (unsigned char)zck->header_digest[i]);
-    zck_log(ZCK_LOG_INFO, "\n");
-    zck_log(ZCK_LOG_INFO, "Calculated header checksum: ");
-    for(int i=0; i<zck->hash_type.digest_size; i++)
-        zck_log(ZCK_LOG_INFO, "%02x", (unsigned char)digest[i]);
-    zck_log(ZCK_LOG_INFO, "\n");
+    char *cks = get_digest_string(zck->header_digest,
+                                  zck->hash_type.digest_size);
+    zck_log(ZCK_LOG_INFO, "Expected header checksum:   %s\n", cks);
+    free(cks);
+    cks = get_digest_string(digest, zck->hash_type.digest_size);
+    zck_log(ZCK_LOG_INFO, "Calculated header checksum: %s\n", cks);
+    free(cks);
     if(memcmp(digest, zck->header_digest, zck->hash_type.digest_size) != 0) {
         free(digest);
         zck_log(ZCK_LOG_ERROR, "Header checksum failed!\n");
-        return False;
+        return 0;
     }
     zck_log(ZCK_LOG_DEBUG, "Header checksum valid\n");
     free(digest);
 
     if(!zck_hash_init(&(zck->check_full_hash), &(zck->hash_type)))
-        return False;
+        return -1;
 
-    return True;
+    return 1;
+}
+
+int PUBLIC zck_validate_checksums(zckCtx *zck) {
+    VALIDATE_READ(zck);
+    char buf[BUF_SIZE];
+
+    if(zck->data_offset == 0) {
+        zck_log(ZCK_LOG_ERROR, "Header hasn't been read yet\n");
+        return -1;
+    }
+
+    zck_hash_close(&(zck->check_full_hash));
+    if(!zck_hash_init(&(zck->check_full_hash), &(zck->hash_type)))
+        return -1;
+
+    if(!seek_data(zck->fd, zck->data_offset, SEEK_SET))
+        return -1;
+
+    /* Check each chunk checksum */
+    zckIndexItem *idx = zck->index.first;
+    int all_good = True;
+    while(idx) {
+        if(idx == zck->index.first && idx->length == 0) {
+            idx->valid = 1;
+            continue;
+        }
+
+        if(!zck_hash_init(&(zck->check_chunk_hash), &(zck->chunk_hash_type)))
+            return -1;
+
+        size_t rlen = 0;
+        while(rlen < idx->comp_length) {
+            size_t rsize = BUF_SIZE;
+            if(BUF_SIZE > idx->comp_length - rlen)
+                rsize = idx->comp_length - rlen;
+            if(read_data(zck->fd, buf, rsize) != rsize)
+                return 0;
+            if(!zck_hash_update(&(zck->check_chunk_hash), buf, rsize))
+                return -1;
+            if(!zck_hash_update(&(zck->check_full_hash), buf, rsize))
+                return -1;
+            rlen += rsize;
+        }
+        int valid_chunk = zck_validate_chunk(zck, idx, ZCK_LOG_ERROR);
+        if(valid_chunk < 0)
+            return -1;
+        idx->valid = valid_chunk;
+        if(all_good && !valid_chunk)
+            all_good = False;
+        idx = idx->next;
+    }
+    if(!all_good)
+        return 0;
+
+    /* Check data checksum */
+    int valid_file = zck_validate_file(zck);
+    if(valid_file < 0)
+        return -1;
+
+    /* Go back to beginning of data section */
+    if(!seek_data(zck->fd, zck->data_offset, SEEK_SET))
+        return -1;
+
+    /* Reinitialize data checksum */
+    if(!zck_hash_init(&(zck->check_full_hash), &(zck->hash_type)))
+        return -1;
+
+    return valid_file;
 }

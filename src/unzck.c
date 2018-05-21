@@ -37,8 +37,6 @@
 
 #include "util_common.h"
 
-#define BLK_SIZE 32768
-
 static char doc[] = "unzck - Decompress a zchunk file";
 
 static char args_doc[] = "<file>";
@@ -130,10 +128,10 @@ int main (int argc, char *argv[]) {
     if(zck == NULL)
         goto error1;
 
-    char *data = malloc(BLK_SIZE);
+    char *data = malloc(BUF_SIZE);
     size_t total = 0;
     while(True) {
-        ssize_t read = zck_read(zck, data, BLK_SIZE);
+        ssize_t read = zck_read(zck, data, BUF_SIZE);
         if(read < 0)
             goto error2;
         if(read == 0)

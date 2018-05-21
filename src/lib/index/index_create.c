@@ -93,7 +93,7 @@ int index_create(zckCtx *zck) {
 }
 
 static int finish_chunk(zckIndex *index, zckIndexItem *item, char *digest,
-                        int finished) {
+                        int valid) {
     VALIDATE(index);
     VALIDATE(item);
 
@@ -108,7 +108,7 @@ static int finish_chunk(zckIndex *index, zckIndexItem *item, char *digest,
         item->digest_size = index->digest_size;
     }
     item->start = index->length;
-    item->finished = finished;
+    item->valid = valid;
     if(index->first == NULL) {
         index->first = item;
     } else {

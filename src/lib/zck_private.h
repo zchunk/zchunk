@@ -195,7 +195,7 @@ int zck_index_read(zckCtx *zck, char *data, size_t size, size_t max_length)
 int index_create(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 int zck_index_new_chunk(zckIndex *index, char *digest, int digest_size,
-                        size_t comp_size, size_t orig_size, int finished)
+                        size_t comp_size, size_t orig_size, int valid)
     __attribute__ ((warn_unused_result));
 int zck_index_add_to_chunk(zckCtx *zck, char *data, size_t comp_size,
                         size_t orig_size)

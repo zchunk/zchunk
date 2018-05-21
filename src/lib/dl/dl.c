@@ -117,7 +117,7 @@ int zck_dl_write_chunk(zckDL *dl) {
         if(!zck_dl_write_zero(dl->zck, dl->priv->tgt_check))
             return False;
     } else {
-        dl->priv->tgt_check->finished = True;
+        dl->priv->tgt_check->valid = True;
     }
     dl->priv->tgt_check = NULL;
     dl->priv->chunk_hash = NULL;
@@ -146,7 +146,7 @@ int zck_dl_write_range(zckDL *dl, const char *at, size_t length) {
             if(dl->priv->dl_chunk_data == idx->start) {
                 zckIndexItem *tgt_idx = dl->zck->index.first;
                 while(tgt_idx) {
-                    if(tgt_idx->finished)
+                    if(tgt_idx->valid)
                         tgt_idx = tgt_idx->next;
                     if(idx->comp_length == tgt_idx->comp_length &&
                        memcmp(idx->digest, tgt_idx->digest,
@@ -253,7 +253,7 @@ int zck_dl_write_and_verify(zckRange *info, zckCtx *src, zckCtx *tgt,
         if(!zck_range_add(info, tgt_idx, tgt))
             return False;
     } else {
-        tgt_idx->finished = True;
+        tgt_idx->valid = True;
         zck_log(ZCK_LOG_DEBUG, "Writing %lu bytes at %lu\n",
                 tgt_idx->comp_length, tgt_idx->start);
     }

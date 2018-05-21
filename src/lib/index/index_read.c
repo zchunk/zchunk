@@ -88,7 +88,7 @@ int zck_index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
             return False;
         new->length = chunk_length;
 
-        new->finished = False;
+        new->valid = False;
         idx_loc += new->comp_length;
         zck->index.length = idx_loc;
 

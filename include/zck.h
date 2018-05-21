@@ -48,7 +48,7 @@ typedef struct zckHash zckHash;
 typedef struct zckIndexItem {
     char *digest;
     int digest_size;
-    int finished;
+    int valid;
     size_t start;
     size_t comp_length;
     size_t length;

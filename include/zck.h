@@ -24,12 +24,14 @@ typedef enum zck_comp {
 typedef enum zck_ioption {
     ZCK_HASH_FULL_TYPE = 0,     /* Set full file hash type, using zck_hash */
     ZCK_HASH_CHUNK_TYPE,        /* Set chunk hash type using zck_hash */
+    ZCK_VAL_HEADER_HASH_TYPE,   /* Set what the header hash type *should* be */
+    ZCK_VAL_HEADER_LENGTH,      /* Set what the header length *should* be */
     ZCK_COMP_TYPE = 100,        /* Set compression type using zck_comp */
-    ZCK_COMP_DICT_SIZE,         /* Set compression dictionary size */
     ZCK_ZSTD_COMP_LEVEL = 1000  /* Set zstd compression level */
 } zck_ioption;
 
 typedef enum zck_soption {
+    ZCK_VAL_HEADER_DIGEST = 0,  /* Set what the header hash *should* be */
     ZCK_COMP_DICT = 100         /* Set compression dictionary */
 } zck_soption;
 
@@ -108,7 +110,8 @@ void zck_free(zckCtx **zck);
  * Options
  *******************************************************************/
 /* Set string option */
-int zck_set_soption(zckCtx *zck, zck_soption option, const void *value)
+int zck_set_soption(zckCtx *zck, zck_soption option, const void *value,
+                    size_t length)
     __attribute__ ((warn_unused_result));
 /* Set integer option */
 int zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t value)

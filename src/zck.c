@@ -173,9 +173,7 @@ int main (int argc, char *argv[]) {
         exit(1);
     }*/
     if(dict_size > 0) {
-        if(!zck_set_ioption(zck, ZCK_COMP_DICT_SIZE, dict_size))
-            exit(1);
-        if(!zck_set_soption(zck, ZCK_COMP_DICT, dict))
+        if(!zck_set_soption(zck, ZCK_COMP_DICT, dict, dict_size))
             exit(1);
     }
     free(dict);

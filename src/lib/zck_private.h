@@ -261,7 +261,8 @@ ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, int use_dict)
     __attribute__ ((warn_unused_result));
 int comp_ioption(zckCtx *zck, zck_ioption option, ssize_t value)
     __attribute__ ((warn_unused_result));
-int comp_soption(zckCtx *zck, zck_soption option, const void *value)
+int comp_soption(zckCtx *zck, zck_soption option, const void *value,
+                 size_t length)
     __attribute__ ((warn_unused_result));
 
 /* dl/range.c */

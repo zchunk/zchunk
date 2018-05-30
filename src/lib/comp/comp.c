@@ -224,8 +224,6 @@ int comp_ioption(zckCtx *zck, zck_ioption option, ssize_t value) {
     }
     if(option == ZCK_COMP_TYPE) {
         return set_comp_type(zck, value);
-    } else if(option == ZCK_COMP_DICT_SIZE) {
-        zck->comp.dict_size = value;
     } else {
         if(zck && zck->comp.set_parameter)
             return zck->comp.set_parameter(&(zck->comp), option, &value);
@@ -237,7 +235,8 @@ int comp_ioption(zckCtx *zck, zck_ioption option, ssize_t value) {
     return True;
 }
 
-int comp_soption(zckCtx *zck, zck_soption option, const void *value) {
+int comp_soption(zckCtx *zck, zck_soption option, const void *value,
+                 size_t length) {
     VALIDATE(zck);
 
     /* Cannot change compression parameters after compression has started */
@@ -247,19 +246,15 @@ int comp_soption(zckCtx *zck, zck_soption option, const void *value) {
         return False;
     }
     if(option == ZCK_COMP_DICT) {
-        if(zck->comp.dict_size == 0) {
-            zck_log(ZCK_LOG_ERROR,
-                    "Dict size must be set before adding dict\n");
-            return False;
-        }
-        char *dict = zmalloc(zck->comp.dict_size);
+        char *dict = zmalloc(length);
         if(dict == NULL) {
             zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
-                    zck->comp.dict_size);
+                    length);
             return False;
         }
-        memcpy(dict, value, zck->comp.dict_size);
+        memcpy(dict, value, length);
         zck->comp.dict = dict;
+        zck->comp.dict_size = length;
     } else {
         if(zck && zck->comp.set_parameter)
             return zck->comp.set_parameter(&(zck->comp), option, value);

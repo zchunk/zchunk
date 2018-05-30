@@ -40,7 +40,7 @@ int zck_index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
     int hash_type;
     if(!compint_to_int(&hash_type, data + length, &length, max_length))
         return False;
-    if(!zck_set_ioption(zck, ZCK_HASH_CHUNK_TYPE, hash_type))
+    if(!set_chunk_hash_type(zck, hash_type))
         return False;
 
     /* Read number of index entries */

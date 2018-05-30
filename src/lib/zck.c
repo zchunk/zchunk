@@ -136,6 +136,7 @@ int PUBLIC zck_set_soption(zckCtx *zck, zck_soption option, const void *value,
 
     /* Compression options */
     } else if(option < 2000) {
+        VALIDATE_WRITE(zck);
         return comp_soption(zck, option, value, length);
 
     /* Unknown options */
@@ -403,7 +404,7 @@ int zck_import_dict(zckCtx *zck) {
     if(!zck_comp_reset(zck))
         return False;
     zck_log(ZCK_LOG_DEBUG, "Setting dict\n");
-    if(!zck_set_soption(zck, ZCK_COMP_DICT, data, size))
+    if(!comp_soption(zck, ZCK_COMP_DICT, data, size))
         return False;
     free(data);
     if(!zck_comp_init(zck))

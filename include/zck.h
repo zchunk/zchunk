@@ -12,7 +12,8 @@
 
 typedef enum zck_hash {
     ZCK_HASH_SHA1,
-    ZCK_HASH_SHA256
+    ZCK_HASH_SHA256,
+    ZCK_HASH_UNKNOWN
 } zck_hash;
 
 typedef enum zck_comp {

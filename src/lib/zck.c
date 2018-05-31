@@ -110,37 +110,78 @@ int PUBLIC zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t value) {
     return True;
 }
 
-int PUBLIC zck_set_soption(zckCtx *zck, zck_soption option, const void *value,
+int hex_to_int (char c) {
+    if (c >= 97)
+        c = c - 32;
+    int result = (c / 16 - 3) * 10 + (c % 16);
+    if (result > 9)
+        result--;
+    return result;
+}
+
+char *ascii_checksum_to_bin (char *checksum) {
+    int cl = strlen(checksum);
+    char *raw_checksum = zmalloc(cl/2);
+    if(raw_checksum == NULL) {
+        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n", cl/2);
+        return NULL;
+    }
+    char *rp = raw_checksum;
+    int buf = 0;
+    for (int i=0; i<cl; i++) {
+        if (i % 2 == 0)
+            buf = hex_to_int(checksum[i]);
+        else {
+            rp[0] = buf*16 + hex_to_int(checksum[i]);
+            rp++;
+        }
+    }
+    return raw_checksum;
+}
+
+int PUBLIC zck_set_soption(zckCtx *zck, zck_soption option, const char *value,
                            size_t length) {
+    char *data = zmalloc(length);
+    if(data == NULL) {
+        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n", length);
+        return False;
+    }
+    memcpy(data, value, length);
+
     /* Validation options */
     if(option == ZCK_VAL_HEADER_DIGEST) {
         VALIDATE_READ(zck);
         zckHashType chk_type = {0};
         if(zck->prep_hash_type < 0) {
+            free(data);
             zck_log(ZCK_LOG_ERROR,
                     "For validation, you must set the header hash type "
                     "*before* the header digest itself\n");
             return False;
         }
-        if(!zck_hash_setup(&chk_type, zck->prep_hash_type))
+        if(!zck_hash_setup(&chk_type, zck->prep_hash_type)) {
+            free(data);
             return False;
-        if(chk_type.digest_size != length) {
+        }
+        if(chk_type.digest_size != length/2) {
+            free(data);
             zck_log(ZCK_LOG_ERROR, "Hash digest size mismatch for header "
                     "validation\n"
                     "Expected: %lu\nProvided: %lu\n", chk_type.digest_size,
-                    length);
+                    length/2);
             return False;
         }
-        zck->prep_digest = zmalloc(length);
-        memcpy(zck->prep_digest, value, length);
+        zck->prep_digest = ascii_checksum_to_bin(data);
+        free(data);
 
     /* Compression options */
     } else if(option < 2000) {
         VALIDATE_WRITE(zck);
-        return comp_soption(zck, option, value, length);
+        return comp_soption(zck, option, data, length);
 
     /* Unknown options */
     } else {
+        free(data);
         zck_log(ZCK_LOG_ERROR, "Unknown string option %i\n", option);
         return False;
     }
@@ -406,9 +447,9 @@ int zck_import_dict(zckCtx *zck) {
     zck_log(ZCK_LOG_DEBUG, "Setting dict\n");
     if(!comp_soption(zck, ZCK_COMP_DICT, data, size))
         return False;
-    free(data);
     if(!zck_comp_init(zck))
         return False;
+    free(data);
 
     return True;
 }

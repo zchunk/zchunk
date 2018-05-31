@@ -111,7 +111,7 @@ void zck_free(zckCtx **zck);
  * Options
  *******************************************************************/
 /* Set string option */
-int zck_set_soption(zckCtx *zck, zck_soption option, const void *value,
+int zck_set_soption(zckCtx *zck, zck_soption option, const char *value,
                     size_t length)
     __attribute__ ((warn_unused_result));
 /* Set integer option */

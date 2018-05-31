@@ -113,12 +113,6 @@ int read_lead_1(zckCtx *zck) {
     size_t header_length = 0;
     if(!compint_to_size(&header_length, header+length, &length, lead))
         return False;
-    if(zck->prep_hdr_size > -1 && (size_t)zck->prep_hdr_size != header_length) {
-        zck_log(ZCK_LOG_ERROR,
-                "Header length (%lu) doesn't match requested header length "
-                "(%lu)\n", header_length, zck->prep_hdr_size);
-        return False;
-    }
     zck->header_length = header_length;
 
     zck->header = header;
@@ -145,6 +139,8 @@ int read_lead_2(zckCtx *zck) {
     /* Read header digest */
     zck_log(ZCK_LOG_DEBUG, "Reading header digest\n");
     header = realloc(header, length + zck->hash_type.digest_size);
+    zck->lead_string = header;
+    zck->header = header;
     if(header == NULL) {
         zck_log(ZCK_LOG_ERROR, "Unable to re-allocate %lu bytes\n",
                 length + zck->hash_type.digest_size);
@@ -160,7 +156,10 @@ int read_lead_2(zckCtx *zck) {
     if(zck->prep_digest &&
        memcmp(zck->prep_digest, header + length, zck->hash_type.digest_size) != 0) {
         zck_log(ZCK_LOG_ERROR,
-                "Header digest doesn't match requested header digest\n");
+                "Header digest doesn't match requested header digest\n"
+                "Expected: %s\nActual: %s\n",
+                get_digest_string(zck->prep_digest, zck->hash_type.digest_size),
+                get_digest_string(header + length, zck->hash_type.digest_size));
         return False;
     }
     zck->header_digest = zmalloc(zck->hash_type.digest_size);
@@ -172,6 +171,15 @@ int read_lead_2(zckCtx *zck) {
     memcpy(zck->header_digest, header + length, zck->hash_type.digest_size);
     length += zck->hash_type.digest_size;
 
+    /* Check whether full header length matches specified header length */
+    if(zck->prep_hdr_size > -1 &&
+       (size_t)zck->prep_hdr_size != zck->header_length + length) {
+        zck_log(ZCK_LOG_ERROR,
+                "Header length (%lu) doesn't match requested header length "
+                "(%lu)\n", zck->header_length + length,
+                zck->prep_hdr_size);
+        return False;
+    }
     /* Store pre-header */
     zck->header = header;
     zck->header_size = lead;

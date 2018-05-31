@@ -163,12 +163,12 @@ int PUBLIC zck_set_soption(zckCtx *zck, zck_soption option, const char *value,
             free(data);
             return False;
         }
-        if(chk_type.digest_size != length/2) {
+        if(chk_type.digest_size*2 != length) {
             free(data);
             zck_log(ZCK_LOG_ERROR, "Hash digest size mismatch for header "
                     "validation\n"
-                    "Expected: %lu\nProvided: %lu\n", chk_type.digest_size,
-                    length/2);
+                    "Expected: %lu\nProvided: %lu\n", chk_type.digest_size*2,
+                    length);
             return False;
         }
         zck->prep_digest = ascii_checksum_to_bin(data);

@@ -15,9 +15,9 @@ Definitions:
  number.
 
 The lead:
-+-+-+-+-+-+====================+=================+==================+
-|   ID    | Checksum type (ci) | Header checksum | Header size (ci) |
-+-+-+-+-+-+====================+=================+==================+
++-+-+-+-+-+====================+==================+=================+
+|   ID    | Checksum type (ci) | Header size (ci) | Header checksum |
++-+-+-+-+-+====================+==================+=================+
 
 ID
  '\0ZCK1', identifies file as zchunk version 1 file
@@ -30,12 +30,12 @@ Checksum type
    0 = SHA-1
    1 = SHA-256
 
+Header size:
+ This is an integer containing the size of the header, not including the lead
+
 Header checksum
  This is the checksum of everything from the beginning of the file
  until the end of the index, ignoring the header checksum.
-
-Header size:
- This is an integer containing the size of the header, not including the lead
 
 
 The preface:

@@ -69,6 +69,31 @@ static int create_regex(regex_t *reg, const char *regex) {
     return True;
 }
 
+static int gen_regex(zckDL *dl) {
+    char *next = "\r\n--%s\r\ncontent-type:.*\r\n" \
+                 "content-range: *bytes *([0-9]+) *- *([0-9]+) */.*\r\n\r";
+    char *end =  "\r\n--%s--\r\n\r";
+    char *regex_n = add_boundary_to_regex(next, dl->priv->boundary);
+    if(regex_n == NULL)
+        return False;
+    char *regex_e = add_boundary_to_regex(end, dl->priv->boundary);
+    if(regex_n == NULL)
+        return False;
+    dl->priv->dl_regex = zmalloc(sizeof(regex_t));
+    if(!create_regex(dl->priv->dl_regex, regex_n)) {
+        free(regex_n);
+        return False;
+    }
+    free(regex_n);
+    dl->priv->end_regex = zmalloc(sizeof(regex_t));
+    if(!create_regex(dl->priv->end_regex, regex_e)) {
+        free(regex_e);
+        return False;
+    }
+    free(regex_e);
+    return True;
+}
+
 size_t zck_multipart_extract(zckDL *dl, char *b, size_t l) {
     VALIDATE(dl);
     if(dl->priv == NULL || dl->priv->mp == NULL)
@@ -93,29 +118,8 @@ size_t zck_multipart_extract(zckDL *dl, char *b, size_t l) {
     }
 
     /* If regex hasn't been created, create it */
-    if(dl->priv->dl_regex == NULL) {
-        char *next = "\r\n--%s\r\ncontent-type:.*\r\n" \
-                     "content-range: *bytes *([0-9]+) *- *([0-9]+) */.*\r\n\r";
-        char *end =  "\r\n--%s--\r\n\r";
-        char *regex_n = add_boundary_to_regex(next, dl->boundary);
-        if(regex_n == NULL)
-            return 0;
-        char *regex_e = add_boundary_to_regex(end, dl->boundary);
-        if(regex_n == NULL)
-            return 0;
-        dl->priv->dl_regex = zmalloc(sizeof(regex_t));
-        if(!create_regex(dl->priv->dl_regex, regex_n)) {
-            free(regex_n);
-            return 0;
-        }
-        free(regex_n);
-        dl->priv->end_regex = zmalloc(sizeof(regex_t));
-        if(!create_regex(dl->priv->end_regex, regex_e)) {
-            free(regex_e);
-            return 0;
-        }
-        free(regex_e);
-    }
+    if(dl->priv->dl_regex == NULL && !gen_regex(dl))
+        return 0;
 
     char *header_start = buf;
     char *i = buf;
@@ -234,7 +238,7 @@ size_t zck_multipart_get_boundary(zckDL *dl, char *b, size_t size) {
         char *boundary = zmalloc(match[1].rm_eo - match[1].rm_so + 1);
         memcpy(boundary, buf + match[1].rm_so, match[1].rm_eo - match[1].rm_so);
         zck_log(ZCK_LOG_DEBUG, "Multipart boundary: %s\n", boundary);
-        dl->boundary = boundary;
+        dl->priv->boundary = boundary;
     }
     if(buf)
         free(buf);

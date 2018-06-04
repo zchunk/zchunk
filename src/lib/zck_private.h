@@ -32,6 +32,7 @@ typedef int (*fcclose)(struct zckComp *comp);
 
 typedef enum zck_log_type zck_log_type;
 
+
 typedef struct zckHashType {
     int type;
     int digest_size;
@@ -52,8 +53,8 @@ typedef struct zckMP {
 } zckMP;
 
 typedef struct zckDLPriv {
-    CURL *curl_ctx;
     zckMP *mp;
+    char *boundary;
     int parser_started;
     int is_chunk;
     size_t write_in_chunk;
@@ -188,6 +189,9 @@ int set_full_hash_type(zckCtx *zck, int hash_type)
     __attribute__ ((warn_unused_result));
 int set_chunk_hash_type(zckCtx *zck, int hash_type)
     __attribute__ ((warn_unused_result));
+int get_max_hash_size()
+    __attribute__ ((warn_unused_result));
+
 
 /* index/index.c */
 int zck_index_read(zckCtx *zck, char *data, size_t size, size_t max_length)
@@ -209,6 +213,8 @@ int zck_write_index(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 zckIndexItem *zck_get_index_of_loc(zckIndex *index, size_t loc)
     __attribute__ ((warn_unused_result));
+zckIndexItem *copy_index_item(zckIndexItem *src)
+    __attribute__ ((warn_unused_result));
 
 /* io.c */
 int seek_data(int fd, off_t offset, int whence)
@@ -227,10 +233,6 @@ int chunks_from_temp(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 
 /* header.c */
-int read_lead_1(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
-int read_lead_2(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
 int validate_header(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 int read_preface(zckCtx *zck)

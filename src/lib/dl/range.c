@@ -147,12 +147,83 @@ int zck_range_add(zckRange *info, zckIndexItem *idx, zckCtx *zck) {
     return True;
 }
 
-int PUBLIC zck_range_calc_segments(zckRange *info, unsigned int max_ranges) {
-    if(max_ranges == 0)
-        return False;
-    info->segments = (info->count + max_ranges - 1) / max_ranges;
-    info->max_ranges = max_ranges;
-    return True;
+char PUBLIC *zck_get_range_char(zckRange *range) {
+    int buf_size=32768;
+    char *output=malloc(buf_size);
+    if(!output) {
+        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n", buf_size);
+        return NULL;
+    }
+
+    int loc = 0;
+    int count = 0;
+    zckRangeItem *ri = range->first;
+    while(ri) {
+        int length = snprintf(output+loc, buf_size-loc, "%lu-%lu,",
+                              (long unsigned)ri->start,
+                              (long unsigned)ri->end);
+        if(length < 0) {
+            zck_log(ZCK_LOG_ERROR, "Unable to get range: %s\n",
+                    strerror(errno));
+            free(output);
+            return NULL;
+        }
+        if(length > buf_size-loc) {
+            buf_size = (int)(buf_size * 1.5);
+            output = realloc(output, buf_size);
+            if(output == NULL) {
+                zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
+                        buf_size);
+                return NULL;
+            }
+            continue;
+        }
+        loc += length;
+        count++;
+        ri = ri->next;
+    }
+    output[loc-1]='\0'; // Remove final comma
+    output = realloc(output, loc);
+    if(output == NULL) {
+        zck_log(ZCK_LOG_ERROR, "Unable to shrink range to %lu bytes\n",
+                loc);
+        free(output);
+        return NULL;
+    }
+    return output;
+}
+
+zckRange PUBLIC *zck_get_dl_range(zckCtx *zck, int max_ranges) {
+    zckRange *range = zmalloc(sizeof(zckRange));
+    if(range == NULL) {
+        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
+                sizeof(zckRange));
+        return NULL;
+    }
+    zckIndexItem **range_idx = &(range->index.first);
+    zckIndexItem *idx = zck->index.first;
+    size_t start = 0;
+    while(idx) {
+        if(idx->valid)
+            continue;
+        if(!zck_range_add(range, idx, zck)) {
+            zck_range_close(range);
+            return NULL;
+        }
+        *range_idx = copy_index_item(idx);
+        if(*range_idx == NULL) {
+            zck_range_close(range);
+            return NULL;
+        }
+        (*range_idx)->start = start;
+        range_idx = &((*range_idx)->next);
+        start += idx->comp_length;
+
+        if(max_ranges >= 0 && range->count >= max_ranges)
+            break;
+        idx = idx->next;
+    }
+    return range;
 }
 
 int zck_range_get_need_dl(zckRange *info, zckCtx *zck_src, zckCtx *zck_tgt) {
@@ -180,75 +251,11 @@ int zck_range_get_need_dl(zckRange *info, zckCtx *zck_src, zckCtx *zck_tgt) {
     return True;
 }
 
-char *zck_range_get_char(zckRangeItem **range, int max_ranges) {
-    int buf_size=32768;
-    char *output=malloc(buf_size);
-    if(!output) {
-        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n", buf_size);
-        return NULL;
-    }
-
-    int loc = 0;
-    int count = 0;
-    while(*range) {
-        int length = snprintf(output+loc, buf_size-loc, "%lu-%lu,",
-                              (long unsigned)(*range)->start,
-                              (long unsigned)(*range)->end);
-        if(length < 0) {
-            zck_log(ZCK_LOG_ERROR, "Unable to get range: %s\n",
-                    strerror(errno));
-            free(output);
-            return NULL;
-        }
-        if(length > buf_size-loc) {
-            buf_size = (int)(buf_size * 1.5);
-            output = realloc(output, buf_size);
-            if(output == NULL) {
-                zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
-                        buf_size);
-                return NULL;
-            }
-            continue;
-        }
-        loc += length;
-        count++;
-        *range = (*range)->next;
-        if(count == max_ranges)
-            break;
-    }
-    output[loc-1]='\0'; // Remove final comma
-    output = realloc(output, loc);
-    if(output == NULL) {
-        zck_log(ZCK_LOG_ERROR, "Unable to shrink range to %lu bytes\n",
-                loc);
-        free(output);
-        return NULL;
-    }
-    return output;
-}
-
 char PUBLIC *zck_get_range(size_t start, size_t end) {
-    zckRangeItem range = {0};
-    range.start = start;
-    range.end = end;
-    zckRangeItem *r = &range;
-    return zck_range_get_char(&r, 1);
-}
-
-int zck_range_get_array(zckRange *info, char **ra) {
-    if(!info) {
-        zck_log(ZCK_LOG_ERROR, "zckRange not allocated\n");
-        return False;
-    }
-    zckRangeItem *tmp = info->first;
-    for(int i=0; i<info->segments; i++) {
-        ra[i] = zck_range_get_char(&tmp, info->max_ranges);
-        if(ra[i] == NULL)
-            return False;
-    }
-    return True;
-}
-
-int zck_range_get_max(zckRange *info, char *url) {
-    return True;
+    zckRange range = {0};
+    zckRangeItem ri = {0};
+    range.first = &ri;
+    ri.start = start;
+    ri.end = end;
+    return zck_get_range_char(&range);
 }

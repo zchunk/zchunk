@@ -71,7 +71,7 @@ int check_flags(zckCtx *zck, char *header, size_t *length, size_t max_length) {
     return True;
 }
 
-int read_lead_1(zckCtx *zck) {
+int PUBLIC zck_read_lead(zckCtx *zck) {
     VALIDATE_READ(zck);
 
     int lead = 5 + 2*MAX_COMP_SIZE;
@@ -115,32 +115,12 @@ int read_lead_1(zckCtx *zck) {
         return False;
     zck->header_length = header_length;
 
-    zck->header = header;
-    zck->header_size = lead;
-    zck->lead_string = header;
-    zck->lead_size = length;
+    /* Set header digest location */
     zck->hdr_digest_loc = length;
-    return True;
-}
-
-int read_lead_2(zckCtx *zck) {
-    VALIDATE_READ(zck);
-
-    if(zck->lead_string == NULL || zck->lead_size == 0) {
-        zck_log(ZCK_LOG_ERROR,
-                "Reading lead step 2 before lead step 1 is read\n");
-        return False;
-    }
-
-    char *header = zck->lead_string;
-    size_t length = zck->lead_size;
-    size_t lead = zck->header_size;
 
     /* Read header digest */
     zck_log(ZCK_LOG_DEBUG, "Reading header digest\n");
     header = realloc(header, length + zck->hash_type.digest_size);
-    zck->lead_string = header;
-    zck->header = header;
     if(header == NULL) {
         zck_log(ZCK_LOG_ERROR, "Unable to re-allocate %lu bytes\n",
                 length + zck->hash_type.digest_size);
@@ -189,7 +169,7 @@ int read_lead_2(zckCtx *zck) {
     return True;
 }
 
-int validate_header(zckCtx *zck) {
+int read_header_from_file(zckCtx *zck) {
     if(zck->header_length > MAX_HEADER_IN_MEM) {
 
     }
@@ -352,11 +332,7 @@ int read_sig(zckCtx *zck) {
 int PUBLIC zck_read_header(zckCtx *zck) {
     VALIDATE_READ(zck);
 
-    if(!read_lead_1(zck))
-        return False;
-    if(!read_lead_2(zck))
-        return False;
-    if(!validate_header(zck))
+    if(!read_header_from_file(zck))
         return False;
     if(!read_preface(zck))
         return False;

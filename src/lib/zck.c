@@ -54,6 +54,12 @@
                                 return False; \
                             }
 
+/* If lead format changes, this needs to be changed */
+int PUBLIC get_min_download_size() {
+    /* Lead + hash type + hash digest + header size */
+    return 5 + MAX_COMP_SIZE*2 + get_max_hash_size();
+}
+
 int PUBLIC zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t value) {
     /* Set hash type */
     if(option == ZCK_HASH_FULL_TYPE) {
@@ -287,6 +293,10 @@ zckCtx PUBLIC *zck_init_read (int src_fd) {
     if(zck == NULL)
         return NULL;
 
+    if(!zck_read_lead(zck)) {
+        zck_free(&zck);
+        return NULL;
+    }
     if(!zck_read_header(zck)) {
         zck_free(&zck);
         return NULL;
@@ -331,10 +341,22 @@ int PUBLIC zck_get_full_hash_type(zckCtx *zck) {
     return zck->hash_type.type;
 }
 
+ssize_t PUBLIC zck_get_full_digest_size(zckCtx *zck) {
+    if(zck == NULL)
+        return -1;
+    return zck->hash_type.digest_size;
+}
+
 int PUBLIC zck_get_chunk_hash_type(zckCtx *zck) {
     if(zck == NULL)
         return -1;
     return zck->index.hash_type;
+}
+
+ssize_t PUBLIC zck_get_chunk_digest_size(zckCtx *zck) {
+    if(zck == NULL)
+        return -1;
+    return zck->index.digest_size;
 }
 
 ssize_t PUBLIC zck_get_index_count(zckCtx *zck) {
@@ -378,7 +400,13 @@ char PUBLIC *zck_get_chunk_digest(zckIndexItem *item) {
 ssize_t PUBLIC zck_get_header_length(zckCtx *zck) {
     if(zck == NULL)
         return -1;
-    return zck->data_offset;
+    return zck->lead_size + zck->header_length;
+}
+
+ssize_t PUBLIC zck_get_lead_length(zckCtx *zck) {
+    if(zck == NULL)
+        return -1;
+    return zck->lead_size;
 }
 
 ssize_t PUBLIC zck_get_data_length(zckCtx *zck) {
@@ -615,4 +643,8 @@ int PUBLIC zck_validate_checksums(zckCtx *zck) {
         return -1;
 
     return valid_file;
+}
+
+int PUBLIC zck_get_fd(zckCtx *zck) {
+    return zck->fd;
 }

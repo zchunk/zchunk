@@ -46,6 +46,12 @@ const static char *HASH_NAME[] = {
     "SHA-256"
 };
 
+/* This needs to be updated to the largest hash size every time a new hash type
+ * is added */
+int get_max_hash_size() {
+    return SHA256_DIGEST_SIZE;
+}
+
 int zck_hash_setup(zckHashType *ht, int h) {
     if(ht) {
         if(h == ZCK_HASH_SHA1) {
@@ -134,8 +140,8 @@ void zck_hash_close(zckHash *hash) {
 }
 
 /* Returns 1 if data hash matches, 0 if it doesn't and -1 if failure */
-int PUBLIC zck_hash_check_data(zckCtx *zck, int dst_fd) {
-    if(!seek_data(dst_fd, zck->data_offset, SEEK_SET))
+int PUBLIC zck_validate_data_checksum(zckCtx *zck) {
+    if(!seek_data(zck->fd, zck->data_offset, SEEK_SET))
         return -1;
     if(!zck_hash_init(&(zck->check_full_hash), &(zck->hash_type)))
         return -1;
@@ -148,7 +154,7 @@ int PUBLIC zck_hash_check_data(zckCtx *zck, int dst_fd) {
             size_t rb = BUF_SIZE;
             if(rb > to_read)
                 rb = to_read;
-            if(!read_data(dst_fd, buf, rb))
+            if(!read_data(zck->fd, buf, rb))
                 return -1;
             if(!zck_hash_update(&(zck->check_full_hash), buf, rb))
                 return -1;

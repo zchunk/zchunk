@@ -32,9 +32,14 @@
 
 #include "zck_private.h"
 
-int zck_index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
-    size_t length = 0;
+#define VALIDATE(f)     if(!f) { \
+                            zck_log(ZCK_LOG_ERROR, "zckCtx not initialized\n"); \
+                            return False; \
+                        }
 
+int zck_index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
+    VALIDATE(zck);
+    size_t length = 0;
 
     /* Read and configure hash type */
     int hash_type;
@@ -88,7 +93,7 @@ int zck_index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
             return False;
         new->length = chunk_length;
 
-        new->valid = False;
+        new->valid = 0;
         idx_loc += new->comp_length;
         zck->index.length = idx_loc;
 
@@ -100,5 +105,37 @@ int zck_index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
     }
     free(zck->index_string);
     zck->index_string = NULL;
+    return True;
+}
+
+int PUBLIC zck_missing_chunks(zckCtx *zck) {
+    if(zck == NULL) {
+        zck_log(ZCK_LOG_ERROR, "zckCtx not initialized\n");
+        return -1;
+    }
+    int missing = 0;
+    for(zckIndexItem *idx = zck->index.first; idx; idx=idx->next)
+        if(idx->valid == 0)
+            missing++;
+    return missing;
+}
+
+int PUBLIC zck_has_failed_chunks(zckCtx *zck) {
+    if(zck == NULL) {
+        zck_log(ZCK_LOG_ERROR, "zckCtx not initialized\n");
+        return -1;
+    }
+    int failed = 0;
+    for(zckIndexItem *idx = zck->index.first; idx; idx=idx->next)
+        if(idx->valid == -1)
+            failed++;
+    return failed;
+}
+
+int PUBLIC zck_reset_failed_chunks(zckCtx *zck) {
+    VALIDATE(zck);
+    for(zckIndexItem *idx = zck->index.first; idx; idx=idx->next)
+        if(idx->valid == -1)
+            idx->valid = 0;
     return True;
 }

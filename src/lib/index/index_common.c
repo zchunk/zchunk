@@ -93,26 +93,3 @@ void zck_index_free(zckCtx *zck) {
         zck->header_digest = NULL;
     }
 }
-
-zckIndexItem *copy_index_item(zckIndexItem *src) {
-    zckIndexItem *dst = zmalloc(sizeof(zckIndexItem));
-    if(dst == NULL) {
-        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
-                sizeof(zckIndexItem));
-        return NULL;
-    }
-    dst->digest = zmalloc(src->digest_size);
-    if(dst->digest == NULL) {
-        free(dst);
-        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
-                src->digest_size);
-        return NULL;
-    }
-    memcpy(dst->digest, src->digest, src->digest_size);
-    dst->digest_size = src->digest_size;
-    dst->valid = src->valid;
-    dst->start = src->start;
-    dst->comp_length = src->comp_length;
-    dst->length = src->length;
-    return dst;
-}

@@ -213,8 +213,6 @@ int zck_write_index(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 zckIndexItem *zck_get_index_of_loc(zckIndex *index, size_t loc)
     __attribute__ ((warn_unused_result));
-zckIndexItem *copy_index_item(zckIndexItem *src)
-    __attribute__ ((warn_unused_result));
 
 /* io.c */
 int seek_data(int fd, off_t offset, int whence)

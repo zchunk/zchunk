@@ -86,13 +86,13 @@ static int dl_write(zckDL *dl, const char *at, size_t length) {
     if(dl->priv->write_in_chunk > 0) {
         if(dl->priv->write_in_chunk < length)
             wb = dl->priv->write_in_chunk;
+        else
+            wb = length;
         if(!write_data(dl->zck->fd, at, wb))
             return -1;
         dl->priv->write_in_chunk -= wb;
         if(!zck_hash_update(dl->priv->chunk_hash, at, wb))
-            return 0;
-        if(wb < 0)
-            return 0;
+            return -1;
         zck_log(ZCK_LOG_DEBUG, "Writing %lu bytes\n", wb);
         dl->priv->dl_chunk_data += wb;
     }
@@ -114,8 +114,9 @@ static int validate_chunk(zckDL *dl) {
                 "Downloaded chunk failed hash check\n");
         if(!zero_chunk(dl->zck, dl->priv->tgt_check))
             return False;
+        dl->priv->tgt_check->valid = -1;
     } else {
-        dl->priv->tgt_check->valid = True;
+        dl->priv->tgt_check->valid = 1;
     }
     dl->priv->tgt_check = NULL;
     dl->priv->chunk_hash = NULL;
@@ -126,7 +127,12 @@ static int validate_chunk(zckDL *dl) {
 int zck_dl_write_range(zckDL *dl, const char *at, size_t length) {
     VALIDATE(dl);
     VALIDATE(dl->priv);
-    if(dl->info.index.first == NULL) {
+    if(dl->range == NULL) {
+        zck_log(ZCK_LOG_ERROR, "zckDL range not initialized\n");
+        return 0;
+    }
+
+    if(dl->range->index.first == NULL) {
         zck_log(ZCK_LOG_ERROR, "zckDL index not initialized\n");
         return 0;
     }
@@ -135,16 +141,20 @@ int zck_dl_write_range(zckDL *dl, const char *at, size_t length) {
         return 0;
     }
     int wb = dl_write(dl, at, length);
+    if(wb < 0)
+        return 0;
     if(dl->priv->write_in_chunk == 0) {
         /* Check whether we just finished downloading a chunk and verify it */
-        if(dl->priv->tgt_check && !validate_chunk(dl))
+        if(dl->priv->tgt_check && !validate_chunk(dl)) {
+            dl->priv->tgt_check->valid = -1;
             return False;
-        zckIndexItem *idx = dl->info.index.first;
+        }
+        zckIndexItem *idx = dl->range->index.first;
         while(idx) {
             if(dl->priv->dl_chunk_data == idx->start) {
                 zckIndexItem *tgt_idx = dl->zck->index.first;
                 while(tgt_idx) {
-                    if(tgt_idx->valid)
+                    if(tgt_idx->valid == 1)
                         tgt_idx = tgt_idx->next;
                     if(idx->comp_length == tgt_idx->comp_length &&
                        memcmp(idx->digest, tgt_idx->digest,
@@ -185,9 +195,11 @@ size_t PUBLIC zck_write_zck_header_cb(void *ptr, size_t l, size_t c, void *dl_v)
     zckDL *dl = (zckDL*)dl_v;
     size_t wb = 0;
     dl->dl += l*c;
+    size_t loc = tell_data(dl->zck->fd);
+    zck_log(ZCK_LOG_DEBUG, "Downloading %lu bytes to position %lu\n", l*c, loc);
     wb = write(dl->zck->fd, ptr, l*c);
     if(dl->write_cb)
-        dl->write_cb(ptr, l, c, dl->wdata);
+        return dl->write_cb(ptr, l, c, dl->wdata);
     return wb;
 }
 
@@ -211,7 +223,7 @@ size_t PUBLIC zck_write_chunk_cb(void *ptr, size_t l, size_t c, void *dl_v) {
             wb = l*c;
     }
     if(dl->write_cb)
-        dl->write_cb(ptr, l, c, dl->wdata);
+        return dl->write_cb(ptr, l, c, dl->wdata);
     return wb;
 }
 
@@ -250,8 +262,9 @@ int write_and_verify_chunk(zckCtx *src, zckCtx *tgt, zckIndexItem *src_idx,
         free(pdigest);
         if(!zero_chunk(tgt, tgt_idx))
             return False;
+        tgt_idx->valid = -1;
     } else {
-        tgt_idx->valid = True;
+        tgt_idx->valid = 1;
         zck_log(ZCK_LOG_DEBUG, "Wrote %lu bytes at %lu\n",
                 tgt_idx->comp_length, tgt_idx->start);
     }
@@ -266,8 +279,10 @@ int PUBLIC zck_copy_chunks(zckCtx *src, zckCtx *tgt) {
     zckIndexItem *src_idx = src_info->first;
     while(tgt_idx) {
         /* No need to copy already valid chunk */
-        if(tgt_idx->valid)
+        if(tgt_idx->valid == 1) {
+            tgt_idx = tgt_idx->next;
             continue;
+        }
 
         int found = False;
         src_idx = src_info->first;
@@ -296,12 +311,14 @@ size_t PUBLIC zck_header_cb(char *b, size_t l, size_t c, void *dl_v) {
         return 0;
     zckDL *dl = (zckDL*)dl_v;
 
-    size_t retval = zck_multipart_get_boundary(dl, b, c*l);
+    if(zck_multipart_get_boundary(dl, b, c*l) == 0)
+        zck_log(ZCK_LOG_DEBUG, "No boundary detected");
 
     if(dl->header_cb)
-        dl->header_cb(b, l, c, dl->hdrdata);
+        return dl->header_cb(b, l, c, dl->hdrdata);
     return c*l;
 }
+
 
 int zck_zero_bytes(zckDL *dl, size_t bytes, size_t start, size_t *buffer_len) {
     char buf[BUF_SIZE] = {0};
@@ -391,23 +408,35 @@ void PUBLIC zck_dl_reset(zckDL *dl) {
         if(dl->priv->mp) {
             if(dl->priv->mp->buffer)
                 free(dl->priv->mp->buffer);
-            free(dl->priv->mp);
+            memset(dl->priv->mp, 0, sizeof(zckMP));
         }
+        dl->priv->dl_chunk_data = 0;
         zck_dl_clear_regex(dl);
         if(dl->priv->boundary)
             free(dl->priv->boundary);
-        free(dl->priv);
+        dl->priv->boundary = NULL;
     }
+    if(dl->range)
+        zck_range_free(&(dl->range));
+
     zckCtx *zck = dl->zck;
-    if(dl->info.first)
-        zck_range_close(&(dl->info));
+    size_t db = dl->dl;
+    size_t ub = dl->ul;
+    zckDLPriv *priv = dl->priv;
     memset(dl, 0, sizeof(zckDL));
+    dl->priv = priv;
     dl->zck = zck;
+    dl->dl = db;
+    dl->ul = ub;
 }
 
 /* Free zckDL and set pointer to NULL */
 void PUBLIC zck_dl_free(zckDL **dl) {
     zck_dl_reset(*dl);
+    if((*dl)->priv->mp)
+        free((*dl)->priv->mp);
+    if((*dl)->priv)
+        free((*dl)->priv);
     free(*dl);
     *dl = NULL;
 }

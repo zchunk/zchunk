@@ -42,15 +42,16 @@ void zck_range_remove(zckRangeItem *range) {
     free(range);
 }
 
-void PUBLIC zck_range_close(zckRange *info) {
-    zckRangeItem *next = info->first;
+void PUBLIC zck_range_free(zckRange **info) {
+    zckRangeItem *next = (*info)->first;
     while(next) {
         zckRangeItem *tmp = next;
         next = next->next;
         free(tmp);
     }
-    zck_index_clean(&(info->index));
-    memset(info, 0, sizeof(zckRange));
+    zck_index_clean(&((*info)->index));
+    free(*info);
+    *info = NULL;
 }
 
 zckRangeItem *zck_range_insert_new(zckRangeItem *prev, zckRangeItem *next, uint64_t start,
@@ -200,25 +201,16 @@ zckRange PUBLIC *zck_get_dl_range(zckCtx *zck, int max_ranges) {
                 sizeof(zckRange));
         return NULL;
     }
-    zckIndexItem **range_idx = &(range->index.first);
     zckIndexItem *idx = zck->index.first;
-    size_t start = 0;
     while(idx) {
-        if(idx->valid)
+        if(idx->valid) {
+            idx = idx->next;
             continue;
+        }
         if(!zck_range_add(range, idx, zck)) {
-            zck_range_close(range);
+            zck_range_free(&range);
             return NULL;
         }
-        *range_idx = copy_index_item(idx);
-        if(*range_idx == NULL) {
-            zck_range_close(range);
-            return NULL;
-        }
-        (*range_idx)->start = start;
-        range_idx = &((*range_idx)->next);
-        start += idx->comp_length;
-
         if(max_ranges >= 0 && range->count >= max_ranges)
             break;
         idx = idx->next;

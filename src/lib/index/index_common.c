@@ -31,7 +31,7 @@
 
 #include "zck_private.h"
 
-zckIndexItem *zck_get_index_of_loc(zckIndex *index, size_t loc) {
+zckIndexItem *get_index_of_loc(zckIndex *index, size_t loc) {
     zckIndexItem *idx = index->first;
     while(idx != NULL) {
         if(loc >= idx->start && loc < idx->start + idx->comp_length)
@@ -43,7 +43,7 @@ zckIndexItem *zck_get_index_of_loc(zckIndex *index, size_t loc) {
     return NULL;
 }
 
-void zck_index_free_item(zckIndexItem **item) {
+void index_free_item(zckIndexItem **item) {
     if(*item == NULL)
         return;
 
@@ -54,7 +54,7 @@ void zck_index_free_item(zckIndexItem **item) {
     return;
 }
 
-void zck_index_clean(zckIndex *index) {
+void index_clean(zckIndex *index) {
     if(index == NULL)
         return;
 
@@ -63,15 +63,15 @@ void zck_index_clean(zckIndex *index) {
         zckIndexItem *tmp=index->first;
         while(tmp != NULL) {
             next = tmp->next;
-            zck_index_free_item(&tmp);
+            index_free_item(&tmp);
             tmp = next;
         }
     }
     memset(index, 0, sizeof(zckIndex));
 }
 
-void zck_index_free(zckCtx *zck) {
-    zck_index_clean(&(zck->index));
+void index_free(zckCtx *zck) {
+    index_clean(&(zck->index));
     if(zck->full_hash_digest) {
         free(zck->full_hash_digest);
         zck->full_hash_digest = NULL;
@@ -92,4 +92,13 @@ void zck_index_free(zckCtx *zck) {
         free(zck->header_digest);
         zck->header_digest = NULL;
     }
+}
+
+void clear_work_index(zckCtx *zck) {
+    if(zck == NULL)
+        return;
+
+    hash_close(&(zck->work_index_hash));
+    if(zck->work_index_item)
+        index_free_item(&(zck->work_index_item));
 }

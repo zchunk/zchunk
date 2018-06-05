@@ -104,7 +104,7 @@ int PUBLIC zck_read_lead(zckCtx *zck) {
                 "(%i)\n", hash_type, zck->prep_hash_type);
         return False;
     }
-    if(!zck_hash_setup(&(zck->hash_type), hash_type))
+    if(!hash_setup(&(zck->hash_type), hash_type))
         return False;
     zck_log(ZCK_LOG_DEBUG, "Setting header and full digest hash type to %s\n",
             zck_hash_name_from_type(hash_type));
@@ -201,14 +201,14 @@ int read_header_from_file(zckCtx *zck) {
         zck->header_size = zck->lead_size + zck->header_length;
     }
 
-    if(!zck_hash_init(&(zck->check_full_hash), &(zck->hash_type)))
+    if(!hash_init(&(zck->check_full_hash), &(zck->hash_type)))
         return False;
-    if(!zck_hash_update(&(zck->check_full_hash), zck->header,
+    if(!hash_update(&(zck->check_full_hash), zck->header,
                         zck->hdr_digest_loc))
         return False;
-    if(!zck_hash_update(&(zck->check_full_hash), header, zck->header_length))
+    if(!hash_update(&(zck->check_full_hash), header, zck->header_length))
         return False;
-    if(!zck_validate_header(zck))
+    if(!validate_header(zck))
         return False;
     return True;
 }
@@ -254,7 +254,7 @@ int read_preface(zckCtx *zck) {
         return False;
     if(!comp_ioption(zck, ZCK_COMP_TYPE, tmp))
         return False;
-    if(!zck_comp_init(zck))
+    if(!comp_init(zck))
         return False;
 
     /* Read and initialize index size */
@@ -285,7 +285,7 @@ int read_index(zckCtx *zck) {
     }
     header = zck->header + zck->lead_size + zck->preface_size;
     int max_length = zck->header_size - (zck->lead_size + zck->preface_size);
-    if(!zck_index_read(zck, header, zck->index_size, max_length))
+    if(!index_read(zck, header, zck->index_size, max_length))
         return False;
 
     zck->index_string = header;
@@ -441,7 +441,7 @@ int lead_create(zckCtx *zck) {
     return True;
 }
 
-int zck_header_create(zckCtx *zck) {
+int header_create(zckCtx *zck) {
     /* Rebuild header without header hash */
     if(zck->header_digest) {
         free(zck->header_digest);
@@ -498,18 +498,18 @@ int zck_header_create(zckCtx *zck) {
     zckHash header_hash = {0};
 
     /* Calculate hash of header */
-    if(!zck_hash_init(&header_hash, &(zck->hash_type)))
+    if(!hash_init(&header_hash, &(zck->hash_type)))
         return False;
     zck_log(ZCK_LOG_DEBUG, "Hashing lead\n");
     /* Hash lead up to header digest */
-    if(!zck_hash_update(&header_hash, zck->lead_string,
+    if(!hash_update(&header_hash, zck->lead_string,
                         zck->hdr_digest_loc))
         return False;
     zck_log(ZCK_LOG_DEBUG, "Hashing the rest\n");
     /* Hash rest of header */
-    if(!zck_hash_update(&header_hash, zck->preface_string, zck->header_length))
+    if(!hash_update(&header_hash, zck->preface_string, zck->header_length))
         return False;
-    zck->header_digest = zck_hash_finalize(&header_hash);
+    zck->header_digest = hash_finalize(&header_hash);
     if(zck->header_digest == NULL) {
         zck_log(ZCK_LOG_ERROR,
                 "Unable to calculate %s checksum for index\n",
@@ -523,7 +523,7 @@ int zck_header_create(zckCtx *zck) {
     return True;
 }
 
-int zck_write_header(zckCtx *zck) {
+int write_header(zckCtx *zck) {
     VALIDATE_WRITE(zck);
 
     zck_log(ZCK_LOG_DEBUG, "Writing header: %lu bytes\n",

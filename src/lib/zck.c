@@ -165,7 +165,7 @@ int PUBLIC zck_set_soption(zckCtx *zck, zck_soption option, const char *value,
                     "*before* the header digest itself\n");
             return False;
         }
-        if(!zck_hash_setup(&chk_type, zck->prep_hash_type)) {
+        if(!hash_setup(&chk_type, zck->prep_hash_type)) {
             free(data);
             return False;
         }
@@ -199,51 +199,42 @@ int PUBLIC zck_close(zckCtx *zck) {
     if(zck->mode == ZCK_MODE_WRITE) {
         if(zck_end_chunk(zck) < 0)
             return False;
-        if(!zck_header_create(zck))
+        if(!header_create(zck))
             return False;
-        if(!zck_write_header(zck))
+        if(!write_header(zck))
             return False;
         zck_log(ZCK_LOG_DEBUG, "Writing chunks\n");
         if(!chunks_from_temp(zck))
             return False;
         zck_log(ZCK_LOG_DEBUG, "Finished writing file, cleaning up\n");
-        if(!zck_comp_close(zck))
+        if(!comp_close(zck))
             return False;
         if(zck->temp_fd) {
             close(zck->temp_fd);
             zck->temp_fd = 0;
         }
     } else {
-        if(!zck_validate_file(zck))
+        if(!validate_file(zck))
             return False;
     }
 
     return True;
 }
 
-void zck_clear_work_index(zckCtx *zck) {
-    if(zck == NULL)
-        return;
-
-    zck_hash_close(&(zck->work_index_hash));
-    if(zck->work_index_item)
-        zck_index_free_item(&(zck->work_index_item));
-}
-
 void zck_clear(zckCtx *zck) {
     if(zck == NULL)
         return;
-    zck_index_free(zck);
+    index_free(zck);
     if(zck->header)
         free(zck->header);
     zck->header = NULL;
     zck->header_size = 0;
-    if(!zck_comp_close(zck))
+    if(!comp_close(zck))
         zck_log(ZCK_LOG_WARNING, "Unable to close compression\n");
-    zck_hash_close(&(zck->full_hash));
-    zck_hash_close(&(zck->check_full_hash));
-    zck_hash_close(&(zck->check_chunk_hash));
-    zck_clear_work_index(zck);
+    hash_close(&(zck->full_hash));
+    hash_close(&(zck->check_full_hash));
+    hash_close(&(zck->check_chunk_hash));
+    clear_work_index(zck);
     if(zck->full_hash_digest) {
         free(zck->full_hash_digest);
         zck->full_hash_digest = NULL;
@@ -311,7 +302,7 @@ zckCtx PUBLIC *zck_init_write (int dst_fd) {
         return NULL;
 
     zck->mode = ZCK_MODE_WRITE;
-    zck->temp_fd = zck_get_tmp_fd();
+    zck->temp_fd = get_tmp_fd();
     if(zck->temp_fd < 0)
         goto iw_error;
 
@@ -420,7 +411,7 @@ ssize_t PUBLIC zck_get_length(zckCtx *zck) {
     return zck_get_header_length(zck) + zck_get_data_length(zck);
 }
 
-int zck_get_tmp_fd() {
+int get_tmp_fd() {
     int temp_fd;
     char *fname = NULL;
     char template[] = "zcktempXXXXXX";
@@ -454,7 +445,7 @@ int zck_get_tmp_fd() {
     return temp_fd;
 }
 
-int zck_import_dict(zckCtx *zck) {
+int import_dict(zckCtx *zck) {
     VALIDATE(zck);
 
     size_t size = zck->index.first->length;
@@ -474,19 +465,19 @@ int zck_import_dict(zckCtx *zck) {
         return False;
     }
     zck_log(ZCK_LOG_DEBUG, "Resetting compression\n");
-    if(!zck_comp_reset(zck))
+    if(!comp_reset(zck))
         return False;
     zck_log(ZCK_LOG_DEBUG, "Setting dict\n");
     if(!comp_soption(zck, ZCK_COMP_DICT, data, size))
         return False;
-    if(!zck_comp_init(zck))
+    if(!comp_init(zck))
         return False;
     free(data);
 
     return True;
 }
 
-int zck_validate_chunk(zckCtx *zck, zckIndexItem *idx,
+int validate_chunk(zckCtx *zck, zckIndexItem *idx,
                        zck_log_type bad_checksum) {
     VALIDATE(zck);
     if(idx == NULL) {
@@ -494,7 +485,7 @@ int zck_validate_chunk(zckCtx *zck, zckIndexItem *idx,
         return -1;
     }
 
-    char *digest = zck_hash_finalize(&(zck->check_chunk_hash));
+    char *digest = hash_finalize(&(zck->check_chunk_hash));
     if(digest == NULL) {
         zck_log(ZCK_LOG_ERROR,
                 "Unable to calculate %s checksum for chunk\n");
@@ -519,15 +510,15 @@ int zck_validate_chunk(zckCtx *zck, zckIndexItem *idx,
     return 1;
 }
 
-int zck_validate_current_chunk(zckCtx *zck) {
+int validate_current_chunk(zckCtx *zck) {
     VALIDATE(zck);
 
-    return zck_validate_chunk(zck, zck->comp.data_idx, ZCK_LOG_ERROR);
+    return validate_chunk(zck, zck->comp.data_idx, ZCK_LOG_ERROR);
 }
 
-int zck_validate_file(zckCtx *zck) {
+int validate_file(zckCtx *zck) {
     VALIDATE(zck);
-    char *digest = zck_hash_finalize(&(zck->check_full_hash));
+    char *digest = hash_finalize(&(zck->check_full_hash));
     if(digest == NULL) {
         zck_log(ZCK_LOG_ERROR,
                 "Unable to calculate %s checksum for full file\n");
@@ -551,9 +542,9 @@ int zck_validate_file(zckCtx *zck) {
     return 1;
 }
 
-int zck_validate_header(zckCtx *zck) {
+int validate_header(zckCtx *zck) {
     VALIDATE(zck);
-    char *digest = zck_hash_finalize(&(zck->check_full_hash));
+    char *digest = hash_finalize(&(zck->check_full_hash));
     if(digest == NULL) {
         zck_log(ZCK_LOG_ERROR,
                 "Unable to calculate %s checksum for header\n");
@@ -575,7 +566,7 @@ int zck_validate_header(zckCtx *zck) {
     zck_log(ZCK_LOG_DEBUG, "Header checksum valid\n");
     free(digest);
 
-    if(!zck_hash_init(&(zck->check_full_hash), &(zck->hash_type)))
+    if(!hash_init(&(zck->check_full_hash), &(zck->hash_type)))
         return -1;
 
     return 1;
@@ -590,8 +581,8 @@ int PUBLIC zck_validate_checksums(zckCtx *zck) {
         return -1;
     }
 
-    zck_hash_close(&(zck->check_full_hash));
-    if(!zck_hash_init(&(zck->check_full_hash), &(zck->hash_type)))
+    hash_close(&(zck->check_full_hash));
+    if(!hash_init(&(zck->check_full_hash), &(zck->hash_type)))
         return -1;
 
     if(!seek_data(zck->fd, zck->data_offset, SEEK_SET))
@@ -606,7 +597,7 @@ int PUBLIC zck_validate_checksums(zckCtx *zck) {
             continue;
         }
 
-        if(!zck_hash_init(&(zck->check_chunk_hash), &(zck->chunk_hash_type)))
+        if(!hash_init(&(zck->check_chunk_hash), &(zck->chunk_hash_type)))
             return -1;
 
         size_t rlen = 0;
@@ -616,13 +607,13 @@ int PUBLIC zck_validate_checksums(zckCtx *zck) {
                 rsize = idx->comp_length - rlen;
             if(read_data(zck->fd, buf, rsize) != rsize)
                 return 0;
-            if(!zck_hash_update(&(zck->check_chunk_hash), buf, rsize))
+            if(!hash_update(&(zck->check_chunk_hash), buf, rsize))
                 return -1;
-            if(!zck_hash_update(&(zck->check_full_hash), buf, rsize))
+            if(!hash_update(&(zck->check_full_hash), buf, rsize))
                 return -1;
             rlen += rsize;
         }
-        int valid_chunk = zck_validate_chunk(zck, idx, ZCK_LOG_ERROR);
+        int valid_chunk = validate_chunk(zck, idx, ZCK_LOG_ERROR);
         if(valid_chunk < 0)
             return -1;
         idx->valid = valid_chunk;
@@ -634,7 +625,7 @@ int PUBLIC zck_validate_checksums(zckCtx *zck) {
         return 0;
 
     /* Check data checksum */
-    int valid_file = zck_validate_file(zck);
+    int valid_file = validate_file(zck);
     if(valid_file < 0)
         return -1;
 
@@ -643,7 +634,7 @@ int PUBLIC zck_validate_checksums(zckCtx *zck) {
         return -1;
 
     /* Reinitialize data checksum */
-    if(!zck_hash_init(&(zck->check_full_hash), &(zck->hash_type)))
+    if(!hash_init(&(zck->check_full_hash), &(zck->hash_type)))
         return -1;
 
     return valid_file;

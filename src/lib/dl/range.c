@@ -34,14 +34,6 @@
 
 #include "zck_private.h"
 
-void zck_range_remove(zckRangeItem *range) {
-    if(range->prev)
-        range->prev->next = range->next;
-    if(range->next)
-        range->next->prev = range->prev;
-    free(range);
-}
-
 void PUBLIC zck_range_free(zckRange **info) {
     zckRangeItem *next = (*info)->first;
     while(next) {
@@ -49,12 +41,12 @@ void PUBLIC zck_range_free(zckRange **info) {
         next = next->next;
         free(tmp);
     }
-    zck_index_clean(&((*info)->index));
+    index_clean(&((*info)->index));
     free(*info);
     *info = NULL;
 }
 
-zckRangeItem *zck_range_insert_new(zckRangeItem *prev, zckRangeItem *next, uint64_t start,
+zckRangeItem *range_insert_new(zckRangeItem *prev, zckRangeItem *next, uint64_t start,
                                uint64_t end, zckRange *info,
                                zckIndexItem *idx, int add_index) {
     zckRangeItem *new = zmalloc(sizeof(zckRangeItem));
@@ -74,7 +66,7 @@ zckRangeItem *zck_range_insert_new(zckRangeItem *prev, zckRangeItem *next, uint6
         next->prev = new;
     }
     if(add_index)
-        if(!zck_index_new_chunk(&(info->index), idx->digest, idx->digest_size,
+        if(!index_new_chunk(&(info->index), idx->digest, idx->digest_size,
                                 end-start+1, end-start+1, False)) {
             free(new);
             return NULL;
@@ -82,7 +74,15 @@ zckRangeItem *zck_range_insert_new(zckRangeItem *prev, zckRangeItem *next, uint6
     return new;
 }
 
-void zck_range_merge_combined(zckRange *info) {
+void range_remove(zckRangeItem *range) {
+    if(range->prev)
+        range->prev->next = range->next;
+    if(range->next)
+        range->next->prev = range->prev;
+    free(range);
+}
+
+void range_merge_combined(zckRange *info) {
     if(!info) {
         zck_log(ZCK_LOG_ERROR, "zckRange not allocated\n");
         return;
@@ -91,7 +91,7 @@ void zck_range_merge_combined(zckRange *info) {
         if(ptr->next && ptr->end >= ptr->next->start-1) {
             if(ptr->end < ptr->next->end)
                 ptr->end = ptr->next->end;
-            zck_range_remove(ptr->next);
+            range_remove(ptr->next);
             info->count -= 1;
         } else {
             ptr = ptr->next;
@@ -99,7 +99,7 @@ void zck_range_merge_combined(zckRange *info) {
     }
 }
 
-int zck_range_add(zckRange *info, zckIndexItem *idx, zckCtx *zck) {
+int range_add(zckRange *info, zckIndexItem *idx, zckCtx *zck) {
     if(info == NULL || idx == NULL) {
         zck_log(ZCK_LOG_ERROR, "zckRange or zckIndexItem not allocated\n");
         return False;
@@ -121,35 +121,37 @@ int zck_range_add(zckRange *info, zckIndexItem *idx, zckCtx *zck) {
             continue;
         } else if(start < ptr->start) {
 
-            if(zck_range_insert_new(ptr->prev, ptr, start, end, info, idx, add_index) == NULL)
+            if(range_insert_new(ptr->prev, ptr, start, end, info, idx,
+                                add_index) == NULL)
                 return False;
             if(info->first == ptr) {
                 info->first = ptr->prev;
             }
             info->count += 1;
-            zck_range_merge_combined(info);
+            range_merge_combined(info);
             return True;
         } else { // start == ptr->start
             if(end > ptr->end)
                 ptr->end = end;
             info->count += 1;
-            zck_range_merge_combined(info);
+            range_merge_combined(info);
             return True;
         }
     }
     /* We've only reached here if we should be last item */
-    zckRangeItem *new = zck_range_insert_new(prev, NULL, start, end, info, idx, add_index);
+    zckRangeItem *new = range_insert_new(prev, NULL, start, end, info, idx,
+                                         add_index);
     if(new == NULL)
         return False;
     if(info->first == NULL)
         info->first = new;
     info->count += 1;
-    zck_range_merge_combined(info);
+    range_merge_combined(info);
     return True;
 }
 
 char PUBLIC *zck_get_range_char(zckRange *range) {
-    int buf_size=32768;
+    int buf_size=BUF_SIZE;
     char *output=malloc(buf_size);
     if(!output) {
         zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n", buf_size);
@@ -207,7 +209,7 @@ zckRange PUBLIC *zck_get_dl_range(zckCtx *zck, int max_ranges) {
             idx = idx->next;
             continue;
         }
-        if(!zck_range_add(range, idx, zck)) {
+        if(!range_add(range, idx, zck)) {
             zck_range_free(&range);
             return NULL;
         }
@@ -216,31 +218,6 @@ zckRange PUBLIC *zck_get_dl_range(zckCtx *zck, int max_ranges) {
         idx = idx->next;
     }
     return range;
-}
-
-int zck_range_get_need_dl(zckRange *info, zckCtx *zck_src, zckCtx *zck_tgt) {
-    zckIndex *tgt_info = zck_get_index(zck_tgt);
-    zckIndex *src_info = zck_get_index(zck_src);
-    zckIndexItem *tgt_idx = tgt_info->first;
-    zckIndexItem *src_idx = src_info->first;
-    while(tgt_idx) {
-        int found = False;
-        src_idx = src_info->first;
-
-        while(src_idx) {
-            if(memcmp(tgt_idx->digest, src_idx->digest, tgt_idx->digest_size) == 0) {
-                found = True;
-                break;
-            }
-            src_idx = src_idx->next;
-        }
-        if(!found)
-            if(!zck_range_add(info, tgt_idx, zck_tgt))
-                return False;
-
-        tgt_idx = tgt_idx->next;
-    }
-    return True;
 }
 
 char PUBLIC *zck_get_range(size_t start, size_t end) {

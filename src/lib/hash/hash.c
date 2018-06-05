@@ -52,7 +52,7 @@ int get_max_hash_size() {
     return SHA256_DIGEST_SIZE;
 }
 
-int zck_hash_setup(zckHashType *ht, int h) {
+int hash_setup(zckHashType *ht, int h) {
     if(ht) {
         if(h == ZCK_HASH_SHA1) {
             memset(ht, 0, sizeof(zckHashType));
@@ -73,7 +73,19 @@ int zck_hash_setup(zckHashType *ht, int h) {
     return False;
 }
 
-int zck_hash_init(zckHash *hash, zckHashType *hash_type) {
+void hash_close(zckHash *hash) {
+    if(!hash)
+        return;
+
+    if(hash->ctx) {
+        free(hash->ctx);
+        hash->ctx = NULL;
+    }
+    hash->type = NULL;
+    return;
+}
+
+int hash_init(zckHash *hash, zckHashType *hash_type) {
     if(hash && hash_type) {
         if(hash_type->type == ZCK_HASH_SHA1) {
             zck_log(ZCK_LOG_DEBUG, "Initializing SHA-1 hash\n");
@@ -99,7 +111,7 @@ int zck_hash_init(zckHash *hash, zckHashType *hash_type) {
     return False;
 }
 
-int zck_hash_update(zckHash *hash, const char *message, const size_t size) {
+int hash_update(zckHash *hash, const char *message, const size_t size) {
     if(message == NULL && size == 0)
         return True;
     if(message == NULL) {
@@ -127,24 +139,64 @@ int zck_hash_update(zckHash *hash, const char *message, const size_t size) {
     return False;
 }
 
-void zck_hash_close(zckHash *hash) {
-    if(!hash)
-        return;
-
-    if(hash->ctx) {
-        free(hash->ctx);
-        hash->ctx = NULL;
+char *hash_finalize(zckHash *hash) {
+    if(hash && hash->ctx && hash->type) {
+        if(hash->type->type == ZCK_HASH_SHA1) {
+            unsigned char *digest = zmalloc(hash->type->digest_size);
+            SHA1_Final((sha1_byte*)digest, (SHA_CTX *)hash->ctx);
+            hash_close(hash);
+            return (char *)digest;
+        } else if(hash->type->type == ZCK_HASH_SHA256) {
+            unsigned char *digest = zmalloc(hash->type->digest_size);
+            sha256_final((sha256_ctx *)hash->ctx, digest);
+            hash_close(hash);
+            return (char *)digest;
+        }
+        zck_log(ZCK_LOG_ERROR, "Unsupported hash type: %i\n", hash->type);
+        return NULL;
     }
-    hash->type = NULL;
-    return;
+    zck_log(ZCK_LOG_ERROR, "Hash hasn't been initialized\n");
+    return NULL;
+}
+
+int set_full_hash_type(zckCtx *zck, int hash_type) {
+    VALIDATE(zck);
+    zck_log(ZCK_LOG_INFO, "Setting full hash to %s\n",
+            zck_hash_name_from_type(hash_type));
+    if(!hash_setup(&(zck->hash_type), hash_type)) {
+        zck_log(ZCK_LOG_ERROR, "Unable to set full hash to %s\n",
+                zck_hash_name_from_type(hash_type));
+        return False;
+    }
+    hash_close(&(zck->full_hash));
+    if(!hash_init(&(zck->full_hash), &(zck->hash_type))) {
+        zck_log(ZCK_LOG_ERROR, "Unable initialize full hash\n");
+        return False;
+    }
+    return True;
+}
+
+int set_chunk_hash_type(zckCtx *zck, int hash_type) {
+    VALIDATE(zck);
+    memset(&(zck->chunk_hash_type), 0, sizeof(zckHashType));
+    zck_log(ZCK_LOG_INFO, "Setting chunk hash to %s\n",
+            zck_hash_name_from_type(hash_type));
+    if(!hash_setup(&(zck->chunk_hash_type), hash_type)) {
+        zck_log(ZCK_LOG_ERROR, "Unable to set chunk hash to %s\n",
+                zck_hash_name_from_type(hash_type));
+        return False;
+    }
+    zck->index.hash_type = zck->chunk_hash_type.type;
+    zck->index.digest_size = zck->chunk_hash_type.digest_size;
+    return True;
 }
 
 /* Returns 1 if data hash matches, 0 if it doesn't and -1 if failure */
 int PUBLIC zck_validate_data_checksum(zckCtx *zck) {
-    zck_hash_close(&(zck->check_full_hash));
+    hash_close(&(zck->check_full_hash));
     if(!seek_data(zck->fd, zck->data_offset, SEEK_SET))
         return -1;
-    if(!zck_hash_init(&(zck->check_full_hash), &(zck->hash_type)))
+    if(!hash_init(&(zck->check_full_hash), &(zck->hash_type)))
         return -1;
     char buf[BUF_SIZE] = {0};
     zckIndexItem *idx = zck->index.first;
@@ -157,33 +209,13 @@ int PUBLIC zck_validate_data_checksum(zckCtx *zck) {
                 rb = to_read;
             if(!read_data(zck->fd, buf, rb))
                 return -1;
-            if(!zck_hash_update(&(zck->check_full_hash), buf, rb))
+            if(!hash_update(&(zck->check_full_hash), buf, rb))
                 return -1;
             to_read -= rb;
         }
         idx = idx->next;
     }
-    return zck_validate_file(zck);
-}
-
-char *zck_hash_finalize(zckHash *hash) {
-    if(hash && hash->ctx && hash->type) {
-        if(hash->type->type == ZCK_HASH_SHA1) {
-            unsigned char *digest = zmalloc(hash->type->digest_size);
-            SHA1_Final((sha1_byte*)digest, (SHA_CTX *)hash->ctx);
-            zck_hash_close(hash);
-            return (char *)digest;
-        } else if(hash->type->type == ZCK_HASH_SHA256) {
-            unsigned char *digest = zmalloc(hash->type->digest_size);
-            sha256_final((sha256_ctx *)hash->ctx, digest);
-            zck_hash_close(hash);
-            return (char *)digest;
-        }
-        zck_log(ZCK_LOG_ERROR, "Unsupported hash type: %i\n", hash->type);
-        return NULL;
-    }
-    zck_log(ZCK_LOG_ERROR, "Hash hasn't been initialized\n");
-    return NULL;
+    return validate_file(zck);
 }
 
 const char PUBLIC *zck_hash_name_from_type(int hash_type) {
@@ -192,36 +224,4 @@ const char PUBLIC *zck_hash_name_from_type(int hash_type) {
         return unknown;
     }
     return HASH_NAME[hash_type];
-}
-
-int set_full_hash_type(zckCtx *zck, int hash_type) {
-    VALIDATE(zck);
-    zck_log(ZCK_LOG_INFO, "Setting full hash to %s\n",
-            zck_hash_name_from_type(hash_type));
-    if(!zck_hash_setup(&(zck->hash_type), hash_type)) {
-        zck_log(ZCK_LOG_ERROR, "Unable to set full hash to %s\n",
-                zck_hash_name_from_type(hash_type));
-        return False;
-    }
-    zck_hash_close(&(zck->full_hash));
-    if(!zck_hash_init(&(zck->full_hash), &(zck->hash_type))) {
-        zck_log(ZCK_LOG_ERROR, "Unable initialize full hash\n");
-        return False;
-    }
-    return True;
-}
-
-int set_chunk_hash_type(zckCtx *zck, int hash_type) {
-    VALIDATE(zck);
-    memset(&(zck->chunk_hash_type), 0, sizeof(zckHashType));
-    zck_log(ZCK_LOG_INFO, "Setting chunk hash to %s\n",
-            zck_hash_name_from_type(hash_type));
-    if(!zck_hash_setup(&(zck->chunk_hash_type), hash_type)) {
-        zck_log(ZCK_LOG_ERROR, "Unable to set chunk hash to %s\n",
-                zck_hash_name_from_type(hash_type));
-        return False;
-    }
-    zck->index.hash_type = zck->chunk_hash_type.type;
-    zck->index.digest_size = zck->chunk_hash_type.digest_size;
-    return True;
 }

@@ -94,7 +94,7 @@ static int gen_regex(zckDL *dl) {
     return True;
 }
 
-size_t zck_multipart_extract(zckDL *dl, char *b, size_t l) {
+size_t multipart_extract(zckDL *dl, char *b, size_t l) {
     VALIDATE(dl);
     if(dl->priv == NULL || dl->priv->mp == NULL)
         return 0;
@@ -139,7 +139,7 @@ size_t zck_multipart_extract(zckDL *dl, char *b, size_t l) {
             } else {
                 mp->length -= size;
             }
-            if(zck_dl_write_range(dl, i, size) != size)
+            if(dl_write_range(dl, i, size) != size)
                 return 0;
             i += size;
             continue;
@@ -207,7 +207,7 @@ static void reset_mp(zckMP *mp) {
     memset(mp, 0, sizeof(zckMP));
 }
 
-size_t zck_multipart_get_boundary(zckDL *dl, char *b, size_t size) {
+size_t multipart_get_boundary(zckDL *dl, char *b, size_t size) {
     VALIDATE(dl);
     if(dl->priv == NULL)
         return 0;

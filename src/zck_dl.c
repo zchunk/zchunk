@@ -125,6 +125,7 @@ typedef struct dlCtx {
     int max_ranges;
 } dlCtx;
 
+/* Fail if dl_ctx->fail_no_ranges is set and we get a 200 response */
 size_t dl_header_cb(char *b, size_t l, size_t c, void *dl_v) {
     dlCtx *dl_ctx = (dlCtx*)dl_v;
     if(dl_ctx->fail_no_ranges) {
@@ -138,8 +139,8 @@ size_t dl_header_cb(char *b, size_t l, size_t c, void *dl_v) {
     return zck_header_cb(b, l, c, dl_ctx->dl);
 }
 
-/* Return -1 on error, 0 on 200 response (if is_chunk), and 1 on complete
- * success */
+/* Return 0 on error, -1 on 200 response (if dl_ctx->fail_no_ranges),
+ * and 1 on complete success */
 int dl_range(dlCtx *dl_ctx, char *url, char *range, int is_chunk) {
     if(dl_ctx == NULL || dl_ctx->dl == NULL || dl_ctx->dl->priv == NULL) {
         free(range);

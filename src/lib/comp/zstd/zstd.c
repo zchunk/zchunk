@@ -145,7 +145,7 @@ static int end_dchunk(zckComp *comp, const int use_dict, const size_t fd_size) {
                 ZSTD_getErrorName(retval));
         goto decomp_error_2;
     }
-    if(!zck_comp_add_to_dc(comp, dst, fd_size))
+    if(!comp_add_to_dc(comp, dst, fd_size))
         goto decomp_error_2;
     free(dst);
     free(src);
@@ -194,7 +194,7 @@ static int set_default_parameters(zckComp *comp) {
     return set_parameter(comp, ZCK_ZSTD_COMP_LEVEL, &level);
 }
 
-int zck_zstd_setup(zckComp *comp) {
+int zstd_setup(zckComp *comp) {
     comp->init = init;
     comp->set_parameter = set_parameter;
     comp->compress = compress;

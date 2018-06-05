@@ -63,7 +63,7 @@ static int decompress(zckComp *comp, const int use_dict) {
     char src_size = comp->data_size;
     comp->data = NULL;
     comp->data_size = 0;
-    if(!zck_comp_add_to_dc(comp, src, src_size)) {
+    if(!comp_add_to_dc(comp, src, src_size)) {
         free(src);
         return False;
     }
@@ -91,7 +91,7 @@ static int set_default_parameters(zckComp *comp) {
     return True;
 }
 
-int zck_nocomp_setup(zckComp *comp) {
+int nocomp_setup(zckComp *comp) {
     comp->init = init;
     comp->set_parameter = set_parameter;
     comp->compress = compress;

@@ -85,7 +85,7 @@ const static char *COMP_NAME[] = {
     "zstd"
 };
 
-int zck_comp_init(zckCtx *zck) {
+int comp_init(zckCtx *zck) {
     VALIDATE(zck);
 
     zckComp *comp = &(zck->comp);
@@ -115,7 +115,7 @@ int zck_comp_init(zckCtx *zck) {
                 free(dst);
                 return False;
             }
-            if(!zck_index_add_to_chunk(zck, dst, dst_size,
+            if(!index_add_to_chunk(zck, dst, dst_size,
                                        zck->comp.dict_size)) {
                 free(dst);
                 return False;
@@ -130,14 +130,14 @@ int zck_comp_init(zckCtx *zck) {
                 free(dst);
                 return False;
             }
-            if(!zck_index_add_to_chunk(zck, dst, dst_size, 0) ||
-               !zck_index_finish_chunk(zck)) {
+            if(!index_add_to_chunk(zck, dst, dst_size, 0) ||
+               !index_finish_chunk(zck)) {
                 free(dst);
                 return False;
             }
             free(dst);
         } else {
-            if(!zck_index_finish_chunk(zck))
+            if(!index_finish_chunk(zck))
                 return False;
         }
     }
@@ -148,7 +148,7 @@ int zck_comp_init(zckCtx *zck) {
     return True;
 }
 
-int zck_comp_reset(zckCtx *zck) {
+int comp_reset(zckCtx *zck) {
     VALIDATE(zck);
 
     zck->comp.started = 0;
@@ -163,7 +163,7 @@ int zck_comp_reset(zckCtx *zck) {
     return zck->comp.close(&(zck->comp));
 }
 
-int zck_comp_close(zckCtx *zck) {
+int comp_close(zckCtx *zck) {
     VALIDATE(zck);
     zck_log(ZCK_LOG_DEBUG, "Closing compression\n");
     if(zck->comp.data) {
@@ -173,7 +173,7 @@ int zck_comp_close(zckCtx *zck) {
         zck->comp.data_loc = 0;
         zck->comp.data_idx = NULL;
     }
-    return zck_comp_reset(zck);
+    return comp_reset(zck);
 }
 
 static int set_comp_type(zckCtx *zck, ssize_t type) {
@@ -200,10 +200,10 @@ static int set_comp_type(zckCtx *zck, ssize_t type) {
     zck_log(ZCK_LOG_DEBUG, "Setting compression to %s\n",
             zck_comp_name_from_type(type));
     if(type == ZCK_COMP_NONE) {
-        return zck_nocomp_setup(comp);
+        return nocomp_setup(comp);
 #ifdef ZCHUNK_ZSTD
     } else if(type == ZCK_COMP_ZSTD) {
-        return zck_zstd_setup(comp);
+        return zstd_setup(comp);
 #endif
     } else {
         zck_log(ZCK_LOG_ERROR, "Unsupported compression type: %s\n",
@@ -274,7 +274,7 @@ const char PUBLIC *zck_comp_name_from_type(int comp_type) {
     return COMP_NAME[comp_type];
 }
 
-size_t zck_comp_read_from_dc(zckComp *comp, char *dst, size_t dst_size) {
+size_t comp_read_from_dc(zckComp *comp, char *dst, size_t dst_size) {
     VALIDATE_SIZE(comp);
     VALIDATE_SIZE(dst);
 
@@ -289,7 +289,7 @@ size_t zck_comp_read_from_dc(zckComp *comp, char *dst, size_t dst_size) {
     return dl_size;
 }
 
-int zck_comp_add_to_dc(zckComp *comp, const char *src, size_t src_size) {
+int comp_add_to_dc(zckComp *comp, const char *src, size_t src_size) {
     VALIDATE(comp);
     VALIDATE(src);
 
@@ -318,7 +318,7 @@ int zck_comp_add_to_dc(zckComp *comp, const char *src, size_t src_size) {
     return True;
 }
 
-int zck_comp_add_to_data(zckComp *comp, const char *src, size_t src_size) {
+int comp_add_to_data(zckComp *comp, const char *src, size_t src_size) {
     VALIDATE(comp);
     VALIDATE(src);
     comp->data = realloc(comp->data, comp->data_size + src_size);
@@ -338,7 +338,7 @@ int zck_comp_add_to_data(zckComp *comp, const char *src, size_t src_size) {
 ssize_t PUBLIC zck_write(zckCtx *zck, const char *src, const size_t src_size) {
     VALIDATE_WRITE_SIZE(zck);
 
-    if(!zck->comp.started && !zck_comp_init(zck))
+    if(!zck->comp.started && !comp_init(zck))
         return -1;
 
     if(src_size == 0)
@@ -352,7 +352,7 @@ ssize_t PUBLIC zck_write(zckCtx *zck, const char *src, const size_t src_size) {
         free(dst);
         return -1;
     }
-    if(!zck_index_add_to_chunk(zck, dst, dst_size, src_size)) {
+    if(!index_add_to_chunk(zck, dst, dst_size, src_size)) {
         free(dst);
         return -1;
     }
@@ -363,7 +363,7 @@ ssize_t PUBLIC zck_write(zckCtx *zck, const char *src, const size_t src_size) {
 ssize_t PUBLIC zck_end_chunk(zckCtx *zck) {
     VALIDATE_WRITE_SIZE(zck);
 
-    if(!zck->comp.started && !zck_comp_init(zck))
+    if(!zck->comp.started && !comp_init(zck))
         return -1;
 
     /* No point in compressing empty data */
@@ -379,11 +379,11 @@ ssize_t PUBLIC zck_end_chunk(zckCtx *zck) {
         free(dst);
         return -1;
     }
-    if(!zck_index_add_to_chunk(zck, dst, dst_size, 0)) {
+    if(!index_add_to_chunk(zck, dst, dst_size, 0)) {
         free(dst);
         return -1;
     }
-    if(!zck_index_finish_chunk(zck)) {
+    if(!index_finish_chunk(zck)) {
         free(dst);
         return -1;
     }
@@ -393,11 +393,11 @@ ssize_t PUBLIC zck_end_chunk(zckCtx *zck) {
 
 ssize_t comp_end_dchunk(zckCtx *zck, int use_dict, size_t fd_size) {
     ssize_t rb = zck->comp.end_dchunk(&(zck->comp), use_dict, fd_size);
-    if(zck_validate_current_chunk(zck) < 1)
+    if(validate_current_chunk(zck) < 1)
         return -1;
     zck->comp.data_loc = 0;
     zck->comp.data_idx = zck->comp.data_idx->next;
-    if(!zck_hash_init(&(zck->check_chunk_hash), &(zck->chunk_hash_type)))
+    if(!hash_init(&(zck->check_chunk_hash), &(zck->chunk_hash_type)))
         return -1;
     return rb;
 }
@@ -415,7 +415,7 @@ ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, int use_dict) {
 
     /* Read dictionary if it exists and hasn't been read yet */
     if(use_dict && !zck->comp.data_eof && zck->comp.data_idx == NULL &&
-       zck->index.first->length > 0 && !zck_import_dict(zck))
+       zck->index.first->length > 0 && !import_dict(zck))
         return -1;
 
     size_t dc = 0;
@@ -429,9 +429,9 @@ ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, int use_dict) {
     zck_log(ZCK_LOG_DEBUG, "Trying to read %lu bytes\n", dst_size);
     while(dc < dst_size) {
         /* Get bytes from decompressed buffer */
-        ssize_t rb = zck_comp_read_from_dc(&(zck->comp), dst+dc, dst_size-dc);
+        ssize_t rb = comp_read_from_dc(&(zck->comp), dst+dc, dst_size-dc);
         if(rb < 0)
-            goto zck_read_error;
+            goto read_error;
         dc += rb;
         if(dc == dst_size)
             break;
@@ -444,7 +444,7 @@ ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, int use_dict) {
         size_t dc_data_size = zck->comp.dc_data_size;
         size_t dc_data_loc = zck->comp.dc_data_loc;
         if(!zck->comp.decompress(&(zck->comp), use_dict))
-            goto zck_read_error;
+            goto read_error;
 
         /* Check whether we decompressed more data */
         if(zck->comp.dc_data_size != dc_data_size ||
@@ -457,15 +457,15 @@ ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, int use_dict) {
             /* Skip first chunk if it's an empty dict */
             if(zck->comp.data_idx->comp_length == 0)
                 zck->comp.data_idx = zck->comp.data_idx->next;
-            if(!zck_hash_init(&(zck->check_chunk_hash), &(zck->chunk_hash_type)))
-                goto zck_hash_error;
+            if(!hash_init(&(zck->check_chunk_hash), &(zck->chunk_hash_type)))
+                goto hash_error;
             if(zck->comp.data_loc > 0) {
-                if(!zck_hash_update(&(zck->check_full_hash), zck->comp.data,
+                if(!hash_update(&(zck->check_full_hash), zck->comp.data,
                                     zck->comp.data_loc))
-                    goto zck_hash_error;
-                if(!zck_hash_update(&(zck->check_chunk_hash), zck->comp.data,
+                    goto hash_error;
+                if(!hash_update(&(zck->check_chunk_hash), zck->comp.data,
                                     zck->comp.data_loc))
-                    goto zck_hash_error;
+                    goto hash_error;
             }
             if(zck->comp.data_idx == NULL) {
                 free(src);
@@ -496,22 +496,22 @@ ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, int use_dict) {
          * compressed buffer */
         rb = read_data(zck->fd, src, rs);
         if(rb < 0)
-            goto zck_read_error;
+            goto read_error;
         if(rb < rs) {
             zck_log(ZCK_LOG_DEBUG, "EOF\n");
             finished_rd = True;
         }
-        if(!zck_hash_update(&(zck->check_full_hash), src, rb) ||
-           !zck_hash_update(&(zck->check_chunk_hash), src, rb) ||
-           !zck_comp_add_to_data(&(zck->comp), src, rb))
-            goto zck_read_error;
+        if(!hash_update(&(zck->check_full_hash), src, rb) ||
+           !hash_update(&(zck->check_chunk_hash), src, rb) ||
+           !comp_add_to_data(&(zck->comp), src, rb))
+            goto read_error;
     }
     free(src);
     return dc;
-zck_read_error:
+read_error:
     free(src);
     return -1;
-zck_hash_error:
+hash_error:
     free(src);
     return -2;
 }

@@ -37,7 +37,7 @@
                             return False; \
                         }
 
-int zck_index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
+int index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
     VALIDATE(zck);
     size_t length = 0;
 

@@ -31,13 +31,13 @@
 char *get_hash(char *data, size_t length, int type) {
     zckHashType hash_type = {0};
     zckHash hash = {0};
-    if(!zck_hash_setup(&hash_type, type))
+    if(!hash_setup(&hash_type, type))
         return NULL;
-    if(!zck_hash_init(&hash, &hash_type))
+    if(!hash_init(&hash, &hash_type))
         return NULL;
-    if(!zck_hash_update(&hash, data, length))
+    if(!hash_update(&hash, data, length))
         return NULL;
-    char *digest = zck_hash_finalize(&hash);
+    char *digest = hash_finalize(&hash);
     if(digest == NULL)
         return NULL;
     return get_digest_string(digest, hash_type.digest_size);

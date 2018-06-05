@@ -55,7 +55,7 @@
                             }
 
 /* If lead format changes, this needs to be changed */
-int PUBLIC get_min_download_size() {
+int PUBLIC zck_get_min_download_size() {
     /* Lead + hash type + hash digest + header size */
     return 5 + MAX_COMP_SIZE*2 + get_max_hash_size();
 }
@@ -414,6 +414,10 @@ ssize_t PUBLIC zck_get_data_length(zckCtx *zck) {
     while(idx->next != NULL)
         idx = idx->next;
     return idx->start + idx->comp_length;
+}
+
+ssize_t PUBLIC zck_get_length(zckCtx *zck) {
+    return zck_get_header_length(zck) + zck_get_data_length(zck);
 }
 
 int zck_get_tmp_fd() {

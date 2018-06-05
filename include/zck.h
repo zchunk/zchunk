@@ -160,6 +160,16 @@ char *zck_get_range_char(zckRange *range)
 int zck_get_fd(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 
+/* Return number of missing chunks (-1 if error) */
+int zck_missing_chunks(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
+/* Return number of failed chunks (-1 if error) */
+int zck_failed_chunks(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
+/* Reset failed chunks to become missing */
+int zck_reset_failed_chunks(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
+
 /*******************************************************************
  * The functions should be all you need to read and write a zchunk
  * file.  After this point are advanced functions with an unstable
@@ -181,6 +191,9 @@ ssize_t zck_get_header_length(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 /* Get data length */
 ssize_t zck_get_data_length(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
+/* Get file length */
+ssize_t zck_get_length(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 /* Get index digest */
 char *zck_get_header_digest(zckCtx *zck)
@@ -277,7 +290,7 @@ typedef struct zckDL {
     void *wdata;
     zck_wcb header_cb;
     void *hdrdata;
-    zckRange info;
+    zckRange *range;
     zckDLPriv *priv;
     struct zckCtx *zck;
 } zckDL;
@@ -288,14 +301,14 @@ typedef struct zckDL {
 /* Get any matching chunks from src and put them in the right place in tgt */
 int zck_copy_chunks(zckCtx *src, zckCtx *tgt)
     __attribute__ ((warn_unused_result));
-/* Free any resources in zckRange */
-void zck_range_close(zckRange *info);
+/* Free zckRange */
+void zck_range_free(zckRange **info);
 /* Get range string from start and end location */
 char *zck_get_range(size_t start, size_t end)
     __attribute__ ((warn_unused_result));
 /* Get the minimum size needed to download in order to know how large the header
  * is */
-int get_min_download_size()
+int zck_get_min_download_size()
     __attribute__ ((warn_unused_result));
 
 /*******************************************************************

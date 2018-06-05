@@ -1,10 +1,10 @@
 #ifndef ZCK_H
 #define ZCK_H
 
-#define ZCK_VERSION "0.5.2"
+#define ZCK_VERSION "0.6.0"
 #define ZCK_VER_MAJOR 0
-#define ZCK_VER_MINOR 5
-#define ZCK_VER_REVISION 2
+#define ZCK_VER_MINOR 6
+#define ZCK_VER_REVISION 0
 #define ZCK_VER_SUBREVISION 0
 
 #define True 1
@@ -201,9 +201,6 @@ char *zck_get_header_digest(zckCtx *zck)
 /* Get data digest */
 char *zck_get_data_digest(zckCtx *zck)
     __attribute__ ((warn_unused_result));
-/* Get temporary fd that will disappear when fd is closed */
-int zck_get_tmp_fd()
-    __attribute__ ((warn_unused_result));
 
 
 /*******************************************************************
@@ -214,16 +211,6 @@ const char *zck_comp_name_from_type(int comp_type)
     __attribute__ ((warn_unused_result));
 /* Initialize compression.  Compression type and parameters *must* be done
  * before this is called */
-int zck_comp_init(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
-/* Release compression resources.  After this is run, you may change compression
- * type and parameters */
-int zck_comp_close(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
-/* Reset compression configuration without losing buffered compressed data.
- * After this is run, you may change compression type and parameters */
-int zck_comp_reset(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
 
 
 /*******************************************************************
@@ -340,7 +327,4 @@ size_t zck_dl_get_bytes_downloaded(zckDL *dl)
 size_t zck_dl_get_bytes_uploaded(zckDL *dl)
     __attribute__ ((warn_unused_result));
 
-/* Download ranges specified in dl->info from url */
-/*int zck_dl_range(zckDL *dl, char *url)
-    __attribute__ ((warn_unused_result));*/
 #endif

@@ -63,7 +63,6 @@ typedef struct zckDLPriv {
     regex_t *end_regex;
     regex_t *hdr_regex;
     zckIndexItem *tgt_check;
-    zckHash *chunk_hash;
 } zckDLPriv;
 
 typedef struct zckComp {
@@ -161,7 +160,9 @@ int get_tmp_fd()
     __attribute__ ((warn_unused_result));
 int import_dict(zckCtx *zck)
     __attribute__ ((warn_unused_result));
-int validate_file(zckCtx *zck)
+int validate_chunk(zckCtx *zck, zckIndexItem *idx, zck_log_type bad_checksum)
+    __attribute__ ((warn_unused_result));
+int validate_file(zckCtx *zck, zck_log_type bad_checksums)
     __attribute__ ((warn_unused_result));
 int validate_current_chunk(zckCtx *zck)
     __attribute__ ((warn_unused_result));
@@ -232,8 +233,6 @@ int chunks_from_temp(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 
 /* header.c */
-int validate_header(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
 int read_preface(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 int read_index(zckCtx *zck)

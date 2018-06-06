@@ -208,7 +208,7 @@ int read_header_from_file(zckCtx *zck) {
         return False;
     if(!hash_update(&(zck->check_full_hash), header, zck->header_length))
         return False;
-    if(!validate_header(zck))
+    if(validate_header(zck) < 1)
         return False;
     return True;
 }

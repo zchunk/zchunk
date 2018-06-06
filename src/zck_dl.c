@@ -221,7 +221,6 @@ int dl_bytes(dlCtx *dl_ctx, char *url, size_t bytes, size_t start,
                    strerror(errno));
             return 0;
         }
-        printf("Seeking to location %lu\n", start);
     }
     return 1;
 }
@@ -246,7 +245,6 @@ int dl_header(CURL *curl, zckDL *dl, char *url, int fail_no_ranges,
     if(!zck_read_lead(dl->zck))
         return 0;
     start = zck_get_lead_length(dl->zck);
-    printf("Now we need %lu bytes\n", zck_get_header_length(dl->zck) - start);
     if(!dl_bytes(&dl_ctx, url, zck_get_header_length(dl->zck) - start,
                  start, &buffer_len, log_level))
         return 0;
@@ -342,17 +340,24 @@ int main (int argc, char *argv[]) {
         }
     } else {
         /* If file is already fully downloaded, let's get out of here! */
-        if(zck_validate_checksums(zck_tgt)) {
+        int retval = zck_find_valid_chunks(zck_tgt);
+        if(retval == 0) {
+            exit_val = 10;
+            goto out;
+        }
+        if(retval == 1) {
+            printf("Missing chunks: 0\n");
             printf("Downloaded %lu bytes\n",
                 (long unsigned)zck_dl_get_bytes_downloaded(dl));
             ftruncate(dst_fd, zck_get_length(zck_tgt));
             exit_val = 0;
-            //goto out;
+            goto out;
         }
         if(zck_src && !zck_copy_chunks(zck_src, zck_tgt)) {
             exit_val = 10;
             goto out;
         }
+        zck_reset_failed_chunks(zck_tgt);
         dlCtx dl_ctx = {0};
         dl_ctx.dl = dl;
         dl_ctx.curl = curl_ctx;

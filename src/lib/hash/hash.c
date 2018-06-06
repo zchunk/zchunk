@@ -179,7 +179,7 @@ int set_full_hash_type(zckCtx *zck, int hash_type) {
 int set_chunk_hash_type(zckCtx *zck, int hash_type) {
     VALIDATE(zck);
     memset(&(zck->chunk_hash_type), 0, sizeof(zckHashType));
-    zck_log(ZCK_LOG_INFO, "Setting chunk hash to %s\n",
+    zck_log(ZCK_LOG_DEBUG, "Setting chunk hash to %s\n",
             zck_hash_name_from_type(hash_type));
     if(!hash_setup(&(zck->chunk_hash_type), hash_type)) {
         zck_log(ZCK_LOG_ERROR, "Unable to set chunk hash to %s\n",
@@ -191,7 +191,7 @@ int set_chunk_hash_type(zckCtx *zck, int hash_type) {
     return True;
 }
 
-/* Returns 1 if data hash matches, 0 if it doesn't and -1 if failure */
+/* Returns 1 if data hash matches, -1 if it doesn't and 0 if error */
 int PUBLIC zck_validate_data_checksum(zckCtx *zck) {
     hash_close(&(zck->check_full_hash));
     if(!seek_data(zck->fd, zck->data_offset, SEEK_SET))
@@ -200,7 +200,7 @@ int PUBLIC zck_validate_data_checksum(zckCtx *zck) {
         return -1;
     char buf[BUF_SIZE] = {0};
     zckIndexItem *idx = zck->index.first;
-    zck_log(ZCK_LOG_INFO, "Checking full hash\n");
+    zck_log(ZCK_LOG_DEBUG, "Checking full hash\n");
     while(idx) {
         size_t to_read = idx->comp_length;
         while(to_read > 0) {
@@ -215,7 +215,7 @@ int PUBLIC zck_validate_data_checksum(zckCtx *zck) {
         }
         idx = idx->next;
     }
-    return validate_file(zck);
+    return validate_file(zck, ZCK_LOG_WARNING);
 }
 
 const char PUBLIC *zck_hash_name_from_type(int hash_type) {

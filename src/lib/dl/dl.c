@@ -119,6 +119,53 @@ static int dl_write(zckDL *dl, const char *at, size_t length) {
     return wb;
 }
 
+/* Copy chunk identified by src_idx into location specified by tgt_idx */
+static int write_and_verify_chunk(zckCtx *src, zckCtx *tgt,
+                                  zckIndexItem *src_idx,
+                                  zckIndexItem *tgt_idx) {
+    static char buf[BUF_SIZE] = {0};
+
+    size_t to_read = src_idx->comp_length;
+    if(!seek_data(src->fd, src->data_offset + src_idx->start, SEEK_SET))
+        return False;
+    if(!seek_data(tgt->fd, tgt->data_offset + tgt_idx->start, SEEK_SET))
+        return False;
+    zckHash check_hash = {0};
+    if(!hash_init(&check_hash, &(src->chunk_hash_type)))
+        return False;
+    while(to_read > 0) {
+        int rb = BUF_SIZE;
+        if(rb > to_read)
+            rb = to_read;
+        if(!read_data(src->fd, buf, rb))
+            return False;
+        if(!hash_update(&check_hash, buf, rb))
+            return False;
+        if(!write_data(tgt->fd, buf, rb))
+            return False;
+        to_read -= rb;
+    }
+    char *digest = hash_finalize(&check_hash);
+    /* If chunk is invalid, overwrite with zeros and add to download range */
+    if(memcmp(digest, src_idx->digest, src_idx->digest_size) != 0) {
+        char *pdigest = zck_get_chunk_digest(src_idx);
+        zck_log(ZCK_LOG_WARNING, "Source hash: %s\n", pdigest);
+        free(pdigest);
+        pdigest = get_digest_string(digest, src_idx->digest_size);
+        zck_log(ZCK_LOG_WARNING, "Target hash: %s\n", pdigest);
+        free(pdigest);
+        if(!zero_chunk(tgt, tgt_idx))
+            return False;
+        tgt_idx->valid = -1;
+    } else {
+        tgt_idx->valid = 1;
+        zck_log(ZCK_LOG_DEBUG, "Wrote %lu bytes at %lu\n",
+                tgt_idx->comp_length, tgt_idx->start);
+    }
+    free(digest);
+    return True;
+}
+
 /* Split current read into the appropriate chunks and write appropriately */
 int dl_write_range(zckDL *dl, const char *at, size_t length) {
     VALIDATE(dl);
@@ -180,53 +227,6 @@ int dl_write_range(zckDL *dl, const char *at, size_t length) {
             return 0;
     }
     return wb + wb2;
-}
-
-/* Copy chunk identified by src_idx into location specified by tgt_idx */
-static int write_and_verify_chunk(zckCtx *src, zckCtx *tgt,
-                                  zckIndexItem *src_idx,
-                                  zckIndexItem *tgt_idx) {
-    static char buf[BUF_SIZE] = {0};
-
-    size_t to_read = src_idx->comp_length;
-    if(!seek_data(src->fd, src->data_offset + src_idx->start, SEEK_SET))
-        return False;
-    if(!seek_data(tgt->fd, tgt->data_offset + tgt_idx->start, SEEK_SET))
-        return False;
-    zckHash check_hash = {0};
-    if(!hash_init(&check_hash, &(src->chunk_hash_type)))
-        return False;
-    while(to_read > 0) {
-        int rb = BUF_SIZE;
-        if(rb > to_read)
-            rb = to_read;
-        if(!read_data(src->fd, buf, rb))
-            return False;
-        if(!hash_update(&check_hash, buf, rb))
-            return False;
-        if(!write_data(tgt->fd, buf, rb))
-            return False;
-        to_read -= rb;
-    }
-    char *digest = hash_finalize(&check_hash);
-    /* If chunk is invalid, overwrite with zeros and add to download range */
-    if(memcmp(digest, src_idx->digest, src_idx->digest_size) != 0) {
-        char *pdigest = zck_get_chunk_digest(src_idx);
-        zck_log(ZCK_LOG_WARNING, "Source hash: %s\n", pdigest);
-        free(pdigest);
-        pdigest = get_digest_string(digest, src_idx->digest_size);
-        zck_log(ZCK_LOG_WARNING, "Target hash: %s\n", pdigest);
-        free(pdigest);
-        if(!zero_chunk(tgt, tgt_idx))
-            return False;
-        tgt_idx->valid = -1;
-    } else {
-        tgt_idx->valid = 1;
-        zck_log(ZCK_LOG_DEBUG, "Wrote %lu bytes at %lu\n",
-                tgt_idx->comp_length, tgt_idx->start);
-    }
-    free(digest);
-    return True;
 }
 
 int PUBLIC zck_copy_chunks(zckCtx *src, zckCtx *tgt) {

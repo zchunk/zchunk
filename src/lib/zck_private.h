@@ -222,10 +222,6 @@ ssize_t read_data(int fd, char *data, size_t length)
     __attribute__ ((warn_unused_result));
 int write_data(int fd, const char *data, size_t length)
     __attribute__ ((warn_unused_result));
-int write_comp_size(int fd, size_t val)
-    __attribute__ ((warn_unused_result));
-int read_comp_size(int fd, size_t *val, size_t *length)
-    __attribute__ ((warn_unused_result));
 int chunks_from_temp(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 

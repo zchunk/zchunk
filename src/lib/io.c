@@ -66,26 +66,6 @@ int write_data(int fd, const char *data, size_t length) {
     return True;
 }
 
-int write_comp_size(int fd, size_t val) {
-    char data[sizeof(size_t)*2] = {0};
-    size_t length = 0;
-    compint_from_size(data, val, &length);
-    return write_data(fd, data, length);
-}
-
-int read_comp_size(int fd, size_t *val, size_t *length) {
-    char data[MAX_COMP_SIZE] = {0};
-    int i=0;
-    for(char c=read_data(fd, data+i, 1); c < 128 && i < MAX_COMP_SIZE;
-        i++,c=read_data(fd, data+i, 1));
-    if(i == MAX_COMP_SIZE) {
-        zck_log(ZCK_LOG_ERROR, "Number too large\n");
-        *val = 0;
-        return False;
-    }
-    return !compint_to_size(val, data, length, MAX_COMP_SIZE);
-}
-
 int seek_data(int fd, off_t offset, int whence) {
     if(lseek(fd, offset, whence) == -1) {
         char *wh_str = NULL;

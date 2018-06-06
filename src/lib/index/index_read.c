@@ -108,6 +108,18 @@ int index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
     return True;
 }
 
+ssize_t PUBLIC zck_get_index_count(zckCtx *zck) {
+    if(zck == NULL)
+        return -1;
+    return zck->index.count;
+}
+
+zckIndex PUBLIC *zck_get_index(zckCtx *zck) {
+    if(zck == NULL)
+        return NULL;
+    return &(zck->index);
+}
+
 int PUBLIC zck_missing_chunks(zckCtx *zck) {
     if(zck == NULL) {
         zck_log(ZCK_LOG_ERROR, "zckCtx not initialized\n");

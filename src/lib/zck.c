@@ -60,6 +60,181 @@ int PUBLIC zck_get_min_download_size() {
     return 5 + MAX_COMP_SIZE*2 + get_max_hash_size();
 }
 
+
+
+static void zck_clear(zckCtx *zck) {
+    if(zck == NULL)
+        return;
+    index_free(zck);
+    if(zck->header)
+        free(zck->header);
+    zck->fd = -1;
+    zck->header = NULL;
+    zck->header_size = 0;
+    if(!comp_close(zck))
+        zck_log(ZCK_LOG_WARNING, "Unable to close compression\n");
+    hash_close(&(zck->full_hash));
+    hash_close(&(zck->check_full_hash));
+    hash_close(&(zck->check_chunk_hash));
+    clear_work_index(zck);
+    if(zck->full_hash_digest) {
+        free(zck->full_hash_digest);
+        zck->full_hash_digest = NULL;
+    }
+    if(zck->header_digest) {
+        free(zck->header_digest);
+        zck->header_digest = NULL;
+    }
+    if(zck->temp_fd) {
+        close(zck->temp_fd);
+        zck->temp_fd = 0;
+    }
+}
+
+static int hex_to_int (char c) {
+    if (c >= 97)
+        c = c - 32;
+    int result = (c / 16 - 3) * 10 + (c % 16);
+    if (result > 9)
+        result--;
+    return result;
+}
+
+static char *ascii_checksum_to_bin (char *checksum) {
+    int cl = strlen(checksum);
+    char *raw_checksum = zmalloc(cl/2);
+    if(raw_checksum == NULL) {
+        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n", cl/2);
+        return NULL;
+    }
+    char *rp = raw_checksum;
+    int buf = 0;
+    for (int i=0; i<cl; i++) {
+        if (i % 2 == 0)
+            buf = hex_to_int(checksum[i]);
+        else {
+            rp[0] = buf*16 + hex_to_int(checksum[i]);
+            rp++;
+        }
+    }
+    return raw_checksum;
+}
+
+int get_tmp_fd() {
+    int temp_fd;
+    char *fname = NULL;
+    char template[] = "zcktempXXXXXX";
+    char *tmpdir = getenv("TMPDIR");
+
+    if(tmpdir == NULL) {
+        tmpdir = "/tmp/";
+    }
+    fname = zmalloc(strlen(template) + strlen(tmpdir) + 2);
+    if(fname == NULL) {
+        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
+                strlen(template) + strlen(tmpdir) + 2);
+        return -1;
+    }
+    strncpy(fname, tmpdir, strlen(tmpdir));
+    strncpy(fname+strlen(tmpdir), "/", 2);
+    strncpy(fname+strlen(tmpdir)+1, template, strlen(template));
+
+    temp_fd = mkstemp(fname);
+    if(temp_fd < 0) {
+        free(fname);
+        zck_log(ZCK_LOG_ERROR, "Unable to create temporary file\n");
+        return -1;
+    }
+    if(unlink(fname) < 0) {
+        free(fname);
+        zck_log(ZCK_LOG_ERROR, "Unable to delete temporary file\n");
+        return -1;
+    }
+    free(fname);
+    return temp_fd;
+}
+
+int import_dict(zckCtx *zck) {
+    VALIDATE(zck);
+
+    size_t size = zck->index.first->length;
+
+    /* No dict */
+    if(size == 0)
+        return True;
+
+    zck_log(ZCK_LOG_DEBUG, "Reading compression dict\n");
+    char *data = zmalloc(size);
+    if(data == NULL) {
+        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n", size);
+        return False;
+    }
+    if(comp_read(zck, data, size, 0) != size) {
+        zck_log(ZCK_LOG_ERROR, "Error reading compressed dict\n");
+        return False;
+    }
+    zck_log(ZCK_LOG_DEBUG, "Resetting compression\n");
+    if(!comp_reset(zck))
+        return False;
+    zck_log(ZCK_LOG_DEBUG, "Setting dict\n");
+    if(!comp_soption(zck, ZCK_COMP_DICT, data, size))
+        return False;
+    if(!comp_init(zck))
+        return False;
+    free(data);
+
+    return True;
+}
+
+int PUBLIC zck_set_soption(zckCtx *zck, zck_soption option, const char *value,
+                           size_t length) {
+    char *data = zmalloc(length);
+    if(data == NULL) {
+        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n", length);
+        return False;
+    }
+    memcpy(data, value, length);
+
+    /* Validation options */
+    if(option == ZCK_VAL_HEADER_DIGEST) {
+        VALIDATE_READ(zck);
+        zckHashType chk_type = {0};
+        if(zck->prep_hash_type < 0) {
+            free(data);
+            zck_log(ZCK_LOG_ERROR,
+                    "For validation, you must set the header hash type "
+                    "*before* the header digest itself\n");
+            return False;
+        }
+        if(!hash_setup(&chk_type, zck->prep_hash_type)) {
+            free(data);
+            return False;
+        }
+        if(chk_type.digest_size*2 != length) {
+            free(data);
+            zck_log(ZCK_LOG_ERROR, "Hash digest size mismatch for header "
+                    "validation\n"
+                    "Expected: %lu\nProvided: %lu\n", chk_type.digest_size*2,
+                    length);
+            return False;
+        }
+        zck->prep_digest = ascii_checksum_to_bin(data);
+        free(data);
+
+    /* Compression options */
+    } else if(option < 2000) {
+        VALIDATE_WRITE(zck);
+        return comp_soption(zck, option, data, length);
+
+    /* Unknown options */
+    } else {
+        free(data);
+        zck_log(ZCK_LOG_ERROR, "Unknown string option %i\n", option);
+        return False;
+    }
+    return True;
+}
+
 int PUBLIC zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t value) {
     /* Set hash type */
     if(option == ZCK_HASH_FULL_TYPE) {
@@ -116,83 +291,6 @@ int PUBLIC zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t value) {
     return True;
 }
 
-int hex_to_int (char c) {
-    if (c >= 97)
-        c = c - 32;
-    int result = (c / 16 - 3) * 10 + (c % 16);
-    if (result > 9)
-        result--;
-    return result;
-}
-
-char *ascii_checksum_to_bin (char *checksum) {
-    int cl = strlen(checksum);
-    char *raw_checksum = zmalloc(cl/2);
-    if(raw_checksum == NULL) {
-        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n", cl/2);
-        return NULL;
-    }
-    char *rp = raw_checksum;
-    int buf = 0;
-    for (int i=0; i<cl; i++) {
-        if (i % 2 == 0)
-            buf = hex_to_int(checksum[i]);
-        else {
-            rp[0] = buf*16 + hex_to_int(checksum[i]);
-            rp++;
-        }
-    }
-    return raw_checksum;
-}
-
-int PUBLIC zck_set_soption(zckCtx *zck, zck_soption option, const char *value,
-                           size_t length) {
-    char *data = zmalloc(length);
-    if(data == NULL) {
-        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n", length);
-        return False;
-    }
-    memcpy(data, value, length);
-
-    /* Validation options */
-    if(option == ZCK_VAL_HEADER_DIGEST) {
-        VALIDATE_READ(zck);
-        zckHashType chk_type = {0};
-        if(zck->prep_hash_type < 0) {
-            free(data);
-            zck_log(ZCK_LOG_ERROR,
-                    "For validation, you must set the header hash type "
-                    "*before* the header digest itself\n");
-            return False;
-        }
-        if(!hash_setup(&chk_type, zck->prep_hash_type)) {
-            free(data);
-            return False;
-        }
-        if(chk_type.digest_size*2 != length) {
-            free(data);
-            zck_log(ZCK_LOG_ERROR, "Hash digest size mismatch for header "
-                    "validation\n"
-                    "Expected: %lu\nProvided: %lu\n", chk_type.digest_size*2,
-                    length);
-            return False;
-        }
-        zck->prep_digest = ascii_checksum_to_bin(data);
-        free(data);
-
-    /* Compression options */
-    } else if(option < 2000) {
-        VALIDATE_WRITE(zck);
-        return comp_soption(zck, option, data, length);
-
-    /* Unknown options */
-    } else {
-        free(data);
-        zck_log(ZCK_LOG_ERROR, "Unknown string option %i\n", option);
-        return False;
-    }
-    return True;
-}
 int PUBLIC zck_close(zckCtx *zck) {
     VALIDATE(zck);
 
@@ -219,35 +317,6 @@ int PUBLIC zck_close(zckCtx *zck) {
     }
 
     return True;
-}
-
-void zck_clear(zckCtx *zck) {
-    if(zck == NULL)
-        return;
-    index_free(zck);
-    if(zck->header)
-        free(zck->header);
-    zck->fd = -1;
-    zck->header = NULL;
-    zck->header_size = 0;
-    if(!comp_close(zck))
-        zck_log(ZCK_LOG_WARNING, "Unable to close compression\n");
-    hash_close(&(zck->full_hash));
-    hash_close(&(zck->check_full_hash));
-    hash_close(&(zck->check_chunk_hash));
-    clear_work_index(zck);
-    if(zck->full_hash_digest) {
-        free(zck->full_hash_digest);
-        zck->full_hash_digest = NULL;
-    }
-    if(zck->header_digest) {
-        free(zck->header_digest);
-        zck->header_digest = NULL;
-    }
-    if(zck->temp_fd) {
-        close(zck->temp_fd);
-        zck->temp_fd = 0;
-    }
 }
 
 void PUBLIC zck_free(zckCtx **zck) {
@@ -325,334 +394,6 @@ zckCtx PUBLIC *zck_init_write (int dst_fd) {
 iw_error:
     free(zck);
     return NULL;
-}
-
-int PUBLIC zck_get_full_hash_type(zckCtx *zck) {
-    if(zck == NULL)
-        return -1;
-    return zck->hash_type.type;
-}
-
-ssize_t PUBLIC zck_get_full_digest_size(zckCtx *zck) {
-    if(zck == NULL)
-        return -1;
-    return zck->hash_type.digest_size;
-}
-
-int PUBLIC zck_get_chunk_hash_type(zckCtx *zck) {
-    if(zck == NULL)
-        return -1;
-    return zck->index.hash_type;
-}
-
-ssize_t PUBLIC zck_get_chunk_digest_size(zckCtx *zck) {
-    if(zck == NULL)
-        return -1;
-    return zck->index.digest_size;
-}
-
-ssize_t PUBLIC zck_get_index_count(zckCtx *zck) {
-    if(zck == NULL)
-        return -1;
-    return zck->index.count;
-}
-
-zckIndex PUBLIC *zck_get_index(zckCtx *zck) {
-    if(zck == NULL)
-        return NULL;
-    return &(zck->index);
-}
-
-char *get_digest_string(const char *digest, int size) {
-    char *str = zmalloc(size*2+1);
-
-    for(int i=0; i<size; i++)
-        snprintf(str + i*2, 3, "%02x", (unsigned char)digest[i]);
-    return str;
-}
-
-char PUBLIC *zck_get_header_digest(zckCtx *zck) {
-    if(zck == NULL)
-        return NULL;
-    return get_digest_string(zck->header_digest, zck->hash_type.digest_size);
-}
-
-char PUBLIC *zck_get_data_digest(zckCtx *zck) {
-    if(zck == NULL)
-        return NULL;
-    return get_digest_string(zck->full_hash_digest, zck->hash_type.digest_size);
-}
-
-char PUBLIC *zck_get_chunk_digest(zckIndexItem *item) {
-    if(item == NULL)
-        return NULL;
-    return get_digest_string(item->digest, item->digest_size);
-}
-
-ssize_t PUBLIC zck_get_header_length(zckCtx *zck) {
-    if(zck == NULL)
-        return -1;
-    return zck->lead_size + zck->header_length;
-}
-
-ssize_t PUBLIC zck_get_lead_length(zckCtx *zck) {
-    if(zck == NULL)
-        return -1;
-    return zck->lead_size;
-}
-
-ssize_t PUBLIC zck_get_data_length(zckCtx *zck) {
-    zckIndexItem *idx = zck->index.first;
-    while(idx->next != NULL)
-        idx = idx->next;
-    return idx->start + idx->comp_length;
-}
-
-ssize_t PUBLIC zck_get_length(zckCtx *zck) {
-    return zck_get_header_length(zck) + zck_get_data_length(zck);
-}
-
-int get_tmp_fd() {
-    int temp_fd;
-    char *fname = NULL;
-    char template[] = "zcktempXXXXXX";
-    char *tmpdir = getenv("TMPDIR");
-
-    if(tmpdir == NULL) {
-        tmpdir = "/tmp/";
-    }
-    fname = zmalloc(strlen(template) + strlen(tmpdir) + 2);
-    if(fname == NULL) {
-        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
-                strlen(template) + strlen(tmpdir) + 2);
-        return -1;
-    }
-    strncpy(fname, tmpdir, strlen(tmpdir));
-    strncpy(fname+strlen(tmpdir), "/", 2);
-    strncpy(fname+strlen(tmpdir)+1, template, strlen(template));
-
-    temp_fd = mkstemp(fname);
-    if(temp_fd < 0) {
-        free(fname);
-        zck_log(ZCK_LOG_ERROR, "Unable to create temporary file\n");
-        return -1;
-    }
-    if(unlink(fname) < 0) {
-        free(fname);
-        zck_log(ZCK_LOG_ERROR, "Unable to delete temporary file\n");
-        return -1;
-    }
-    free(fname);
-    return temp_fd;
-}
-
-int import_dict(zckCtx *zck) {
-    VALIDATE(zck);
-
-    size_t size = zck->index.first->length;
-
-    /* No dict */
-    if(size == 0)
-        return True;
-
-    zck_log(ZCK_LOG_DEBUG, "Reading compression dict\n");
-    char *data = zmalloc(size);
-    if(data == NULL) {
-        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n", size);
-        return False;
-    }
-    if(comp_read(zck, data, size, 0) != size) {
-        zck_log(ZCK_LOG_ERROR, "Error reading compressed dict\n");
-        return False;
-    }
-    zck_log(ZCK_LOG_DEBUG, "Resetting compression\n");
-    if(!comp_reset(zck))
-        return False;
-    zck_log(ZCK_LOG_DEBUG, "Setting dict\n");
-    if(!comp_soption(zck, ZCK_COMP_DICT, data, size))
-        return False;
-    if(!comp_init(zck))
-        return False;
-    free(data);
-
-    return True;
-}
-
-/* Validate chunk, returning -1 if checksum fails, 1 if good, 0 if error */
-int validate_chunk(zckCtx *zck, zckIndexItem *idx,
-                       zck_log_type bad_checksum) {
-    VALIDATE(zck);
-    if(idx == NULL) {
-        zck_log(ZCK_LOG_ERROR, "Index not initialized\n");
-        return 0;
-    }
-
-    char *digest = hash_finalize(&(zck->check_chunk_hash));
-    if(digest == NULL) {
-        zck_log(ZCK_LOG_ERROR,
-                "Unable to calculate %s checksum for chunk\n");
-        return 0;
-    }
-    if(idx->comp_length == 0)
-        memset(digest, 0, idx->digest_size);
-    zck_log(ZCK_LOG_DEBUG, "Checking chunk checksum\n");
-    char *pdigest = zck_get_chunk_digest(idx);
-    zck_log(ZCK_LOG_DEBUG, "Expected chunk checksum:   %s\n", pdigest);
-    free(pdigest);
-    pdigest = get_digest_string(digest, idx->digest_size);
-    zck_log(ZCK_LOG_DEBUG, "Calculated chunk checksum: %s\n", pdigest);
-    free(pdigest);
-    if(memcmp(digest, idx->digest, idx->digest_size) != 0) {
-        free(digest);
-        zck_log(bad_checksum, "Chunk checksum failed!\n");
-        return -1;
-    }
-    zck_log(ZCK_LOG_DEBUG, "Chunk checksum valid\n");
-    free(digest);
-    return 1;
-}
-
-int validate_current_chunk(zckCtx *zck) {
-    VALIDATE(zck);
-
-    return validate_chunk(zck, zck->comp.data_idx, ZCK_LOG_ERROR);
-}
-
-int validate_file(zckCtx *zck, zck_log_type bad_checksums) {
-    VALIDATE(zck);
-    char *digest = hash_finalize(&(zck->check_full_hash));
-    if(digest == NULL) {
-        zck_log(ZCK_LOG_ERROR,
-                "Unable to calculate %s checksum for full file\n");
-        return 0;
-    }
-    zck_log(ZCK_LOG_DEBUG, "Checking data checksum\n");
-    char *cks = get_digest_string(zck->full_hash_digest,
-                                  zck->hash_type.digest_size);
-    zck_log(ZCK_LOG_DEBUG, "Expected data checksum:   %s\n", cks);
-    free(cks);
-    cks = get_digest_string(digest, zck->hash_type.digest_size);
-    zck_log(ZCK_LOG_DEBUG, "Calculated data checksum: %s\n", cks);
-    free(cks);
-    if(memcmp(digest, zck->full_hash_digest, zck->hash_type.digest_size) != 0) {
-        free(digest);
-        zck_log(bad_checksums, "Data checksum failed!\n");
-        return -1;
-    }
-    zck_log(ZCK_LOG_DEBUG, "Data checksum valid\n");
-    free(digest);
-    return 1;
-}
-
-int validate_header(zckCtx *zck) {
-    VALIDATE(zck);
-    char *digest = hash_finalize(&(zck->check_full_hash));
-    if(digest == NULL) {
-        zck_log(ZCK_LOG_ERROR,
-                "Unable to calculate %s checksum for header\n");
-        return 0;
-    }
-    zck_log(ZCK_LOG_DEBUG, "Checking header checksum\n");
-    char *cks = get_digest_string(zck->header_digest,
-                                  zck->hash_type.digest_size);
-    zck_log(ZCK_LOG_DEBUG, "Expected header checksum:   %s\n", cks);
-    free(cks);
-    cks = get_digest_string(digest, zck->hash_type.digest_size);
-    zck_log(ZCK_LOG_DEBUG, "Calculated header checksum: %s\n", cks);
-    free(cks);
-    if(memcmp(digest, zck->header_digest, zck->hash_type.digest_size) != 0) {
-        free(digest);
-        zck_log(ZCK_LOG_ERROR, "Header checksum failed!\n");
-        return -1;
-    }
-    zck_log(ZCK_LOG_DEBUG, "Header checksum valid\n");
-    free(digest);
-
-    if(!hash_init(&(zck->check_full_hash), &(zck->hash_type)))
-        return 0;
-
-    return 1;
-}
-
-int validate_checksums(zckCtx *zck, zck_log_type bad_checksums) {
-    VALIDATE_READ(zck);
-    char buf[BUF_SIZE];
-
-    if(zck->data_offset == 0) {
-        zck_log(ZCK_LOG_ERROR, "Header hasn't been read yet\n");
-        return 0;
-    }
-
-    hash_close(&(zck->check_full_hash));
-    if(!hash_init(&(zck->check_full_hash), &(zck->hash_type)))
-        return 0;
-
-    if(!seek_data(zck->fd, zck->data_offset, SEEK_SET))
-        return 0;
-
-    /* Check each chunk checksum */
-    int all_good = True;
-    for(zckIndexItem *idx = zck->index.first; idx; idx = idx->next) {
-        if(idx == zck->index.first && idx->length == 0) {
-            idx->valid = 1;
-            continue;
-        }
-
-        if(!hash_init(&(zck->check_chunk_hash), &(zck->chunk_hash_type)))
-            return 0;
-
-        size_t rlen = 0;
-        while(rlen < idx->comp_length) {
-            size_t rsize = BUF_SIZE;
-            if(BUF_SIZE > idx->comp_length - rlen)
-                rsize = idx->comp_length - rlen;
-            if(read_data(zck->fd, buf, rsize) != rsize)
-                zck_log(ZCK_LOG_DEBUG, "No more data\n");
-            if(!hash_update(&(zck->check_chunk_hash), buf, rsize))
-                return 0;
-            if(!hash_update(&(zck->check_full_hash), buf, rsize))
-                return 0;
-            rlen += rsize;
-        }
-        int valid_chunk = validate_chunk(zck, idx, bad_checksums);
-        if(!valid_chunk)
-            return 0;
-        idx->valid = valid_chunk;
-        if(all_good && valid_chunk != 1)
-            all_good = False;
-    }
-    int valid_file = -1;
-    if(all_good) {
-        /* Check data checksum */
-        valid_file = validate_file(zck, bad_checksums);
-        if(!valid_file)
-            return 0;
-
-        /* If data checksum failed, invalidate *all* chunks */
-        if(valid_file == -1)
-            for(zckIndexItem *idx = zck->index.first; idx; idx = idx->next)
-                idx->valid = -1;
-    }
-
-    /* Go back to beginning of data section */
-    if(!seek_data(zck->fd, zck->data_offset, SEEK_SET))
-        return 0;
-
-    /* Reinitialize data checksum */
-    if(!hash_init(&(zck->check_full_hash), &(zck->hash_type)))
-        return 0;
-
-    return valid_file;
-}
-
-/* Returns 1 if all chunks are valid, -1 if even one isn't and 0 if error */
-int PUBLIC zck_find_valid_chunks(zckCtx *zck) {
-    return validate_checksums(zck, ZCK_LOG_DEBUG);
-}
-
-/* Returns 1 if all checksums matched, -1 if even one doesn't and 0 if error */
-int PUBLIC zck_validate_checksums(zckCtx *zck) {
-    return validate_checksums(zck, ZCK_LOG_WARNING);
 }
 
 int PUBLIC zck_get_fd(zckCtx *zck) {

@@ -532,3 +532,26 @@ int PUBLIC zck_read_header(zckCtx *zck) {
         return False;
     return True;
 }
+
+ssize_t PUBLIC zck_get_header_length(zckCtx *zck) {
+    if(zck == NULL)
+        return -1;
+    return zck->lead_size + zck->header_length;
+}
+
+ssize_t PUBLIC zck_get_lead_length(zckCtx *zck) {
+    if(zck == NULL)
+        return -1;
+    return zck->lead_size;
+}
+
+ssize_t PUBLIC zck_get_data_length(zckCtx *zck) {
+    zckIndexItem *idx = zck->index.first;
+    while(idx->next != NULL)
+        idx = idx->next;
+    return idx->start + idx->comp_length;
+}
+
+ssize_t PUBLIC zck_get_length(zckCtx *zck) {
+    return zck_get_header_length(zck) + zck_get_data_length(zck);
+}

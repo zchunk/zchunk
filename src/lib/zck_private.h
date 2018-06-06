@@ -160,18 +160,7 @@ int get_tmp_fd()
     __attribute__ ((warn_unused_result));
 int import_dict(zckCtx *zck)
     __attribute__ ((warn_unused_result));
-int validate_chunk(zckCtx *zck, zckIndexItem *idx, zck_log_type bad_checksum)
-    __attribute__ ((warn_unused_result));
-int validate_file(zckCtx *zck, zck_log_type bad_checksums)
-    __attribute__ ((warn_unused_result));
-int validate_current_chunk(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
-int validate_header(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
-const char *hash_name_from_type(int hash_type)
-    __attribute__ ((warn_unused_result));
-char *get_digest_string(const char *digest, int size)
-    __attribute__ ((warn_unused_result));
+
 
 /* hash/hash.h */
 int hash_setup(zckHashType *ht, int h)
@@ -183,13 +172,21 @@ int hash_update(zckHash *hash, const char *message, const size_t size)
 char *hash_finalize(zckHash *hash)
     __attribute__ ((warn_unused_result));
 void hash_close(zckHash *hash);
-const char *zck_hash_get_printable(const char *digest, zckHashType *type)
+int validate_chunk(zckCtx *zck, zckIndexItem *idx, zck_log_type bad_checksum)
+    __attribute__ ((warn_unused_result));
+int validate_file(zckCtx *zck, zck_log_type bad_checksums)
+    __attribute__ ((warn_unused_result));
+int validate_current_chunk(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
+int validate_header(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 int set_full_hash_type(zckCtx *zck, int hash_type)
     __attribute__ ((warn_unused_result));
 int set_chunk_hash_type(zckCtx *zck, int hash_type)
     __attribute__ ((warn_unused_result));
 int get_max_hash_size()
+    __attribute__ ((warn_unused_result));
+char *get_digest_string(const char *digest, int size)
     __attribute__ ((warn_unused_result));
 
 

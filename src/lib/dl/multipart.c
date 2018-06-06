@@ -94,6 +94,12 @@ static int gen_regex(zckDL *dl) {
     return True;
 }
 
+static void reset_mp(zckMP *mp) {
+    if(mp->buffer)
+        free(mp->buffer);
+    memset(mp, 0, sizeof(zckMP));
+}
+
 size_t multipart_extract(zckDL *dl, char *b, size_t l) {
     VALIDATE(dl);
     if(dl->priv == NULL || dl->priv->mp == NULL)
@@ -199,12 +205,6 @@ end:
     if(alloc_buf)
         free(buf);
     return l;
-}
-
-static void reset_mp(zckMP *mp) {
-    if(mp->buffer)
-        free(mp->buffer);
-    memset(mp, 0, sizeof(zckMP));
 }
 
 size_t multipart_get_boundary(zckDL *dl, char *b, size_t size) {

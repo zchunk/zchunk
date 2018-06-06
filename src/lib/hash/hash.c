@@ -409,7 +409,7 @@ int PUBLIC zck_validate_data_checksum(zckCtx *zck) {
 }
 
 const char PUBLIC *zck_hash_name_from_type(int hash_type) {
-    if(hash_type > 1) {
+    if(hash_type > 1 || hash_type < 0) {
         snprintf(unknown+8, 21, "%i)", hash_type);
         return unknown;
     }

@@ -145,7 +145,7 @@ int main (int argc, char *argv[]) {
     if(!zck_close(zck))
         goto error2;
     if(arguments.log_level <= ZCK_LOG_INFO)
-        printf("Decompressed %lu bytes\n", total);
+        printf("Decompressed %lu bytes\n", (unsigned long)total);
     good_exit = True;
 error2:
     free(data);

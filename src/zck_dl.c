@@ -214,11 +214,12 @@ int dl_bytes(dlCtx *dl_ctx, char *url, size_t bytes, size_t start,
 
         if(log_level <= ZCK_LOG_DEBUG)
             printf("Downloading %lu bytes at position %lu\n",
-                   start+bytes-*buffer_len, *buffer_len);
+                   (unsigned long)start+bytes-*buffer_len,
+                   (unsigned long)*buffer_len);
         *buffer_len += start + bytes - *buffer_len;
         if(lseek(fd, start, SEEK_SET) == -1) {
-            printf("Seek to byte %lu of temporary file failed: %s\n", start,
-                   strerror(errno));
+            printf("Seek to byte %lu of temporary file failed: %s\n",
+                   (unsigned long)start, strerror(errno));
             return 0;
         }
     }
@@ -283,7 +284,7 @@ int main (int argc, char *argv[]) {
     CURL *curl_ctx = curl_easy_init();
     if(!curl_ctx) {
         printf("Unable to allocate %lu bytes for curl context\n",
-                sizeof(CURL));
+                (unsigned long)sizeof(CURL));
         exit(10);
     }
 
@@ -323,7 +324,11 @@ int main (int argc, char *argv[]) {
         }
         /* Download the full file */
         lseek(dst_fd, 0, SEEK_SET);
-        ftruncate(dst_fd, 0);
+        if(ftruncate(dst_fd, 0) < 0) {
+            perror(NULL);
+            exit_val = 10;
+            goto out;
+        }
         dlCtx dl_ctx = {0};
         dl_ctx.dl = dl;
         dl_ctx.curl = curl_ctx;
@@ -349,7 +354,11 @@ int main (int argc, char *argv[]) {
             printf("Missing chunks: 0\n");
             printf("Downloaded %lu bytes\n",
                 (long unsigned)zck_dl_get_bytes_downloaded(dl));
-            ftruncate(dst_fd, zck_get_length(zck_tgt));
+            if(ftruncate(dst_fd, zck_get_length(zck_tgt)) < 0) {
+                perror(NULL);
+                exit_val = 10;
+                goto out;
+            }
             exit_val = 0;
             goto out;
         }
@@ -397,7 +406,11 @@ int main (int argc, char *argv[]) {
     }
     printf("Downloaded %lu bytes\n",
            (long unsigned)zck_dl_get_bytes_downloaded(dl));
-    ftruncate(dst_fd, zck_get_length(zck_tgt));
+    if(ftruncate(dst_fd, zck_get_length(zck_tgt)) < 0) {
+        perror(NULL);
+        exit_val = 10;
+        goto out;
+    }
 
     switch(zck_validate_data_checksum(dl->zck)) {
         case -1:

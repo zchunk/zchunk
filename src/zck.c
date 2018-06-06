@@ -264,7 +264,7 @@ int main (int argc, char *argv[]) {
 
             if(arguments.log_level <= ZCK_LOG_INFO) {
                 printf("Using buzhash algorithm for automatic chunking\n");
-                printf("Window size: %lu\n", buzhash_width);
+                printf("Window size: %lu\n", (unsigned long)buzhash_width);
             }
             while(cur_loc < data + in_size) {
                 uint32_t bh = 0;
@@ -297,8 +297,9 @@ int main (int argc, char *argv[]) {
     if(arguments.log_level <= ZCK_LOG_INFO) {
         zckIndex *idx = zck_get_index(zck);
         printf("Wrote %lu bytes in %lu chunks\n",
-               zck_get_data_length(zck) + zck_get_header_length(zck),
-               idx->count);
+               (unsigned long)(zck_get_data_length(zck) +
+                               zck_get_header_length(zck)),
+               (unsigned long)idx->count);
     }
 
     zck_free(&zck);

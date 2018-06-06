@@ -132,10 +132,12 @@ int PUBLIC zck_has_failed_chunks(zckCtx *zck) {
     return failed;
 }
 
-int PUBLIC zck_reset_failed_chunks(zckCtx *zck) {
-    VALIDATE(zck);
+void PUBLIC zck_reset_failed_chunks(zckCtx *zck) {
+    if(!zck)
+        return;
+
     for(zckIndexItem *idx = zck->index.first; idx; idx=idx->next)
         if(idx->valid == -1)
             idx->valid = 0;
-    return True;
+    return;
 }

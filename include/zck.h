@@ -146,6 +146,9 @@ int zck_validate_checksums(zckCtx *zck)
 /* Validate just the data checksum for the current file */
 int zck_validate_data_checksum(zckCtx *zck)
     __attribute__ ((warn_unused_result));
+/* Go through file and mark valid chunks as valid */
+int zck_find_valid_chunks(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 
 /* Get a zckRange of ranges that need to still be downloaded.
  * max_ranges is the maximum number of ranges supported in a single request
@@ -167,8 +170,7 @@ int zck_missing_chunks(zckCtx *zck)
 int zck_failed_chunks(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 /* Reset failed chunks to become missing */
-int zck_reset_failed_chunks(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+void zck_reset_failed_chunks(zckCtx *zck);
 
 /*******************************************************************
  * The functions should be all you need to read and write a zchunk

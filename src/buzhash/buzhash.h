@@ -5,9 +5,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-extern const size_t buzhash_width;
+typedef struct buzHash {
+    uint32_t h;
+    int window_size;
+} buzHash;
 
-uint32_t buzhash (const char *);
-uint32_t buzhash_update (const char *, uint32_t);
+uint32_t buzhash_setup(buzHash *b, const char *s, size_t n);
+uint32_t buzhash_update (buzHash *b, const char *s);
 
 #endif

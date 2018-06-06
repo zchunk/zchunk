@@ -261,6 +261,9 @@ int main (int argc, char *argv[]) {
             char *cur_loc = data;
             char *start = data;
             char *window_loc;
+            buzHash b = {0};
+            size_t buzhash_width = 48;
+            size_t match_bits = 32768;
 
             if(arguments.log_level <= ZCK_LOG_INFO) {
                 printf("Using buzhash algorithm for automatic chunking\n");
@@ -270,11 +273,11 @@ int main (int argc, char *argv[]) {
                 uint32_t bh = 0;
                 window_loc = cur_loc;
                 if(cur_loc + buzhash_width < data + in_size) {
-                    bh = buzhash(window_loc);
+                    bh = buzhash_setup(&b, window_loc, buzhash_width);
                     cur_loc += buzhash_width;
                     while(cur_loc < data + in_size) {
-                        bh = buzhash_update(cur_loc, bh);
-                        if(((bh) & (buzhash_width - 1)) == 0)
+                        bh = buzhash_update(&b, cur_loc);
+                        if(((bh) & (match_bits - 1)) == 0)
                             break;
                         cur_loc++;
                     }

@@ -230,19 +230,9 @@ int chunks_from_temp(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 
 /* header.c */
-int read_preface(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
-int read_index(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
-int read_sig(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
 int header_create(zckCtx *zck)
     __attribute__ ((warn_unused_result));
-int sig_create(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
 int write_header(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
-int write_sigs(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 
 /* comp/comp.c */
@@ -253,10 +243,6 @@ int comp_close(zckCtx *zck)
 int comp_reset(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 int comp_add_to_dc(zckComp *comp, const char *src, size_t src_size)
-    __attribute__ ((warn_unused_result));
-int comp_add_to_data(zckComp *comp, const char *src, size_t src_size)
-    __attribute__ ((warn_unused_result));
-size_t comp_read_from_dc(zckComp *comp, char *dst, size_t dst_size)
     __attribute__ ((warn_unused_result));
 ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, int use_dict)
     __attribute__ ((warn_unused_result));

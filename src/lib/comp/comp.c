@@ -85,6 +85,86 @@ const static char *COMP_NAME[] = {
     "zstd"
 };
 
+static int set_comp_type(zckCtx *zck, ssize_t type) {
+    VALIDATE(zck);
+
+    zckComp *comp = &(zck->comp);
+
+    /* Cannot change compression type after compression has started */
+    if(comp->started) {
+        zck_log(ZCK_LOG_ERROR,
+                "Unable to set compression type after initialization\n");
+        return False;
+    }
+
+    /* Set all values to 0 before setting compression type */
+    char *dc_data = comp->dc_data;
+    size_t dc_data_loc = comp->dc_data_loc;
+    size_t dc_data_size = comp->dc_data_size;
+    memset(comp, 0, sizeof(zckComp));
+    comp->dc_data = dc_data;
+    comp->dc_data_loc = dc_data_loc;
+    comp->dc_data_size = dc_data_size;
+
+    zck_log(ZCK_LOG_DEBUG, "Setting compression to %s\n",
+            zck_comp_name_from_type(type));
+    if(type == ZCK_COMP_NONE) {
+        return nocomp_setup(comp);
+#ifdef ZCHUNK_ZSTD
+    } else if(type == ZCK_COMP_ZSTD) {
+        return zstd_setup(comp);
+#endif
+    } else {
+        zck_log(ZCK_LOG_ERROR, "Unsupported compression type: %s\n",
+                zck_comp_name_from_type(type));
+        return False;
+    }
+    return True;
+}
+
+static size_t comp_read_from_dc(zckComp *comp, char *dst, size_t dst_size) {
+    VALIDATE_SIZE(comp);
+    VALIDATE_SIZE(dst);
+
+    size_t dl_size = dst_size;
+    if(dl_size > comp->dc_data_size - comp->dc_data_loc)
+        dl_size = comp->dc_data_size - comp->dc_data_loc;
+    memcpy(dst, comp->dc_data+comp->dc_data_loc, dl_size);
+    comp->dc_data_loc += dl_size;
+    if(dl_size > 0)
+        zck_log(ZCK_LOG_DEBUG, "Reading %lu bytes from decompressed buffer\n",
+                dl_size);
+    return dl_size;
+}
+
+static int comp_add_to_data(zckComp *comp, const char *src, size_t src_size) {
+    VALIDATE(comp);
+    VALIDATE(src);
+    comp->data = realloc(comp->data, comp->data_size + src_size);
+    if(comp->data == NULL) {
+        zck_log(ZCK_LOG_ERROR, "Unable to reallocate %lu bytes\n",
+                comp->data_size + src_size);
+        return False;
+    }
+    zck_log(ZCK_LOG_DEBUG, "Adding %lu bytes to compressed buffer\n",
+        src_size);
+    memcpy(comp->data + comp->data_size, src, src_size);
+    comp->data_size += src_size;
+    comp->data_loc += src_size;
+    return True;
+}
+
+static ssize_t comp_end_dchunk(zckCtx *zck, int use_dict, size_t fd_size) {
+    ssize_t rb = zck->comp.end_dchunk(&(zck->comp), use_dict, fd_size);
+    if(validate_current_chunk(zck) < 1)
+        return -1;
+    zck->comp.data_loc = 0;
+    zck->comp.data_idx = zck->comp.data_idx->next;
+    if(!hash_init(&(zck->check_chunk_hash), &(zck->chunk_hash_type)))
+        return -1;
+    return rb;
+}
+
 int comp_init(zckCtx *zck) {
     VALIDATE(zck);
 
@@ -176,43 +256,6 @@ int comp_close(zckCtx *zck) {
     return comp_reset(zck);
 }
 
-static int set_comp_type(zckCtx *zck, ssize_t type) {
-    VALIDATE(zck);
-
-    zckComp *comp = &(zck->comp);
-
-    /* Cannot change compression type after compression has started */
-    if(comp->started) {
-        zck_log(ZCK_LOG_ERROR,
-                "Unable to set compression type after initialization\n");
-        return False;
-    }
-
-    /* Set all values to 0 before setting compression type */
-    char *dc_data = comp->dc_data;
-    size_t dc_data_loc = comp->dc_data_loc;
-    size_t dc_data_size = comp->dc_data_size;
-    memset(comp, 0, sizeof(zckComp));
-    comp->dc_data = dc_data;
-    comp->dc_data_loc = dc_data_loc;
-    comp->dc_data_size = dc_data_size;
-
-    zck_log(ZCK_LOG_DEBUG, "Setting compression to %s\n",
-            zck_comp_name_from_type(type));
-    if(type == ZCK_COMP_NONE) {
-        return nocomp_setup(comp);
-#ifdef ZCHUNK_ZSTD
-    } else if(type == ZCK_COMP_ZSTD) {
-        return zstd_setup(comp);
-#endif
-    } else {
-        zck_log(ZCK_LOG_ERROR, "Unsupported compression type: %s\n",
-                zck_comp_name_from_type(type));
-        return False;
-    }
-    return True;
-}
-
 int comp_ioption(zckCtx *zck, zck_ioption option, ssize_t value) {
     VALIDATE(zck);
 
@@ -266,29 +309,6 @@ int comp_soption(zckCtx *zck, zck_soption option, const void *value,
     return True;
 }
 
-const char PUBLIC *zck_comp_name_from_type(int comp_type) {
-    if(comp_type > 2) {
-        snprintf(unknown+8, 21, "%i)", comp_type);
-        return unknown;
-    }
-    return COMP_NAME[comp_type];
-}
-
-size_t comp_read_from_dc(zckComp *comp, char *dst, size_t dst_size) {
-    VALIDATE_SIZE(comp);
-    VALIDATE_SIZE(dst);
-
-    size_t dl_size = dst_size;
-    if(dl_size > comp->dc_data_size - comp->dc_data_loc)
-        dl_size = comp->dc_data_size - comp->dc_data_loc;
-    memcpy(dst, comp->dc_data+comp->dc_data_loc, dl_size);
-    comp->dc_data_loc += dl_size;
-    if(dl_size > 0)
-        zck_log(ZCK_LOG_DEBUG, "Reading %lu bytes from decompressed buffer\n",
-                dl_size);
-    return dl_size;
-}
-
 int comp_add_to_dc(zckComp *comp, const char *src, size_t src_size) {
     VALIDATE(comp);
     VALIDATE(src);
@@ -316,90 +336,6 @@ int comp_add_to_dc(zckComp *comp, const char *src, size_t src_size) {
     memcpy(comp->dc_data + comp->dc_data_size, src, src_size);
     comp->dc_data_size += src_size;
     return True;
-}
-
-int comp_add_to_data(zckComp *comp, const char *src, size_t src_size) {
-    VALIDATE(comp);
-    VALIDATE(src);
-    comp->data = realloc(comp->data, comp->data_size + src_size);
-    if(comp->data == NULL) {
-        zck_log(ZCK_LOG_ERROR, "Unable to reallocate %lu bytes\n",
-                comp->data_size + src_size);
-        return False;
-    }
-    zck_log(ZCK_LOG_DEBUG, "Adding %lu bytes to compressed buffer\n",
-        src_size);
-    memcpy(comp->data + comp->data_size, src, src_size);
-    comp->data_size += src_size;
-    comp->data_loc += src_size;
-    return True;
-}
-
-ssize_t PUBLIC zck_write(zckCtx *zck, const char *src, const size_t src_size) {
-    VALIDATE_WRITE_SIZE(zck);
-
-    if(!zck->comp.started && !comp_init(zck))
-        return -1;
-
-    if(src_size == 0)
-        return 0;
-
-    char *dst = NULL;
-    size_t dst_size = 0;
-    if(zck->comp.compress(&(zck->comp), src, src_size, &dst, &dst_size, 1) < 0)
-        return -1;
-    if(dst_size > 0 && !write_data(zck->temp_fd, dst, dst_size)) {
-        free(dst);
-        return -1;
-    }
-    if(!index_add_to_chunk(zck, dst, dst_size, src_size)) {
-        free(dst);
-        return -1;
-    }
-    free(dst);
-    return src_size;
-}
-
-ssize_t PUBLIC zck_end_chunk(zckCtx *zck) {
-    VALIDATE_WRITE_SIZE(zck);
-
-    if(!zck->comp.started && !comp_init(zck))
-        return -1;
-
-    /* No point in compressing empty data */
-    if(zck->comp.dc_data_size == 0)
-        return 0;
-
-    size_t data_size = zck->comp.dc_data_size;
-    char *dst = NULL;
-    size_t dst_size = 0;
-    if(!zck->comp.end_cchunk(&(zck->comp), &dst, &dst_size, 1))
-        return -1;
-    if(dst_size > 0 && !write_data(zck->temp_fd, dst, dst_size)) {
-        free(dst);
-        return -1;
-    }
-    if(!index_add_to_chunk(zck, dst, dst_size, 0)) {
-        free(dst);
-        return -1;
-    }
-    if(!index_finish_chunk(zck)) {
-        free(dst);
-        return -1;
-    }
-    free(dst);
-    return data_size;
-}
-
-ssize_t comp_end_dchunk(zckCtx *zck, int use_dict, size_t fd_size) {
-    ssize_t rb = zck->comp.end_dchunk(&(zck->comp), use_dict, fd_size);
-    if(validate_current_chunk(zck) < 1)
-        return -1;
-    zck->comp.data_loc = 0;
-    zck->comp.data_idx = zck->comp.data_idx->next;
-    if(!hash_init(&(zck->check_chunk_hash), &(zck->chunk_hash_type)))
-        return -1;
-    return rb;
 }
 
 ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, int use_dict) {
@@ -514,6 +450,70 @@ read_error:
 hash_error:
     free(src);
     return -2;
+}
+
+const char PUBLIC *zck_comp_name_from_type(int comp_type) {
+    if(comp_type > 2) {
+        snprintf(unknown+8, 21, "%i)", comp_type);
+        return unknown;
+    }
+    return COMP_NAME[comp_type];
+}
+
+ssize_t PUBLIC zck_write(zckCtx *zck, const char *src, const size_t src_size) {
+    VALIDATE_WRITE_SIZE(zck);
+
+    if(!zck->comp.started && !comp_init(zck))
+        return -1;
+
+    if(src_size == 0)
+        return 0;
+
+    char *dst = NULL;
+    size_t dst_size = 0;
+    if(zck->comp.compress(&(zck->comp), src, src_size, &dst, &dst_size, 1) < 0)
+        return -1;
+    if(dst_size > 0 && !write_data(zck->temp_fd, dst, dst_size)) {
+        free(dst);
+        return -1;
+    }
+    if(!index_add_to_chunk(zck, dst, dst_size, src_size)) {
+        free(dst);
+        return -1;
+    }
+    free(dst);
+    return src_size;
+}
+
+ssize_t PUBLIC zck_end_chunk(zckCtx *zck) {
+    VALIDATE_WRITE_SIZE(zck);
+
+    if(!zck->comp.started && !comp_init(zck))
+        return -1;
+
+    /* No point in compressing empty data */
+    if(zck->comp.dc_data_size == 0)
+        return 0;
+
+    size_t data_size = zck->comp.dc_data_size;
+    char *dst = NULL;
+    size_t dst_size = 0;
+    if(!zck->comp.end_cchunk(&(zck->comp), &dst, &dst_size, 1))
+        return -1;
+    if(dst_size > 0 && !write_data(zck->temp_fd, dst, dst_size)) {
+        free(dst);
+        return -1;
+    }
+    if(!index_add_to_chunk(zck, dst, dst_size, 0)) {
+        free(dst);
+        return -1;
+    }
+    if(!index_finish_chunk(zck)) {
+        free(dst);
+        return -1;
+    }
+    free(dst);
+    return data_size;
 }
 
 ssize_t PUBLIC zck_read(zckCtx *zck, char *dst, size_t dst_size) {

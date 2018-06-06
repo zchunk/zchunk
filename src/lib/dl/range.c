@@ -34,21 +34,10 @@
 
 #include "zck_private.h"
 
-void PUBLIC zck_range_free(zckRange **info) {
-    zckRangeItem *next = (*info)->first;
-    while(next) {
-        zckRangeItem *tmp = next;
-        next = next->next;
-        free(tmp);
-    }
-    index_clean(&((*info)->index));
-    free(*info);
-    *info = NULL;
-}
-
-zckRangeItem *range_insert_new(zckRangeItem *prev, zckRangeItem *next, uint64_t start,
-                               uint64_t end, zckRange *info,
-                               zckIndexItem *idx, int add_index) {
+static zckRangeItem *range_insert_new(zckRangeItem *prev, zckRangeItem *next,
+                                      uint64_t start, uint64_t end,
+                                      zckRange *info, zckIndexItem *idx,
+                                      int add_index) {
     zckRangeItem *new = zmalloc(sizeof(zckRangeItem));
     if(!new) {
         zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
@@ -74,7 +63,7 @@ zckRangeItem *range_insert_new(zckRangeItem *prev, zckRangeItem *next, uint64_t 
     return new;
 }
 
-void range_remove(zckRangeItem *range) {
+static void range_remove(zckRangeItem *range) {
     if(range->prev)
         range->prev->next = range->next;
     if(range->next)
@@ -82,7 +71,7 @@ void range_remove(zckRangeItem *range) {
     free(range);
 }
 
-void range_merge_combined(zckRange *info) {
+static void range_merge_combined(zckRange *info) {
     if(!info) {
         zck_log(ZCK_LOG_ERROR, "zckRange not allocated\n");
         return;
@@ -99,7 +88,7 @@ void range_merge_combined(zckRange *info) {
     }
 }
 
-int range_add(zckRange *info, zckIndexItem *idx, zckCtx *zck) {
+static int range_add(zckRange *info, zckIndexItem *idx, zckCtx *zck) {
     if(info == NULL || idx == NULL) {
         zck_log(ZCK_LOG_ERROR, "zckRange or zckIndexItem not allocated\n");
         return False;
@@ -148,6 +137,18 @@ int range_add(zckRange *info, zckIndexItem *idx, zckCtx *zck) {
     info->count += 1;
     range_merge_combined(info);
     return True;
+}
+
+void PUBLIC zck_range_free(zckRange **info) {
+    zckRangeItem *next = (*info)->first;
+    while(next) {
+        zckRangeItem *tmp = next;
+        next = next->next;
+        free(tmp);
+    }
+    index_clean(&((*info)->index));
+    free(*info);
+    *info = NULL;
 }
 
 char PUBLIC *zck_get_range_char(zckRange *range) {

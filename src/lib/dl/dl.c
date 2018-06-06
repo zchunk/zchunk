@@ -41,7 +41,7 @@
                         }
 
 /* Free zckDL header regex used for downloading ranges */
-void clear_dl_regex(zckDL *dl) {
+static void clear_dl_regex(zckDL *dl) {
     if(dl == NULL || dl->priv == NULL)
         return;
 
@@ -183,8 +183,9 @@ int dl_write_range(zckDL *dl, const char *at, size_t length) {
 }
 
 /* Copy chunk identified by src_idx into location specified by tgt_idx */
-int write_and_verify_chunk(zckCtx *src, zckCtx *tgt, zckIndexItem *src_idx,
-                           zckIndexItem *tgt_idx) {
+static int write_and_verify_chunk(zckCtx *src, zckCtx *tgt,
+                                  zckIndexItem *src_idx,
+                                  zckIndexItem *tgt_idx) {
     static char buf[BUF_SIZE] = {0};
 
     size_t to_read = src_idx->comp_length;

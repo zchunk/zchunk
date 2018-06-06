@@ -208,11 +208,8 @@ int index_finish_chunk(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 void index_clean(zckIndex *index);
 void index_free(zckCtx *zck);
-void index_free_item(zckIndexItem **item);
 void clear_work_index(zckCtx *zck);
 int write_index(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
-zckIndexItem *get_index_of_loc(zckIndex *index, size_t loc)
     __attribute__ ((warn_unused_result));
 
 
@@ -271,8 +268,6 @@ int comp_soption(zckCtx *zck, zck_soption option, const void *value,
 
 /* dl/range.c */
 char *range_get_char(zckRangeItem **range, int max_ranges)
-    __attribute__ ((warn_unused_result));
-int range_add(zckRange *info, zckIndexItem *idx, zckCtx *zck)
     __attribute__ ((warn_unused_result));
 
 /* dl/multipart.c */

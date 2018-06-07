@@ -84,7 +84,8 @@ static int set_chunk_valid(zckDL *dl) {
     VALIDATE(dl);
     VALIDATE(dl->priv);
 
-    int retval = validate_chunk(dl->zck, dl->priv->tgt_check, ZCK_LOG_WARNING);
+    int retval = validate_chunk(dl->zck, dl->priv->tgt_check, ZCK_LOG_WARNING,
+                                dl->priv->tgt_number);
     if(retval < 1) {
         if(!zero_chunk(dl->zck, dl->priv->tgt_check))
             return False;
@@ -193,14 +194,16 @@ int dl_write_range(zckDL *dl, const char *at, size_t length) {
 
         for(zckIndexItem *idx = dl->range->index.first; idx; idx = idx->next) {
             if(dl->priv->dl_chunk_data == idx->start) {
+                int count = 0;
                 for(zckIndexItem *tgt_idx = dl->zck->index.first; tgt_idx;
-                    tgt_idx = tgt_idx->next) {
+                    tgt_idx = tgt_idx->next, count++) {
                     if(tgt_idx->valid == 1)
                         continue;
                     if(idx->comp_length == tgt_idx->comp_length &&
                        memcmp(idx->digest, tgt_idx->digest,
                               idx->digest_size) == 0) {
                         dl->priv->tgt_check = tgt_idx;
+                        dl->priv->tgt_number = count;
                         if(!hash_init(&(dl->zck->check_chunk_hash),
                                           &(dl->zck->chunk_hash_type)))
                             return 0;

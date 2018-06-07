@@ -37,6 +37,7 @@ typedef enum zck_soption {
 } zck_soption;
 
 typedef enum zck_log_type {
+    ZCK_LOG_DDEBUG = -1,
     ZCK_LOG_DEBUG,
     ZCK_LOG_INFO,
     ZCK_LOG_WARNING,

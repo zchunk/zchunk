@@ -60,9 +60,9 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
 
     switch (key) {
         case 'v':
-            arguments->log_level -= 1;
-            if(arguments->log_level < ZCK_LOG_DEBUG)
-                arguments->log_level = ZCK_LOG_DEBUG;
+            arguments->log_level--;
+            if(arguments->log_level < ZCK_LOG_DDEBUG)
+                arguments->log_level = ZCK_LOG_DDEBUG;
             break;
         case 'q':
             arguments->log_level = ZCK_LOG_ERROR;

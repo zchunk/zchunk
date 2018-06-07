@@ -38,10 +38,11 @@ void PUBLIC zck_set_log_level(zck_log_type ll) {
     log_level = ll;
 }
 
-void zck_log(zck_log_type lt, const char *format, ...) {
+void zck_log_wf(const char *function, zck_log_type lt, const char *format, ...) {
     if(lt >= log_level) {
         va_list args;
         va_start(args, format);
+        dprintf(STDERR_FILENO, "%s: ", function);
         vdprintf(STDERR_FILENO, format, args);
         va_end(args);
     }

@@ -85,7 +85,8 @@ static int validate_checksums(zckCtx *zck, zck_log_type bad_checksums) {
 
     /* Check each chunk checksum */
     int all_good = True;
-    for(zckIndexItem *idx = zck->index.first; idx; idx = idx->next) {
+    int count = 0;
+    for(zckIndexItem *idx = zck->index.first; idx; idx = idx->next, count++) {
         if(idx == zck->index.first && idx->length == 0) {
             idx->valid = 1;
             continue;
@@ -107,7 +108,7 @@ static int validate_checksums(zckCtx *zck, zck_log_type bad_checksums) {
                 return 0;
             rlen += rsize;
         }
-        int valid_chunk = validate_chunk(zck, idx, bad_checksums);
+        int valid_chunk = validate_chunk(zck, idx, bad_checksums, count);
         if(!valid_chunk)
             return 0;
         idx->valid = valid_chunk;
@@ -152,11 +153,15 @@ int hash_setup(zckHashType *ht, int h) {
             memset(ht, 0, sizeof(zckHashType));
             ht->type = ZCK_HASH_SHA1;
             ht->digest_size = SHA1_DIGEST_LENGTH;
+            zck_log(ZCK_LOG_DEBUG, "Setting up hash type %s\n",
+                    zck_hash_name_from_type(ht->type));
             return True;
         }else if(h == ZCK_HASH_SHA256) {
             memset(ht, 0, sizeof(zckHashType));
             ht->type = ZCK_HASH_SHA256;
             ht->digest_size = SHA256_DIGEST_SIZE;
+            zck_log(ZCK_LOG_DEBUG, "Setting up hash type %s\n",
+                    zck_hash_name_from_type(ht->type));
             return True;
         }
         zck_log(ZCK_LOG_ERROR, "Unsupported hash type: %s\n",
@@ -182,7 +187,7 @@ void hash_close(zckHash *hash) {
 int hash_init(zckHash *hash, zckHashType *hash_type) {
     if(hash && hash_type) {
         if(hash_type->type == ZCK_HASH_SHA1) {
-            zck_log(ZCK_LOG_DEBUG, "Initializing SHA-1 hash\n");
+            zck_log(ZCK_LOG_DDEBUG, "Initializing SHA-1 hash\n");
             hash->ctx = zmalloc(sizeof(SHA_CTX));
             hash->type = hash_type;
             if(hash->ctx == NULL)
@@ -190,7 +195,7 @@ int hash_init(zckHash *hash, zckHashType *hash_type) {
             SHA1_Init((SHA_CTX *) hash->ctx);
             return True;
         }else if(hash_type->type == ZCK_HASH_SHA256) {
-            zck_log(ZCK_LOG_DEBUG, "Initializing SHA-256 hash\n");
+            zck_log(ZCK_LOG_DDEBUG, "Initializing SHA-256 hash\n");
             hash->ctx = zmalloc(sizeof(sha256_ctx));
             hash->type = hash_type;
             if(hash->ctx == NULL)
@@ -287,7 +292,7 @@ int set_chunk_hash_type(zckCtx *zck, int hash_type) {
 
 /* Validate chunk, returning -1 if checksum fails, 1 if good, 0 if error */
 int validate_chunk(zckCtx *zck, zckIndexItem *idx,
-                       zck_log_type bad_checksum) {
+                       zck_log_type bad_checksum, int chunk_number) {
     VALIDATE(zck);
     if(idx == NULL) {
         zck_log(ZCK_LOG_ERROR, "Index not initialized\n");
@@ -302,19 +307,25 @@ int validate_chunk(zckCtx *zck, zckIndexItem *idx,
     }
     if(idx->comp_length == 0)
         memset(digest, 0, idx->digest_size);
-    zck_log(ZCK_LOG_DEBUG, "Checking chunk checksum\n");
     char *pdigest = zck_get_chunk_digest(idx);
-    zck_log(ZCK_LOG_DEBUG, "Expected chunk checksum:   %s\n", pdigest);
+    zck_log(ZCK_LOG_DDEBUG, "Expected chunk checksum:   %s\n", pdigest);
     free(pdigest);
     pdigest = get_digest_string(digest, idx->digest_size);
-    zck_log(ZCK_LOG_DEBUG, "Calculated chunk checksum: %s\n", pdigest);
+    zck_log(ZCK_LOG_DDEBUG, "Calculated chunk checksum: %s\n", pdigest);
     free(pdigest);
     if(memcmp(digest, idx->digest, idx->digest_size) != 0) {
         free(digest);
-        zck_log(bad_checksum, "Chunk checksum failed!\n");
+        if(chunk_number == -1)
+            zck_log(bad_checksum, "Chunk checksum: FAILED!\n");
+        else
+            zck_log(bad_checksum, "Chunk %i's checksum: FAILED\n",
+                    chunk_number);
         return -1;
     }
-    zck_log(ZCK_LOG_DEBUG, "Chunk checksum valid\n");
+    if(chunk_number == -1)
+        zck_log(ZCK_LOG_DEBUG, "Chunk checksum: valid\n");
+    else
+        zck_log(ZCK_LOG_DEBUG, "Chunk %i's checksum: valid\n", chunk_number);
     free(digest);
     return 1;
 }
@@ -322,7 +333,7 @@ int validate_chunk(zckCtx *zck, zckIndexItem *idx,
 int validate_current_chunk(zckCtx *zck) {
     VALIDATE(zck);
 
-    return validate_chunk(zck, zck->comp.data_idx, ZCK_LOG_ERROR);
+    return validate_chunk(zck, zck->comp.data_idx, ZCK_LOG_ERROR, -1);
 }
 
 int validate_file(zckCtx *zck, zck_log_type bad_checksums) {

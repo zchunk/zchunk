@@ -16,6 +16,8 @@
 
 #define PUBLIC __attribute__((visibility("default")))
 
+#define zck_log(...) zck_log_wf(__func__, __VA_ARGS__)
+
 struct zckComp;
 
 typedef int (*finit)(struct zckComp *comp);
@@ -63,6 +65,7 @@ typedef struct zckDLPriv {
     regex_t *end_regex;
     regex_t *hdr_regex;
     zckIndexItem *tgt_check;
+    int tgt_number;
 } zckDLPriv;
 
 typedef struct zckComp {
@@ -172,7 +175,8 @@ int hash_update(zckHash *hash, const char *message, const size_t size)
 char *hash_finalize(zckHash *hash)
     __attribute__ ((warn_unused_result));
 void hash_close(zckHash *hash);
-int validate_chunk(zckCtx *zck, zckIndexItem *idx, zck_log_type bad_checksum)
+int validate_chunk(zckCtx *zck, zckIndexItem *idx, zck_log_type bad_checksum,
+                   int chunk_number)
     __attribute__ ((warn_unused_result));
 int validate_file(zckCtx *zck, zck_log_type bad_checksums)
     __attribute__ ((warn_unused_result));
@@ -272,5 +276,5 @@ int compint_to_size(size_t *val, const char *compint, size_t *length,
 
 
 /* log.c */
-void zck_log(zck_log_type lt, const char *format, ...);
+void zck_log_wf(const char *function, zck_log_type lt, const char *format, ...);
 #endif

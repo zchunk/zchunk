@@ -60,9 +60,9 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
 
     switch (key) {
         case 'v':
-            arguments->log_level -= 1;
-            if(arguments->log_level < ZCK_LOG_DEBUG)
-                arguments->log_level = ZCK_LOG_DEBUG;
+            arguments->log_level--;
+            if(arguments->log_level < ZCK_LOG_DDEBUG)
+                arguments->log_level = ZCK_LOG_DDEBUG;
             break;
         case 'q':
             arguments->log_level = ZCK_LOG_ERROR;
@@ -116,48 +116,57 @@ int main (int argc, char *argv[]) {
     }
     zckCtx *zck = zck_init_read(src_fd);
     if(zck == NULL) {
-        printf("Unable to read header\n");
+        printf("Unable to read zchunk header\n");
         exit(1);
     }
 
     int valid_cks = 1;
     if(arguments.verify) {
         valid_cks = zck_validate_checksums(zck);
-        if(valid_cks < 0)
+        if(!valid_cks)
             exit(1);
     }
     close(src_fd);
 
-    printf("Overall checksum type: %s\n", zck_hash_name_from_type(zck_get_full_hash_type(zck)));
-    char *digest = zck_get_header_digest(zck);
-    printf("Header checksum: %s\n", digest);
-    free(digest);
-    digest = zck_get_data_digest(zck);
-    printf("Data checksum: %s\n", digest);
-    free(digest);
-    printf("Index count: %lu\n", (long unsigned)zck_get_index_count(zck));
-    printf("Chunk checksum type: %s\n", zck_hash_name_from_type(zck_get_chunk_hash_type(zck)));
-
-    zckIndex *idxi = zck_get_index(zck);
-    if(idxi == NULL)
-        exit(1);
-    zckIndexItem *idx = idxi->first;
-    while(idx) {
-        char *digest = zck_get_chunk_digest(idx);
-        if(digest == NULL)
-            exit(1);
-        printf("%s %12lu %12lu %12lu", digest,
-               (long unsigned)(idx->start + zck_get_header_length(zck)),
-               (long unsigned)idx->comp_length, (long unsigned)idx->length);
-        if(arguments.verify) {
-            if(idx->valid)
-                printf("  +");
-            else
-                printf("  !");
-        }
-        printf("\n");
+    if(arguments.log_level <= ZCK_LOG_WARNING) {
+        printf("Overall checksum type: %s\n",
+               zck_hash_name_from_type(zck_get_full_hash_type(zck)));
+        char *digest = zck_get_header_digest(zck);
+        printf("Header checksum: %s\n", digest);
         free(digest);
-        idx = idx->next;
+        digest = zck_get_data_digest(zck);
+        printf("Data checksum: %s\n", digest);
+        free(digest);
+        printf("Index count: %lu\n", (long unsigned)zck_get_index_count(zck));
+        printf("Chunk checksum type: %s\n", zck_hash_name_from_type(zck_get_chunk_hash_type(zck)));
+    }
+
+    if(arguments.log_level <= ZCK_LOG_INFO) {
+        zckIndex *idxi = zck_get_index(zck);
+        if(idxi == NULL)
+            exit(1);
+        for(zckIndexItem *idx = idxi->first; idx; idx=idx->next) {
+            char *digest = zck_get_chunk_digest(idx);
+            if(digest == NULL)
+                exit(1);
+            printf("%s %12lu %12lu %12lu", digest,
+                   (long unsigned)(idx->start + zck_get_header_length(zck)),
+                   (long unsigned)idx->comp_length, (long unsigned)idx->length);
+            if(arguments.verify) {
+                if(idx->valid)
+                    printf("  +");
+                else
+                    printf("  !");
+            }
+            printf("\n");
+            free(digest);
+        }
+    }
+    if(arguments.verify) {
+        if(valid_cks == 1 && arguments.log_level <= ZCK_LOG_WARNING)
+            printf("All checksums are valid\n");
+        else if(valid_cks == -1)
+            printf("Some checksums failed\n");
     }
     zck_free(&zck);
     return 1-valid_cks;

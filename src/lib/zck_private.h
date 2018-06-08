@@ -54,7 +54,11 @@ typedef struct zckMP {
     size_t buffer_len;
 } zckMP;
 
-typedef struct zckDLPriv {
+typedef struct zckDL {
+    struct zckCtx *zck;
+    size_t dl;
+    size_t ul;
+    zckRange *range;
     zckMP *mp;
     char *boundary;
     int parser_started;
@@ -64,9 +68,52 @@ typedef struct zckDLPriv {
     regex_t *dl_regex;
     regex_t *end_regex;
     regex_t *hdr_regex;
-    zckIndexItem *tgt_check;
+    zckChunk *tgt_check;
     int tgt_number;
-} zckDLPriv;
+
+    /* Callbacks */
+    zck_wcb write_cb;
+    void *write_data;
+    zck_wcb header_cb;
+    void *header_data;
+} zckDL;
+
+/* Contains an index item pointing to a chunk */
+typedef struct zckChunk {
+    char *digest;
+    int digest_size;
+    int valid;
+    size_t start;
+    size_t comp_length;
+    size_t length;
+    struct zckChunk *next;
+    zckCtx *zck;
+} zckChunk;
+
+/* Contains everything about an index and a pointer to the first index item */
+typedef struct zckIndex {
+    size_t count;
+    size_t length;
+    int hash_type;
+    size_t digest_size;
+    zckChunk *first;
+} zckIndex;
+
+/* Contains a single range */
+typedef struct zckRangeItem {
+    size_t start;
+    size_t end;
+    struct zckRangeItem *next;
+    struct zckRangeItem *prev;
+} zckRangeItem;
+
+/* Contains a series of ranges, information about them, a link to the first
+ * range item, and an index describing what information is in the ranges */
+typedef struct zckRange {
+    unsigned int count;
+    zckRangeItem *first;
+    zckIndex index;
+} zckRange;
 
 typedef struct zckComp {
     int started;
@@ -84,7 +131,7 @@ typedef struct zckComp {
     char *data;
     size_t data_size;
     size_t data_loc;
-    zckIndexItem *data_idx;
+    zckChunk *data_idx;
     int data_eof;
     char *dc_data;
     size_t dc_data_size;
@@ -139,7 +186,7 @@ typedef struct zckCtx {
     ssize_t prep_hdr_size;
 
     zckIndex index;
-    zckIndexItem *work_index_item;
+    zckChunk *work_index_item;
     zckHash work_index_hash;
     size_t stream;
     int has_streams;
@@ -175,7 +222,7 @@ int hash_update(zckHash *hash, const char *message, const size_t size)
 char *hash_finalize(zckHash *hash)
     __attribute__ ((warn_unused_result));
 void hash_close(zckHash *hash);
-int validate_chunk(zckCtx *zck, zckIndexItem *idx, zck_log_type bad_checksum,
+int validate_chunk(zckCtx *zck, zckChunk *idx, zck_log_type bad_checksum,
                    int chunk_number)
     __attribute__ ((warn_unused_result));
 int validate_file(zckCtx *zck, zck_log_type bad_checksums)
@@ -200,7 +247,8 @@ int index_read(zckCtx *zck, char *data, size_t size, size_t max_length)
 int index_create(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 int index_new_chunk(zckIndex *index, char *digest, int digest_size,
-                        size_t comp_size, size_t orig_size, int valid)
+                    size_t comp_size, size_t orig_size, int valid,
+                    zckCtx *zck)
     __attribute__ ((warn_unused_result));
 int index_add_to_chunk(zckCtx *zck, char *data, size_t comp_size,
                         size_t orig_size)
@@ -258,6 +306,7 @@ size_t multipart_extract(zckDL *dl, char *b, size_t l)
     __attribute__ ((warn_unused_result));
 size_t multipart_get_boundary(zckDL *dl, char *b, size_t size)
     __attribute__ ((warn_unused_result));
+void reset_mp(zckMP *mp);
 
 /* dl/dl.c */
 int dl_write_range(zckDL *dl, const char *at, size_t length)

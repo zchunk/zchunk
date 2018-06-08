@@ -298,11 +298,10 @@ int main (int argc, char *argv[]) {
     if(!zck_close(zck))
         exit(1);
     if(arguments.log_level <= ZCK_LOG_INFO) {
-        zckIndex *idx = zck_get_index(zck);
         printf("Wrote %lu bytes in %lu chunks\n",
                (unsigned long)(zck_get_data_length(zck) +
                                zck_get_header_length(zck)),
-               (unsigned long)idx->count);
+               (long)zck_get_chunk_count(zck));
     }
 
     zck_free(&zck);

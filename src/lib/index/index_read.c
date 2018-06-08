@@ -54,7 +54,7 @@ int index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
         return False;
     zck->index.count = index_count;
 
-    zckIndexItem *prev = zck->index.first;
+    zckChunk *prev = zck->index.first;
     size_t idx_loc = 0;
     while(length < size) {
         if(length + zck->index.digest_size > max_length) {
@@ -62,10 +62,10 @@ int index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
             return False;
         }
 
-        zckIndexItem *new = zmalloc(sizeof(zckIndexItem));
+        zckChunk *new = zmalloc(sizeof(zckChunk));
         if(!new) {
             zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
-                    sizeof(zckIndexItem));
+                    sizeof(zckChunk));
             return False;
         }
 
@@ -92,7 +92,7 @@ int index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
         if(!compint_to_size(&chunk_length, data+length, &length, max_length))
             return False;
         new->length = chunk_length;
-
+        new->zck = zck;
         new->valid = 0;
         idx_loc += new->comp_length;
         zck->index.length = idx_loc;
@@ -108,16 +108,59 @@ int index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
     return True;
 }
 
-ssize_t PUBLIC zck_get_index_count(zckCtx *zck) {
+ssize_t PUBLIC zck_get_chunk_count(zckCtx *zck) {
     if(zck == NULL)
         return -1;
     return zck->index.count;
 }
 
-zckIndex PUBLIC *zck_get_index(zckCtx *zck) {
+zckChunk PUBLIC *zck_get_first_chunk(zckCtx *zck) {
     if(zck == NULL)
         return NULL;
-    return &(zck->index);
+    return zck->index.first;
+}
+
+zckChunk PUBLIC *zck_get_next_chunk(zckChunk *idx) {
+    if(idx == NULL)
+        return NULL;
+    return idx->next;
+}
+
+ssize_t PUBLIC zck_get_chunk_start(zckChunk *idx) {
+    if(idx == NULL)
+        return -1;
+    if(idx->zck)
+        return idx->start + zck_get_header_length(idx->zck);
+    else
+        return idx->start;
+}
+
+ssize_t PUBLIC zck_get_chunk_size(zckChunk *idx) {
+    if(idx == NULL)
+        return -1;
+    return idx->length;
+}
+
+ssize_t PUBLIC zck_get_chunk_comp_size(zckChunk *idx) {
+    if(idx == NULL)
+        return -1;
+    return idx->comp_length;
+}
+
+int PUBLIC zck_get_chunk_valid(zckChunk *idx) {
+    if(idx == NULL)
+        return -1;
+    return idx->valid;
+}
+
+int PUBLIC zck_compare_chunk_digest(zckChunk *a, zckChunk *b) {
+    if(a == NULL || b == NULL)
+        return False;
+    if(a->digest_size != b->digest_size)
+        return False;
+    if(memcmp(a->digest, b->digest, a->digest_size) != 0)
+        return False;
+    return True;
 }
 
 int PUBLIC zck_missing_chunks(zckCtx *zck) {
@@ -126,7 +169,7 @@ int PUBLIC zck_missing_chunks(zckCtx *zck) {
         return -1;
     }
     int missing = 0;
-    for(zckIndexItem *idx = zck->index.first; idx; idx=idx->next)
+    for(zckChunk *idx = zck->index.first; idx; idx=idx->next)
         if(idx->valid == 0)
             missing++;
     return missing;
@@ -138,7 +181,7 @@ int PUBLIC zck_has_failed_chunks(zckCtx *zck) {
         return -1;
     }
     int failed = 0;
-    for(zckIndexItem *idx = zck->index.first; idx; idx=idx->next)
+    for(zckChunk *idx = zck->index.first; idx; idx=idx->next)
         if(idx->valid == -1)
             failed++;
     return failed;
@@ -148,7 +191,7 @@ void PUBLIC zck_reset_failed_chunks(zckCtx *zck) {
     if(!zck)
         return;
 
-    for(zckIndexItem *idx = zck->index.first; idx; idx=idx->next)
+    for(zckChunk *idx = zck->index.first; idx; idx=idx->next)
         if(idx->valid == -1)
             idx->valid = 0;
     return;

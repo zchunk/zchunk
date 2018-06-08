@@ -146,7 +146,7 @@ size_t dl_header_cb(char *b, size_t l, size_t c, void *dl_v) {
 /* Return 0 on error, -1 on 200 response (if dl_ctx->fail_no_ranges),
  * and 1 on complete success */
 int dl_range(dlCtx *dl_ctx, char *url, char *range, int is_chunk) {
-    if(dl_ctx == NULL || dl_ctx->dl == NULL || dl_ctx->dl->priv == NULL) {
+    if(dl_ctx == NULL || dl_ctx->dl == NULL) {
         free(range);
         printf("Struct not defined\n");
         return 0;
@@ -201,7 +201,7 @@ int dl_bytes(dlCtx *dl_ctx, char *url, size_t bytes, size_t start,
     if(start + bytes > *buffer_len) {
         zckDL *dl = dl_ctx->dl;
 
-        int fd = zck_get_fd(dl->zck);
+        int fd = zck_get_fd(zck_dl_get_zck(dl));
 
         if(lseek(fd, *buffer_len, SEEK_SET) == -1) {
             printf("Seek to download location failed: %s\n",
@@ -247,13 +247,17 @@ int dl_header(CURL *curl, zckDL *dl, char *url, int fail_no_ranges,
     if(retval < 1)
         return retval;
 
-    if(!zck_read_lead(dl->zck))
+    zckCtx *zck = zck_dl_get_zck(dl);
+    if(zck == NULL)
         return 0;
-    start = zck_get_lead_length(dl->zck);
-    if(!dl_bytes(&dl_ctx, url, zck_get_header_length(dl->zck) - start,
+
+    if(!zck_read_lead(zck))
+        return 0;
+    start = zck_get_lead_length(zck);
+    if(!dl_bytes(&dl_ctx, url, zck_get_header_length(zck) - start,
                  start, &buffer_len, log_level))
         return 0;
-    if(!zck_read_header(dl->zck))
+    if(!zck_read_header(zck))
         return 0;
     return 1;
 }
@@ -342,7 +346,7 @@ int main (int argc, char *argv[]) {
             goto out;
         }
         lseek(dst_fd, 0, SEEK_SET);
-        if(!zck_read_lead(dl->zck) || !zck_read_header(dl->zck)) {
+        if(!zck_read_lead(zck_tgt) || !zck_read_header(zck_tgt)) {
             printf("Error reading zchunk file\n");
             exit_val = 10;
             goto out;
@@ -381,15 +385,15 @@ int main (int argc, char *argv[]) {
         while(zck_missing_chunks(zck_tgt) > 0) {
             dl_ctx.range_fail = 0;
             zck_dl_reset(dl);
-            dl->range = zck_get_dl_range(zck_tgt, dl_ctx.max_ranges);
-            if(dl->range == NULL) {
+            zckRange *range = zck_get_dl_range(zck_tgt, dl_ctx.max_ranges);
+            if(range == NULL || !zck_dl_set_range(dl, range)) {
                 exit_val = 10;
                 goto out;
             }
             while(range_attempt[ra_index] > 1 &&
-                  range_attempt[ra_index+1] > dl->range->count)
+                  range_attempt[ra_index+1] > zck_get_range_count(range))
                 ra_index++;
-            char *range_string = zck_get_range_char(dl->range);
+            char *range_string = zck_get_range_char(range);
             if(range_string == NULL) {
                 exit_val = 10;
                 goto out;
@@ -402,8 +406,13 @@ int main (int argc, char *argv[]) {
                 }
                 printf("Tried downloading too many ranges, reducing to %i\n", dl_ctx.max_ranges);
             }
-            zck_range_free(&(dl->range));
+            if(!zck_dl_set_range(dl, NULL)) {
+                exit_val = 10;
+                goto out;
+            }
+            zck_range_free(&range);
             if(!retval) {
+                exit_val = 1;
                 goto out;
             }
         }
@@ -416,7 +425,7 @@ int main (int argc, char *argv[]) {
         goto out;
     }
 
-    switch(zck_validate_data_checksum(dl->zck)) {
+    switch(zck_validate_data_checksum(zck_tgt)) {
         case -1:
             exit_val = 1;
             break;

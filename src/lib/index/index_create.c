@@ -40,10 +40,10 @@ static int create_chunk(zckCtx *zck) {
     VALIDATE(zck);
 
     clear_work_index(zck);
-    zck->work_index_item = zmalloc(sizeof(zckIndexItem));
+    zck->work_index_item = zmalloc(sizeof(zckChunk));
     if(zck->work_index_item == NULL) {
         zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
-                sizeof(zckIndexItem));
+                sizeof(zckChunk));
         return False;
     }
     if(!hash_init(&(zck->work_index_hash), &(zck->chunk_hash_type)))
@@ -51,8 +51,8 @@ static int create_chunk(zckCtx *zck) {
     return True;
 }
 
-static int finish_chunk(zckIndex *index, zckIndexItem *item, char *digest,
-                        int valid) {
+static int finish_chunk(zckIndex *index, zckChunk *item, char *digest,
+                        int valid, zckCtx *zck) {
     VALIDATE(index);
     VALIDATE(item);
 
@@ -68,10 +68,11 @@ static int finish_chunk(zckIndex *index, zckIndexItem *item, char *digest,
     }
     item->start = index->length;
     item->valid = valid;
+    item->zck = zck;
     if(index->first == NULL) {
         index->first = item;
     } else {
-        zckIndexItem *tmp = index->first;
+        zckChunk *tmp = index->first;
         while(tmp->next)
             tmp = tmp->next;
         tmp->next = item;
@@ -99,7 +100,7 @@ int index_create(zckCtx *zck) {
     /* Add digest size + MAX_COMP_SIZE bytes for length of each entry in
      * index */
     if(zck->index.first) {
-        zckIndexItem *tmp = zck->index.first;
+        zckChunk *tmp = zck->index.first;
         while(tmp) {
             index_malloc += zck->index.digest_size + MAX_COMP_SIZE*2;
             tmp = tmp->next;
@@ -111,7 +112,7 @@ int index_create(zckCtx *zck) {
     compint_from_size(index+index_size, zck->index.hash_type, &index_size);
     compint_from_size(index+index_size, zck->index.count, &index_size);
     if(zck->index.first) {
-        zckIndexItem *tmp = zck->index.first;
+        zckChunk *tmp = zck->index.first;
         while(tmp) {
             /* Write digest */
             memcpy(index+index_size, tmp->digest, zck->index.digest_size);
@@ -138,7 +139,8 @@ int index_create(zckCtx *zck) {
 }
 
 int index_new_chunk(zckIndex *index, char *digest, int digest_size,
-                        size_t comp_size, size_t orig_size, int finished) {
+                    size_t comp_size, size_t orig_size, int finished,
+                    zckCtx *zck) {
     if(index == NULL) {
         zck_log(ZCK_LOG_ERROR, "Invalid index\n");
         return False;
@@ -147,16 +149,16 @@ int index_new_chunk(zckIndex *index, char *digest, int digest_size,
         zck_log(ZCK_LOG_ERROR, "Digest size 0 too small\n");
         return False;
     }
-    zckIndexItem *idx = zmalloc(sizeof(zckIndexItem));
+    zckChunk *idx = zmalloc(sizeof(zckChunk));
     if(idx == NULL) {
         zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
-                sizeof(zckIndexItem));
+                sizeof(zckChunk));
         return False;
     }
     index->digest_size = digest_size;
     idx->comp_length = comp_size;
     idx->length = orig_size;
-    return finish_chunk(index, idx, digest, finished);
+    return finish_chunk(index, idx, digest, finished, zck);
 }
 
 int index_add_to_chunk(zckCtx *zck, char *data, size_t comp_size,
@@ -203,7 +205,7 @@ int index_finish_chunk(zckCtx *zck) {
             return False;
         }
     }
-    if(!finish_chunk(&(zck->index), zck->work_index_item, digest, True))
+    if(!finish_chunk(&(zck->index), zck->work_index_item, digest, True, zck))
         return False;
 
     free(digest);

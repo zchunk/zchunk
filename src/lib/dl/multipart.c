@@ -73,20 +73,20 @@ static int gen_regex(zckDL *dl) {
     char *next = "\r\n--%s\r\ncontent-type:.*\r\n" \
                  "content-range: *bytes *([0-9]+) *- *([0-9]+) */.*\r\n\r";
     char *end =  "\r\n--%s--\r\n\r";
-    char *regex_n = add_boundary_to_regex(next, dl->priv->boundary);
+    char *regex_n = add_boundary_to_regex(next, dl->boundary);
     if(regex_n == NULL)
         return False;
-    char *regex_e = add_boundary_to_regex(end, dl->priv->boundary);
+    char *regex_e = add_boundary_to_regex(end, dl->boundary);
     if(regex_n == NULL)
         return False;
-    dl->priv->dl_regex = zmalloc(sizeof(regex_t));
-    if(!create_regex(dl->priv->dl_regex, regex_n)) {
+    dl->dl_regex = zmalloc(sizeof(regex_t));
+    if(!create_regex(dl->dl_regex, regex_n)) {
         free(regex_n);
         return False;
     }
     free(regex_n);
-    dl->priv->end_regex = zmalloc(sizeof(regex_t));
-    if(!create_regex(dl->priv->end_regex, regex_e)) {
+    dl->end_regex = zmalloc(sizeof(regex_t));
+    if(!create_regex(dl->end_regex, regex_e)) {
         free(regex_e);
         return False;
     }
@@ -94,7 +94,9 @@ static int gen_regex(zckDL *dl) {
     return True;
 }
 
-static void reset_mp(zckMP *mp) {
+void reset_mp(zckMP *mp) {
+    if(mp == NULL)
+        return;
     if(mp->buffer)
         free(mp->buffer);
     memset(mp, 0, sizeof(zckMP));
@@ -102,9 +104,9 @@ static void reset_mp(zckMP *mp) {
 
 size_t multipart_extract(zckDL *dl, char *b, size_t l) {
     VALIDATE(dl);
-    if(dl->priv == NULL || dl->priv->mp == NULL)
+    if(dl == NULL || dl->mp == NULL)
         return 0;
-    zckMP *mp = dl->priv->mp;
+    zckMP *mp = dl->mp;
     char *buf = b;
     int alloc_buf = False;
 
@@ -124,7 +126,7 @@ size_t multipart_extract(zckDL *dl, char *b, size_t l) {
     }
 
     /* If regex hasn't been created, create it */
-    if(dl->priv->dl_regex == NULL && !gen_regex(dl))
+    if(dl->dl_regex == NULL && !gen_regex(dl))
         return 0;
 
     char *header_start = buf;
@@ -180,8 +182,8 @@ size_t multipart_extract(zckDL *dl, char *b, size_t l) {
 
         /* Run regex against download range string */
         regmatch_t match[4] = {{0}};
-        if(regexec(dl->priv->dl_regex, i, 3, match, 0) != 0) {
-            if(regexec(dl->priv->end_regex, i, 3, match, 0) != 0)
+        if(regexec(dl->dl_regex, i, 3, match, 0) != 0) {
+            if(regexec(dl->end_regex, i, 3, match, 0) != 0)
                 zck_log(ZCK_LOG_ERROR, "Unable to find multipart download range\n");
             goto end;
         }
@@ -209,14 +211,14 @@ end:
 
 size_t multipart_get_boundary(zckDL *dl, char *b, size_t size) {
     VALIDATE(dl);
-    if(dl->priv == NULL)
+    if(dl == NULL)
         return 0;
 
     /* Create regex to find boundary */
-    if(dl->priv->hdr_regex == NULL) {
+    if(dl->hdr_regex == NULL) {
         char *regex = "boundary *= *([0-9a-fA-F]+)";
-        dl->priv->hdr_regex = zmalloc(sizeof(regex_t));
-        if(!create_regex(dl->priv->hdr_regex, regex))
+        dl->hdr_regex = zmalloc(sizeof(regex_t));
+        if(!create_regex(dl->hdr_regex, regex))
             return 0;
     }
 
@@ -233,12 +235,12 @@ size_t multipart_get_boundary(zckDL *dl, char *b, size_t size) {
 
     /* Check whether this header contains the boundary and set it if it does */
     regmatch_t match[2] = {{0}};
-    if(regexec(dl->priv->hdr_regex, buf, 2, match, 0) == 0) {
-        reset_mp(dl->priv->mp);
+    if(regexec(dl->hdr_regex, buf, 2, match, 0) == 0) {
+        reset_mp(dl->mp);
         char *boundary = zmalloc(match[1].rm_eo - match[1].rm_so + 1);
         memcpy(boundary, buf + match[1].rm_so, match[1].rm_eo - match[1].rm_so);
         zck_log(ZCK_LOG_DEBUG, "Multipart boundary: %s\n", boundary);
-        dl->priv->boundary = boundary;
+        dl->boundary = boundary;
     }
     if(buf)
         free(buf);

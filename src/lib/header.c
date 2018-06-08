@@ -546,7 +546,7 @@ ssize_t PUBLIC zck_get_lead_length(zckCtx *zck) {
 }
 
 ssize_t PUBLIC zck_get_data_length(zckCtx *zck) {
-    zckIndexItem *idx = zck->index.first;
+    zckChunk *idx = zck->index.first;
     while(idx->next != NULL)
         idx = idx->next;
     return idx->start + idx->comp_length;

@@ -137,44 +137,39 @@ int main (int argc, char *argv[]) {
         printf("   %s: %s\n", arguments.args[1], zck_hash_name_from_type(zck_get_chunk_hash_type(zck_src)));
         exit(1);
     }
-    zckIndex *tgt_info = zck_get_index(zck_tgt);
-    if(tgt_info == NULL)
+    zckChunk *tgt_idx = zck_get_first_chunk(zck_tgt);
+    zckChunk *src_idx = zck_get_first_chunk(zck_src);
+    if(tgt_idx == NULL || src_idx == NULL)
         exit(1);
-    zckIndex *src_info = zck_get_index(zck_src);
-    if(src_info == NULL)
-        exit(1);
-    zckIndexItem *tgt_idx = tgt_info->first;
-    zckIndexItem *src_idx = src_info->first;
-    if(memcmp(tgt_idx->digest, src_idx->digest, tgt_idx->digest_size) != 0)
+
+    if(!zck_compare_chunk_digest(tgt_idx, src_idx))
         printf("WARNING: Dicts don't match\n");
     ssize_t dl_size = zck_get_header_length(zck_tgt);
     if(dl_size < 0)
         exit(1);
     ssize_t total_size = zck_get_header_length(zck_tgt);
     ssize_t matched_chunks = 0;
-    while(tgt_idx) {
+    for(tgt_idx = zck_get_first_chunk(zck_tgt); tgt_idx;
+        tgt_idx = zck_get_next_chunk(tgt_idx)) {
         int found = False;
-        src_idx = src_info->first;
-
-        while(src_idx) {
-            if(memcmp(tgt_idx->digest, src_idx->digest, tgt_idx->digest_size) == 0) {
+        for(src_idx = zck_get_first_chunk(zck_src); src_idx;
+            src_idx = zck_get_next_chunk(src_idx)) {
+            if(zck_compare_chunk_digest(tgt_idx, src_idx)) {
                 found = True;
                 break;
             }
-            src_idx = src_idx->next;
         }
         if(!found) {
-            dl_size += tgt_idx->comp_length;
+            dl_size += zck_get_chunk_comp_size(tgt_idx);
         } else {
             matched_chunks += 1;
         }
-        total_size += tgt_idx->comp_length;
-        tgt_idx = tgt_idx->next;
+        total_size += zck_get_chunk_comp_size(tgt_idx);
     }
     printf("Would download %li of %li bytes\n", (long)dl_size,
            (long)total_size);
     printf("Matched %li of %lu chunks\n", (long)matched_chunks,
-           (long unsigned)zck_get_index_count(zck_tgt));
+           (long unsigned)zck_get_chunk_count(zck_tgt));
     zck_free(&zck_tgt);
     zck_free(&zck_src);
 }

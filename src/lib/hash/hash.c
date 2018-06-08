@@ -69,14 +69,13 @@ const static char *HASH_NAME[] = {
 
 static int validate_checksums(zckCtx *zck, zck_log_type bad_checksums) {
     VALIDATE_READ(zck);
-    char buf[BUF_SIZE];
+    char buf[BUF_SIZE] = {0};
 
     if(zck->data_offset == 0) {
         zck_log(ZCK_LOG_ERROR, "Header hasn't been read yet\n");
         return 0;
     }
 
-    hash_close(&(zck->check_full_hash));
     if(!hash_init(&(zck->check_full_hash), &(zck->hash_type)))
         return 0;
 
@@ -86,7 +85,7 @@ static int validate_checksums(zckCtx *zck, zck_log_type bad_checksums) {
     /* Check each chunk checksum */
     int all_good = True;
     int count = 0;
-    for(zckIndexItem *idx = zck->index.first; idx; idx = idx->next, count++) {
+    for(zckChunk *idx = zck->index.first; idx; idx = idx->next, count++) {
         if(idx == zck->index.first && idx->length == 0) {
             idx->valid = 1;
             continue;
@@ -124,7 +123,7 @@ static int validate_checksums(zckCtx *zck, zck_log_type bad_checksums) {
 
         /* If data checksum failed, invalidate *all* chunks */
         if(valid_file == -1)
-            for(zckIndexItem *idx = zck->index.first; idx; idx = idx->next)
+            for(zckChunk *idx = zck->index.first; idx; idx = idx->next)
                 idx->valid = -1;
     }
 
@@ -185,6 +184,7 @@ void hash_close(zckHash *hash) {
 }
 
 int hash_init(zckHash *hash, zckHashType *hash_type) {
+    hash_close(hash);
     if(hash && hash_type) {
         if(hash_type->type == ZCK_HASH_SHA1) {
             zck_log(ZCK_LOG_DDEBUG, "Initializing SHA-1 hash\n");
@@ -252,9 +252,11 @@ char *hash_finalize(zckHash *hash) {
             return (char *)digest;
         }
         zck_log(ZCK_LOG_ERROR, "Unsupported hash type: %i\n", hash->type);
+        hash_close(hash);
         return NULL;
     }
     zck_log(ZCK_LOG_ERROR, "Hash hasn't been initialized\n");
+    hash_close(hash);
     return NULL;
 }
 
@@ -267,7 +269,6 @@ int set_full_hash_type(zckCtx *zck, int hash_type) {
                 zck_hash_name_from_type(hash_type));
         return False;
     }
-    hash_close(&(zck->full_hash));
     if(!hash_init(&(zck->full_hash), &(zck->hash_type))) {
         zck_log(ZCK_LOG_ERROR, "Unable initialize full hash\n");
         return False;
@@ -291,7 +292,7 @@ int set_chunk_hash_type(zckCtx *zck, int hash_type) {
 }
 
 /* Validate chunk, returning -1 if checksum fails, 1 if good, 0 if error */
-int validate_chunk(zckCtx *zck, zckIndexItem *idx,
+int validate_chunk(zckCtx *zck, zckChunk *idx,
                        zck_log_type bad_checksum, int chunk_number) {
     VALIDATE(zck);
     if(idx == NULL) {
@@ -394,13 +395,12 @@ int validate_header(zckCtx *zck) {
 
 /* Returns 1 if data hash matches, -1 if it doesn't and 0 if error */
 int PUBLIC zck_validate_data_checksum(zckCtx *zck) {
-    hash_close(&(zck->check_full_hash));
     if(!seek_data(zck->fd, zck->data_offset, SEEK_SET))
-        return -1;
+        return 0;
     if(!hash_init(&(zck->check_full_hash), &(zck->hash_type)))
-        return -1;
+        return 0;
     char buf[BUF_SIZE] = {0};
-    zckIndexItem *idx = zck->index.first;
+    zckChunk *idx = zck->index.first;
     zck_log(ZCK_LOG_DEBUG, "Checking full hash\n");
     while(idx) {
         size_t to_read = idx->comp_length;
@@ -409,9 +409,9 @@ int PUBLIC zck_validate_data_checksum(zckCtx *zck) {
             if(rb > to_read)
                 rb = to_read;
             if(!read_data(zck->fd, buf, rb))
-                return -1;
+                return 0;
             if(!hash_update(&(zck->check_full_hash), buf, rb))
-                return -1;
+                return 0;
             to_read -= rb;
         }
         idx = idx->next;
@@ -463,7 +463,7 @@ char PUBLIC *zck_get_data_digest(zckCtx *zck) {
     return get_digest_string(zck->full_hash_digest, zck->hash_type.digest_size);
 }
 
-char PUBLIC *zck_get_chunk_digest(zckIndexItem *item) {
+char PUBLIC *zck_get_chunk_digest(zckChunk *item) {
     if(item == NULL)
         return NULL;
     return get_digest_string(item->digest, item->digest_size);

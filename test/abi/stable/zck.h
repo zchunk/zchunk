@@ -1,10 +1,10 @@
 #ifndef ZCK_H
 #define ZCK_H
 
-#define ZCK_VERSION "0.6.2"
+#define ZCK_VERSION "0.6.3"
 #define ZCK_VER_MAJOR 0
 #define ZCK_VER_MINOR 6
-#define ZCK_VER_REVISION 2
+#define ZCK_VER_REVISION 3
 #define ZCK_VER_SUBREVISION 0
 
 #define True 1
@@ -37,6 +37,7 @@ typedef enum zck_soption {
 } zck_soption;
 
 typedef enum zck_log_type {
+    ZCK_LOG_DDEBUG = -1,
     ZCK_LOG_DEBUG,
     ZCK_LOG_INFO,
     ZCK_LOG_WARNING,

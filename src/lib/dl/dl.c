@@ -192,33 +192,33 @@ int dl_write_range(zckDL *dl, const char *at, size_t length) {
         if(dl->tgt_check && !set_chunk_valid(dl))
             return False;
 
-        for(zckChunk *idx = dl->range->index.first; idx; idx = idx->next) {
-            if(dl->dl_chunk_data == idx->start) {
+        for(zckChunk *chk = dl->range->index.first; chk; chk = chk->next) {
+            if(dl->dl_chunk_data == chk->start) {
                 int count = 0;
-                for(zckChunk *tgt_idx = dl->zck->index.first; tgt_idx;
-                    tgt_idx = tgt_idx->next, count++) {
-                    if(tgt_idx->valid == 1)
+                for(zckChunk *tgt_chk = dl->zck->index.first; tgt_chk;
+                    tgt_chk = tgt_chk->next, count++) {
+                    if(tgt_chk->valid == 1)
                         continue;
-                    if(idx->comp_length == tgt_idx->comp_length &&
-                       memcmp(idx->digest, tgt_idx->digest,
-                              idx->digest_size) == 0) {
-                        dl->tgt_check = tgt_idx;
+                    if(chk->comp_length == tgt_chk->comp_length &&
+                       memcmp(chk->digest, tgt_chk->digest,
+                              chk->digest_size) == 0) {
+                        dl->tgt_check = tgt_chk;
                         dl->tgt_number = count;
                         if(!hash_init(&(dl->zck->check_chunk_hash),
                                           &(dl->zck->chunk_hash_type)))
                             return 0;
-                        dl->write_in_chunk = idx->comp_length;
+                        dl->write_in_chunk = chk->comp_length;
                         if(!seek_data(dl->zck->fd,
-                                      dl->zck->data_offset + tgt_idx->start,
+                                      dl->zck->data_offset + tgt_chk->start,
                                       SEEK_SET))
                             return 0;
-                        idx = NULL;
-                        tgt_idx = NULL;
+                        chk = NULL;
+                        tgt_chk = NULL;
                         break;
                     }
                 }
             }
-            if(!idx)
+            if(!chk)
                 break;
         }
     }

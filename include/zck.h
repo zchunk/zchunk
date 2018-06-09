@@ -288,6 +288,9 @@ void zck_dl_free(zckDL **dl);
 /* Get zchunk context from download context */
 zckCtx *zck_dl_get_zck(zckDL *dl)
     __attribute__ ((warn_unused_result));
+/* Set zchunk context in download context */
+int zck_dl_set_zck(zckDL *dl, zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 /* Clear regex used for extracting download ranges from multipart download */
 void zck_dl_clear_regex(zckDL *dl);
 /* Download and process the header from url */
@@ -303,7 +306,7 @@ size_t zck_dl_get_bytes_uploaded(zckDL *dl)
 int zck_dl_set_range(zckDL *dl, zckRange *range)
     __attribute__ ((warn_unused_result));
 /* Get download ranges from zchunk download context */
-int zck_dl_set_range(zckDL *dl, zckRange *range)
+zckRange *zck_dl_get_range(zckDL *dl)
     __attribute__ ((warn_unused_result));
 
 /* Set header callback function */

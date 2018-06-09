@@ -332,6 +332,12 @@ zckCtx PUBLIC *zck_dl_get_zck(zckDL *dl) {
     return dl->zck;
 }
 
+int PUBLIC zck_dl_set_zck(zckDL *dl, zckCtx *zck) {
+    if(dl == NULL)
+        return False;
+    dl->zck = zck;
+    return True;
+}
 int PUBLIC zck_dl_set_range(zckDL *dl, zckRange *range) {
     if(dl == NULL)
         return False;

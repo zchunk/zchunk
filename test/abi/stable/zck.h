@@ -1,10 +1,10 @@
 #ifndef ZCK_H
 #define ZCK_H
 
-#define ZCK_VERSION "0.7.0"
+#define ZCK_VERSION "0.7.1"
 #define ZCK_VER_MAJOR 0
 #define ZCK_VER_MINOR 7
-#define ZCK_VER_REVISION 0
+#define ZCK_VER_REVISION 1
 #define ZCK_VER_SUBREVISION 0
 
 #define True 1
@@ -133,6 +133,8 @@ char *zck_get_range_char(zckRange *range)
 /* Get file descriptor attached to zchunk context */
 int zck_get_fd(zckCtx *zck)
     __attribute__ ((warn_unused_result));
+/* Set file descriptor attached to zchunk context */
+void zck_set_fd(zckCtx *zck, int fd);
 
 /* Return number of missing chunks (-1 if error) */
 int zck_missing_chunks(zckCtx *zck)
@@ -199,6 +201,8 @@ int zck_read_lead(zckCtx *zck)
 int zck_read_header(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 
+int zck_validate_lead(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 
 /*******************************************************************
  * Indexes
@@ -288,6 +292,9 @@ void zck_dl_free(zckDL **dl);
 /* Get zchunk context from download context */
 zckCtx *zck_dl_get_zck(zckDL *dl)
     __attribute__ ((warn_unused_result));
+/* Set zchunk context in download context */
+int zck_dl_set_zck(zckDL *dl, zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 /* Clear regex used for extracting download ranges from multipart download */
 void zck_dl_clear_regex(zckDL *dl);
 /* Download and process the header from url */
@@ -303,7 +310,7 @@ size_t zck_dl_get_bytes_uploaded(zckDL *dl)
 int zck_dl_set_range(zckDL *dl, zckRange *range)
     __attribute__ ((warn_unused_result));
 /* Get download ranges from zchunk download context */
-int zck_dl_set_range(zckDL *dl, zckRange *range)
+zckRange *zck_dl_get_range(zckDL *dl)
     __attribute__ ((warn_unused_result));
 
 /* Set header callback function */

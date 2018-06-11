@@ -133,6 +133,8 @@ char *zck_get_range_char(zckRange *range)
 /* Get file descriptor attached to zchunk context */
 int zck_get_fd(zckCtx *zck)
     __attribute__ ((warn_unused_result));
+/* Set file descriptor attached to zchunk context */
+void zck_set_fd(zckCtx *zck, int fd);
 
 /* Return number of missing chunks (-1 if error) */
 int zck_missing_chunks(zckCtx *zck)

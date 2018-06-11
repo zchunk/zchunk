@@ -218,6 +218,7 @@ int PUBLIC zck_set_soption(zckCtx *zck, zck_soption option, const char *value,
                     length);
             return False;
         }
+        zck_log(ZCK_LOG_DEBUG, "Setting expected hash to (%s)%s\n", zck_hash_name_from_type(zck->prep_hash_type), data);
         zck->prep_digest = ascii_checksum_to_bin(data);
         free(data);
 
@@ -398,4 +399,9 @@ iw_error:
 
 int PUBLIC zck_get_fd(zckCtx *zck) {
     return zck->fd;
+}
+
+void PUBLIC zck_set_fd(zckCtx *zck, int fd) {
+    zck->fd = fd;
+    return;
 }

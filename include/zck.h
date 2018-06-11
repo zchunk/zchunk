@@ -199,6 +199,8 @@ int zck_read_lead(zckCtx *zck)
 int zck_read_header(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 
+int zck_validate_lead(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
 
 /*******************************************************************
  * Indexes

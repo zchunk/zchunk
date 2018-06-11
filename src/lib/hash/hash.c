@@ -183,6 +183,11 @@ void hash_close(zckHash *hash) {
     return;
 }
 
+void hash_reset(zckHashType *ht) {
+    memset(ht, 0, sizeof(zckHashType));
+    return;
+}
+
 int hash_init(zckHash *hash, zckHashType *hash_type) {
     hash_close(hash);
     if(hash && hash_type) {

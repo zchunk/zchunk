@@ -222,6 +222,7 @@ int hash_update(zckHash *hash, const char *message, const size_t size)
 char *hash_finalize(zckHash *hash)
     __attribute__ ((warn_unused_result));
 void hash_close(zckHash *hash);
+void hash_reset(zckHashType *ht);
 int validate_chunk(zckCtx *zck, zckChunk *idx, zck_log_type bad_checksum,
                    int chunk_number)
     __attribute__ ((warn_unused_result));

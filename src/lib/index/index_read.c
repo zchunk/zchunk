@@ -175,7 +175,7 @@ int PUBLIC zck_missing_chunks(zckCtx *zck) {
     return missing;
 }
 
-int PUBLIC zck_has_failed_chunks(zckCtx *zck) {
+int PUBLIC zck_failed_chunks(zckCtx *zck) {
     if(zck == NULL) {
         zck_log(ZCK_LOG_ERROR, "zckCtx not initialized\n");
         return -1;

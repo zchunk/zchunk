@@ -90,8 +90,7 @@ static int set_chunk_valid(zckDL *dl) {
         if(!zero_chunk(dl->zck, dl->tgt_check))
             return False;
         dl->tgt_check->valid = -1;
-        if(retval == 0)
-            return False;
+        return False;
     } else {
         dl->tgt_check->valid = 1;
     }

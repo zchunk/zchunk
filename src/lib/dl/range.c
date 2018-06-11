@@ -88,8 +88,8 @@ static void range_merge_combined(zckRange *info) {
     }
 }
 
-static int range_add(zckRange *info, zckChunk *idx, zckCtx *zck) {
-    if(info == NULL || idx == NULL) {
+static int range_add(zckRange *info, zckChunk *chk, zckCtx *zck) {
+    if(info == NULL || chk == NULL) {
         zck_log(ZCK_LOG_ERROR, "zckRange or zckChunk not allocated\n");
         return False;
     }
@@ -100,8 +100,8 @@ static int range_add(zckRange *info, zckChunk *idx, zckCtx *zck) {
         add_index = True;
     }
 
-    size_t start = idx->start + header_len;
-    size_t end = idx->start + header_len + idx->comp_length - 1;
+    size_t start = chk->start + header_len;
+    size_t end = chk->start + header_len + chk->comp_length - 1;
     zckRangeItem *prev = info->first;
     for(zckRangeItem *ptr=info->first; ptr;) {
         prev = ptr;
@@ -109,8 +109,7 @@ static int range_add(zckRange *info, zckChunk *idx, zckCtx *zck) {
             ptr = ptr->next;
             continue;
         } else if(start < ptr->start) {
-
-            if(range_insert_new(ptr->prev, ptr, start, end, info, idx,
+            if(range_insert_new(ptr->prev, ptr, start, end, info, chk,
                                 add_index) == NULL)
                 return False;
             if(info->first == ptr) {
@@ -128,7 +127,7 @@ static int range_add(zckRange *info, zckChunk *idx, zckCtx *zck) {
         }
     }
     /* We've only reached here if we should be last item */
-    zckRangeItem *new = range_insert_new(prev, NULL, start, end, info, idx,
+    zckRangeItem *new = range_insert_new(prev, NULL, start, end, info, chk,
                                          add_index);
     if(new == NULL)
         return False;
@@ -204,19 +203,16 @@ zckRange PUBLIC *zck_get_dl_range(zckCtx *zck, int max_ranges) {
                 sizeof(zckRange));
         return NULL;
     }
-    zckChunk *idx = zck->index.first;
-    while(idx) {
-        if(idx->valid) {
-            idx = idx->next;
+    for(zckChunk *chk = zck->index.first; chk; chk = chk->next) {
+        if(chk->valid)
             continue;
-        }
-        if(!range_add(range, idx, zck)) {
+
+        if(!range_add(range, chk, zck)) {
             zck_range_free(&range);
             return NULL;
         }
         if(max_ranges >= 0 && range->count >= max_ranges)
             break;
-        idx = idx->next;
     }
     return range;
 }

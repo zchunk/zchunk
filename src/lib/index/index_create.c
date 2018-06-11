@@ -149,16 +149,16 @@ int index_new_chunk(zckIndex *index, char *digest, int digest_size,
         zck_log(ZCK_LOG_ERROR, "Digest size 0 too small\n");
         return False;
     }
-    zckChunk *idx = zmalloc(sizeof(zckChunk));
-    if(idx == NULL) {
+    zckChunk *chk = zmalloc(sizeof(zckChunk));
+    if(chk == NULL) {
         zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
                 sizeof(zckChunk));
         return False;
     }
     index->digest_size = digest_size;
-    idx->comp_length = comp_size;
-    idx->length = orig_size;
-    return finish_chunk(index, idx, digest, finished, zck);
+    chk->comp_length = comp_size;
+    chk->length = orig_size;
+    return finish_chunk(index, chk, digest, finished, zck);
 }
 
 int index_add_to_chunk(zckCtx *zck, char *data, size_t comp_size,

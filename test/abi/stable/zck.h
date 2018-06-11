@@ -1,10 +1,10 @@
 #ifndef ZCK_H
 #define ZCK_H
 
-#define ZCK_VERSION "0.6.3"
+#define ZCK_VERSION "0.7.0"
 #define ZCK_VER_MAJOR 0
-#define ZCK_VER_MINOR 6
-#define ZCK_VER_REVISION 3
+#define ZCK_VER_MINOR 7
+#define ZCK_VER_REVISION 0
 #define ZCK_VER_SUBREVISION 0
 
 #define True 1
@@ -47,42 +47,12 @@ typedef enum zck_log_type {
 
 typedef struct zckCtx zckCtx;
 typedef struct zckHash zckHash;
+typedef struct zckChunk zckChunk;
+typedef struct zckIndex zckIndex;
+typedef struct zckRange zckRange;
+typedef struct zckDL zckDL;
 
-/* Contains an index item pointing to a chunk */
-typedef struct zckIndexItem {
-    char *digest;
-    int digest_size;
-    int valid;
-    size_t start;
-    size_t comp_length;
-    size_t length;
-    struct zckIndexItem *next;
-} zckIndexItem;
-
-/* Contains everything about an index and a pointer to the first index item */
-typedef struct zckIndex {
-    size_t count;
-    size_t length;
-    int hash_type;
-    size_t digest_size;
-    zckIndexItem *first;
-} zckIndex;
-
-/* Contains a single range */
-typedef struct zckRangeItem {
-    size_t start;
-    size_t end;
-    struct zckRangeItem *next;
-    struct zckRangeItem *prev;
-} zckRangeItem;
-
-/* Contains a series of ranges, information about them, a link to the first
- * range item, and an index describing what information is in the ranges */
-typedef struct zckRange {
-    unsigned int count;
-    zckRangeItem *first;
-    zckIndex index;
-} zckRange;
+typedef size_t (*zck_wcb)(void *ptr, size_t l, size_t c, void *dl_v);
 
 /*******************************************************************
  * Reading a zchunk file
@@ -233,16 +203,33 @@ int zck_read_header(zckCtx *zck)
 /*******************************************************************
  * Indexes
  *******************************************************************/
-/* Get index count */
-ssize_t zck_get_index_count(zckCtx *zck)
+/* Get chunk count */
+ssize_t zck_get_chunk_count(zckCtx *zck)
     __attribute__ ((warn_unused_result));
-/* Get index */
-zckIndex *zck_get_index(zckCtx *zck)
+/* Get first chunk */
+zckChunk *zck_get_first_chunk(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
+/* Get next chunk */
+zckChunk *zck_get_next_chunk(zckChunk *idx)
+    __attribute__ ((warn_unused_result));
+/* Get chunk starting location */
+ssize_t zck_get_chunk_start(zckChunk *idx)
+    __attribute__ ((warn_unused_result));
+/* Get uncompressed chunk size */
+ssize_t zck_get_chunk_size(zckChunk *idx)
+    __attribute__ ((warn_unused_result));
+/* Get compressed chunk size */
+ssize_t zck_get_chunk_comp_size(zckChunk *idx)
+    __attribute__ ((warn_unused_result));
+/* Get validity of current chunk - 1 = valid, 0 = missing, -1 = invalid */
+int zck_get_chunk_valid(zckChunk *idx)
     __attribute__ ((warn_unused_result));
 /* Get chunk digest */
-char *zck_get_chunk_digest(zckIndexItem *item)
+char *zck_get_chunk_digest(zckChunk *item)
     __attribute__ ((warn_unused_result));
-
+/* Find out if two chunk digests are the same */
+int zck_compare_chunk_digest(zckChunk *a, zckChunk *b)
+    __attribute__ ((warn_unused_result));
 
 /*******************************************************************
  * Advanced hash functions
@@ -269,22 +256,6 @@ const char *zck_hash_name_from_type(int hash_type)
  * Downloading (should this go in a separate header and library?)
  *******************************************************************/
 
-typedef size_t (*zck_wcb)(void *ptr, size_t l, size_t c, void *dl_v);
-typedef struct zckDLPriv zckDLPriv;
-
-/* Contains a zchunk download context */
-typedef struct zckDL {
-    size_t dl;
-    size_t ul;
-    zck_wcb write_cb;
-    void *wdata;
-    zck_wcb header_cb;
-    void *hdrdata;
-    zckRange *range;
-    zckDLPriv *priv;
-    struct zckCtx *zck;
-} zckDL;
-
 /*******************************************************************
  * Ranges
  *******************************************************************/
@@ -300,6 +271,9 @@ char *zck_get_range(size_t start, size_t end)
  * is */
 int zck_get_min_download_size()
     __attribute__ ((warn_unused_result));
+/* Get the number of separate range items in the range */
+int zck_get_range_count(zckRange *range)
+    __attribute__ ((warn_unused_result));
 
 /*******************************************************************
  * Downloading
@@ -311,13 +285,9 @@ zckDL *zck_dl_init(zckCtx *zck)
 void zck_dl_reset(zckDL *dl);
 /* Free zchunk download context */
 void zck_dl_free(zckDL **dl);
-/* Write callback.  You *must* pass this and your initialized zchunk download
- * context to the downloader when downloading a zchunk file.  If you have your
- * own callback, set dl->write_cb to your callback and dl->wdata to your
- * callback data. */
-size_t zck_write_chunk_cb(void *ptr, size_t l, size_t c, void *dl_v);
-size_t zck_write_zck_header_cb(void *ptr, size_t l, size_t c, void *dl_v);
-size_t zck_header_cb(char *b, size_t l, size_t c, void *dl_v);
+/* Get zchunk context from download context */
+zckCtx *zck_dl_get_zck(zckDL *dl)
+    __attribute__ ((warn_unused_result));
 /* Clear regex used for extracting download ranges from multipart download */
 void zck_dl_clear_regex(zckDL *dl);
 /* Download and process the header from url */
@@ -329,5 +299,32 @@ size_t zck_dl_get_bytes_downloaded(zckDL *dl)
 /* Get number of bytes uploaded using download context */
 size_t zck_dl_get_bytes_uploaded(zckDL *dl)
     __attribute__ ((warn_unused_result));
+/* Set download ranges for zchunk download context */
+int zck_dl_set_range(zckDL *dl, zckRange *range)
+    __attribute__ ((warn_unused_result));
+/* Get download ranges from zchunk download context */
+int zck_dl_set_range(zckDL *dl, zckRange *range)
+    __attribute__ ((warn_unused_result));
+
+/* Set header callback function */
+int zck_dl_set_header_cb(zckDL *dl, zck_wcb func)
+    __attribute__ ((warn_unused_result));
+/* Set header userdata */
+int zck_dl_set_header_data(zckDL *dl, void *data)
+    __attribute__ ((warn_unused_result));
+/* Set write callback function */
+int zck_dl_set_write_cb(zckDL *dl, zck_wcb func)
+    __attribute__ ((warn_unused_result));
+/* Set write userdata */
+int zck_dl_set_write_data(zckDL *dl, void *data)
+    __attribute__ ((warn_unused_result));
+
+/* Write callback.  You *must* pass this and your initialized zchunk download
+ * context to the downloader when downloading a zchunk file.  If you have your
+ * own callback, set dl->write_cb to your callback and dl->wdata to your
+ * callback data. */
+size_t zck_write_chunk_cb(void *ptr, size_t l, size_t c, void *dl_v);
+size_t zck_write_zck_header_cb(void *ptr, size_t l, size_t c, void *dl_v);
+size_t zck_header_cb(char *b, size_t l, size_t c, void *dl_v);
 
 #endif

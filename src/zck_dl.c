@@ -385,7 +385,7 @@ int main (int argc, char *argv[]) {
         while(zck_missing_chunks(zck_tgt) > 0) {
             dl_ctx.range_fail = 0;
             zck_dl_reset(dl);
-            zckRange *range = zck_get_dl_range(zck_tgt, dl_ctx.max_ranges);
+            zckRange *range = zck_get_missing_range(zck_tgt, dl_ctx.max_ranges);
             if(range == NULL || !zck_dl_set_range(dl, range)) {
                 exit_val = 10;
                 goto out;

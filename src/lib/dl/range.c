@@ -196,7 +196,7 @@ char PUBLIC *zck_get_range_char(zckRange *range) {
     return output;
 }
 
-zckRange PUBLIC *zck_get_dl_range(zckCtx *zck, int max_ranges) {
+zckRange PUBLIC *zck_get_missing_range(zckCtx *zck, int max_ranges) {
     zckRange *range = zmalloc(sizeof(zckRange));
     if(range == NULL) {
         zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",

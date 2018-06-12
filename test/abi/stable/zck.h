@@ -1,10 +1,10 @@
 #ifndef ZCK_H
 #define ZCK_H
 
-#define ZCK_VERSION "0.7.1"
+#define ZCK_VERSION "0.7.2"
 #define ZCK_VER_MAJOR 0
 #define ZCK_VER_MINOR 7
-#define ZCK_VER_REVISION 1
+#define ZCK_VER_REVISION 2
 #define ZCK_VER_SUBREVISION 0
 
 #define True 1
@@ -123,9 +123,9 @@ int zck_find_valid_chunks(zckCtx *zck)
 
 /* Get a zckRange of ranges that need to still be downloaded.
  * max_ranges is the maximum number of ranges supported in a single request
- *     by the server.  If the server supports unlimited ranges, set to -1
+ *     by the server.  If the server supports unlimited ranges, set this to -1
  * Returns NULL if there's an error */
-zckRange *zck_get_dl_range(zckCtx *zck, int max_ranges)
+zckRange *zck_get_missing_range(zckCtx *zck, int max_ranges)
     __attribute__ ((warn_unused_result));
 /* Get a string representation of a zckRange */
 char *zck_get_range_char(zckRange *range)

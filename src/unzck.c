@@ -45,6 +45,7 @@ static struct argp_option options[] = {
     {"verbose", 'v', 0,        0,
      "Increase verbosity (can be specified more than once for debugging)"},
     {"quiet",   'q', 0,        0, "Only show errors"},
+    {"stdout",  'c', 0,        0, "Direct output to stdout"},
     {"version", 'V', 0,        0, "Show program version"},
     { 0 }
 };
@@ -52,6 +53,7 @@ static struct argp_option options[] = {
 struct arguments {
   char *args[1];
   zck_log_type log_level;
+  int stdout;
 };
 
 static error_t parse_opt (int key, char *arg, struct argp_state *state) {
@@ -65,6 +67,9 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
             break;
         case 'q':
             arguments->log_level = ZCK_LOG_ERROR;
+            break;
+        case 'c':
+            arguments->stdout = 1;
             break;
         case 'V':
             version();
@@ -114,12 +119,15 @@ int main (int argc, char *argv[]) {
     char *out_name = malloc(strlen(arguments.args[0]) - 3);
     snprintf(out_name, strlen(arguments.args[0]) - 3, "%s", arguments.args[0]);
 
-    int dst_fd = open(out_name, O_TRUNC | O_WRONLY | O_CREAT, 0644);
-    if(dst_fd < 0) {
-        printf("Unable to open %s", out_name);
-        perror("");
-        free(out_name);
-        exit(1);
+    int dst_fd = STDOUT_FILENO;
+    if(!arguments.stdout) {
+        dst_fd = open(out_name, O_TRUNC | O_WRONLY | O_CREAT, 0644);
+        if(dst_fd < 0) {
+            printf("Unable to open %s", out_name);
+            perror("");
+            free(out_name);
+            exit(1);
+        }
     }
 
     int good_exit = False;

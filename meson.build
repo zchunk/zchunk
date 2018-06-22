@@ -1,6 +1,5 @@
-project('zck', 'c')
+project('zck', 'c', version: '0.7.3')
 
-lib_version = '0.0.1'
 so_version = '1'
 
 use_zstd = get_option('with-zstd')
@@ -27,7 +26,7 @@ subdir('test')
 
 pkg_mod = import('pkgconfig')
 pkg_mod.generate(libraries: zcklib,
-                 version: lib_version,
+                 version: meson.project_version(),
                  name: 'libzck',
                  filebase: 'zck',
                  description: 'A library for generating easy-to-delta files.')

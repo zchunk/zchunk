@@ -10,5 +10,5 @@ zcklib = shared_library('zck',
                         include_directories: inc,
                         dependencies: [zstd_dep],
                         install: true,
-                        version: lib_version,
+                        version: meson.project_version(),
                         soversion: so_version)

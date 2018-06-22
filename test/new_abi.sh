@@ -10,5 +10,5 @@ fi
 rm abi/stable -rf
 mkdir -p abi/stable
 cp -a ../build/src/lib/libzck.so.* abi/stable
-cp -a ../include/zck.h abi/stable
+cp -a ../build/include/zck.h abi/stable
 find abi -type l -delete

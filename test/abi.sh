@@ -10,7 +10,7 @@ fi
 rm abi/new -rf
 mkdir -p abi/new
 cp -a ../build/src/lib/libzck.so.* abi/new
-cp -a ../include/zck.h abi/new
+cp -a ../build/include/zck.h abi/new
 find abi -type l -delete
 
 # Redump abi/stable

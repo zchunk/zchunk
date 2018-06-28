@@ -61,7 +61,8 @@ static int check_flags(zckCtx *zck, char *header, size_t *length, size_t max_len
     }
     zck->has_streams = header[3] & 0x01;
     if(zck->has_streams)
-        zck_log(ZCK_LOG_INFO, "Archive has streams\n");
+        zck_log(ZCK_LOG_ERROR, "This version of zchunk doesn't support streams\n");
+        return False;
     if((header[3] & 0xfe) != 0 || header[2] != 0 || header[1] != 0 ||
        header[0] != 0) {
         zck_log(ZCK_LOG_ERROR, "Unknown flags(s) set\n");

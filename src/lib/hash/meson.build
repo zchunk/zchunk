@@ -1,3 +1,5 @@
 lib_sources += files('hash.c')
-subdir('sha1')
-subdir('sha2')
+if use_openssl == 'no'
+    subdir('sha1')
+    subdir('sha2')
+endif

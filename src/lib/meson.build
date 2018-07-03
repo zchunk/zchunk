@@ -8,7 +8,7 @@ lib_sources += files('zck.c', 'header.c', 'io.c', 'log.c', 'compint.c')
 zcklib = shared_library('zck',
                         lib_sources,
                         include_directories: inc,
-                        dependencies: [zstd_dep],
+                        dependencies: [zstd_dep, openssl_dep],
                         install: true,
                         version: meson.project_version(),
                         soversion: so_version)

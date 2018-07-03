@@ -31,8 +31,24 @@
 #include <zck.h>
 
 #include "zck_private.h"
+
+/***** If we're not using OpenSSL, use bundled sha libraries *****/
+#ifndef ZCHUNK_OPENSSL
 #include "sha1/sha1.h"
 #include "sha2/sha2.h"
+#define SHA256_CTX sha256_ctx
+#define SHA256_Init sha256_init
+#define SHA256_Update sha256_update
+static void SHA256_Final(unsigned char *md, SHA256_CTX *c) {
+    sha256_final(c, md);
+}
+/***** If we are using OpenSSL, set the defines accordingly *****/
+#else
+#include <openssl/sha.h>
+#define SHA256_DIGEST_SIZE SHA256_DIGEST_LENGTH
+#define SHA1_DIGEST_LENGTH SHA_DIGEST_LENGTH
+#define sha1_byte void
+#endif
 
 #define VALIDATE(f)     if(!f) { \
                             zck_log(ZCK_LOG_ERROR, "zckCtx not initialized\n"); \
@@ -201,11 +217,11 @@ int hash_init(zckHash *hash, zckHashType *hash_type) {
             return True;
         }else if(hash_type->type == ZCK_HASH_SHA256) {
             zck_log(ZCK_LOG_DDEBUG, "Initializing SHA-256 hash\n");
-            hash->ctx = zmalloc(sizeof(sha256_ctx));
+            hash->ctx = zmalloc(sizeof(SHA256_CTX));
             hash->type = hash_type;
             if(hash->ctx == NULL)
                 return False;
-            sha256_init((sha256_ctx *) hash->ctx);
+            SHA256_Init((SHA256_CTX *) hash->ctx);
             return True;
         }
         zck_log(ZCK_LOG_ERROR, "Unsupported hash type: %i\n", hash_type->type);
@@ -233,7 +249,7 @@ int hash_update(zckHash *hash, const char *message, const size_t size) {
             SHA1_Update((SHA_CTX *)hash->ctx, (const sha1_byte *)message, size);
             return True;
         } else if(hash->type->type == ZCK_HASH_SHA256) {
-            sha256_update((sha256_ctx *)hash->ctx, (const unsigned char *)message, size);
+            SHA256_Update((SHA256_CTX *)hash->ctx, (const unsigned char *)message, size);
             return True;
         }
         zck_log(ZCK_LOG_ERROR, "Unsupported hash type: %i\n", hash->type);
@@ -252,7 +268,7 @@ char *hash_finalize(zckHash *hash) {
             return (char *)digest;
         } else if(hash->type->type == ZCK_HASH_SHA256) {
             unsigned char *digest = zmalloc(hash->type->digest_size);
-            sha256_final((sha256_ctx *)hash->ctx, digest);
+            SHA256_Final(digest, (SHA256_CTX *)hash->ctx);
             hash_close(hash);
             return (char *)digest;
         }

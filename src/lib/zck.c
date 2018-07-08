@@ -68,7 +68,6 @@ static void zck_clear(zckCtx *zck) {
     index_free(zck);
     if(zck->header)
         free(zck->header);
-    zck->fd = -1;
     zck->header = NULL;
     zck->header_size = 0;
     if(!comp_close(zck))
@@ -89,6 +88,7 @@ static void zck_clear(zckCtx *zck) {
         close(zck->temp_fd);
         zck->temp_fd = 0;
     }
+    zck->fd = -1;
 }
 
 static int hex_to_int (char c) {
@@ -337,6 +337,8 @@ zckCtx PUBLIC *zck_create() {
     }
     zck->prep_hash_type = -1;
     zck->prep_hdr_size = -1;
+    zck->buzhash_width = DEFAULT_BUZHASH_WIDTH;
+    zck->buzhash_match_bits = (2^DEFAULT_BUZHASH_BITS) - 1;
     return zck;
 }
 

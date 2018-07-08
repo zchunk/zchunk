@@ -12,6 +12,9 @@
 #define ZCK_MODE_READ 0
 #define ZCK_MODE_WRITE 1
 
+#define DEFAULT_BUZHASH_WIDTH 48
+#define DEFAULT_BUZHASH_BITS 15
+
 #define zmalloc(x) calloc(1, x)
 
 #define PUBLIC __attribute__((visibility("default")))
@@ -204,6 +207,9 @@ typedef struct zckCtx {
 
     char *data;
     size_t data_size;
+
+    int buzhash_width;
+    int buzhash_match_bits;
 } zckCtx;
 
 int get_tmp_fd()

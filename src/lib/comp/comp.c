@@ -315,14 +315,7 @@ int comp_soption(zckCtx *zck, zck_soption option, const void *value,
         return False;
     }
     if(option == ZCK_COMP_DICT) {
-        char *dict = zmalloc(length);
-        if(dict == NULL) {
-            zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
-                    length);
-            return False;
-        }
-        memcpy(dict, value, length);
-        zck->comp.dict = dict;
+        zck->comp.dict = (char *)value;
         zck->comp.dict_size = length;
     } else {
         if(zck && zck->comp.set_parameter)
@@ -519,6 +512,7 @@ ssize_t PUBLIC zck_end_chunk(zckCtx *zck) {
     if(!zck->comp.started && !comp_init(zck))
         return -1;
 
+    buzhash_reset(&(zck->buzhash));
     /* No point in compressing empty data */
     if(zck->comp.dc_data_size == 0)
         return 0;

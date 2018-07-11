@@ -1,7 +1,7 @@
 #ifndef ZCK_H
 #define ZCK_H
 
-#define ZCK_VERSION "0.7.4"
+#define ZCK_VERSION "0.7.5"
 
 #define True 1
 #define False 0

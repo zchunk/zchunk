@@ -89,7 +89,7 @@ const static char *HASH_NAME[] = {
     "SHA-1",
     "SHA-256",
     "SHA-512",
-    "SHA-512/64"
+    "SHA-512/128"
 };
 
 static int validate_checksums(zckCtx *zck, zck_log_type bad_checksums) {
@@ -188,13 +188,13 @@ int hash_setup(zckHashType *ht, int h) {
                     zck_hash_name_from_type(ht->type));
             return True;
         } else if(h >= ZCK_HASH_SHA512 &&
-                 h <= ZCK_HASH_SHA512_64) {
+                  h <= ZCK_HASH_SHA512_128) {
             memset(ht, 0, sizeof(zckHashType));
             ht->type = h;
             if(h == ZCK_HASH_SHA512)
                 ht->digest_size = SHA512_DIGEST_SIZE;
-            else if(h == ZCK_HASH_SHA512_64)
-                ht->digest_size = 8;
+            else if(h == ZCK_HASH_SHA512_128)
+                ht->digest_size = 16;
             zck_log(ZCK_LOG_DEBUG, "Setting up hash type %s\n",
                     zck_hash_name_from_type(ht->type));
             return True;
@@ -244,7 +244,7 @@ int hash_init(zckHash *hash, zckHashType *hash_type) {
             SHA256_Init((SHA256_CTX *) hash->ctx);
             return True;
         } else if(hash_type->type >= ZCK_HASH_SHA512 &&
-                 hash_type->type <= ZCK_HASH_SHA512_64) {
+                  hash_type->type <= ZCK_HASH_SHA512_128) {
             zck_log(ZCK_LOG_DDEBUG, "Initializing SHA-512 hash\n");
             hash->ctx = zmalloc(sizeof(SHA512_CTX));
             hash->type = hash_type;
@@ -281,7 +281,7 @@ int hash_update(zckHash *hash, const char *message, const size_t size) {
             SHA256_Update((SHA256_CTX *)hash->ctx, (const unsigned char *)message, size);
             return True;
         } else if(hash->type->type >= ZCK_HASH_SHA512 &&
-                  hash->type->type <= ZCK_HASH_SHA512_64) {
+                  hash->type->type <= ZCK_HASH_SHA512_128) {
             SHA512_Update((SHA512_CTX *)hash->ctx, (const unsigned char *)message, size);
             return True;
         }
@@ -305,7 +305,7 @@ char *hash_finalize(zckHash *hash) {
             hash_close(hash);
             return (char *)digest;
         } else if(hash->type->type >= ZCK_HASH_SHA512 &&
-                  hash->type->type <= ZCK_HASH_SHA512_64) {
+                  hash->type->type <= ZCK_HASH_SHA512_128) {
             unsigned char *digest = zmalloc(SHA512_DIGEST_SIZE);
             SHA512_Final(digest, (SHA512_CTX *)hash->ctx);
             hash_close(hash);

@@ -398,7 +398,7 @@ zckCtx PUBLIC *zck_init_write (int dst_fd) {
 #endif
     if(!zck_set_ioption(zck, ZCK_HASH_FULL_TYPE, ZCK_HASH_SHA256))
         goto iw_error;
-    if(!zck_set_ioption(zck, ZCK_HASH_CHUNK_TYPE, ZCK_HASH_SHA512_64))
+    if(!zck_set_ioption(zck, ZCK_HASH_CHUNK_TYPE, ZCK_HASH_SHA512_128))
         goto iw_error;
     zck->fd = dst_fd;
 

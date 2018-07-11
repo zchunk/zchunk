@@ -1,5 +1,6 @@
 lib_sources = files()
 add_global_arguments('-fvisibility=hidden', language : 'c')
+subdir('buzhash')
 subdir('comp')
 subdir('hash')
 subdir('index')

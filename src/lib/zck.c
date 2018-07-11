@@ -120,6 +120,14 @@ static char *ascii_checksum_to_bin (char *checksum) {
     return raw_checksum;
 }
 
+static void update_buzhash_bits(zckCtx *zck) {
+    int s=1;
+    for(int i=0; i<zck->buzhash_match_bits; i++)
+        s *= 2;
+    s -= 1;
+    zck->buzhash_bitmask = s;
+}
+
 int get_tmp_fd() {
     int temp_fd;
     char *fname = NULL;
@@ -347,7 +355,8 @@ zckCtx PUBLIC *zck_create() {
     zck->prep_hash_type = -1;
     zck->prep_hdr_size = -1;
     zck->buzhash_width = DEFAULT_BUZHASH_WIDTH;
-    zck->buzhash_match_bits = (2^DEFAULT_BUZHASH_BITS) - 1;
+    zck->buzhash_match_bits = DEFAULT_BUZHASH_BITS;
+    update_buzhash_bits(zck);
     return zck;
 }
 

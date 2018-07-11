@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <math.h>
 #include <zck.h>
 
 #include "zck_private.h"
@@ -163,6 +164,31 @@ static ssize_t comp_end_dchunk(zckCtx *zck, int use_dict, size_t fd_size) {
     if(!hash_init(&(zck->check_chunk_hash), &(zck->chunk_hash_type)))
         return -1;
     return rb;
+}
+
+static ssize_t comp_write(zckCtx *zck, const char *src, const size_t src_size) {
+    VALIDATE_WRITE_SIZE(zck);
+
+    if(!zck->comp.started && !comp_init(zck))
+        return -1;
+
+    if(src_size == 0)
+        return 0;
+
+    char *dst = NULL;
+    size_t dst_size = 0;
+    if(zck->comp.compress(&(zck->comp), src, src_size, &dst, &dst_size, 1) < 0)
+        return -1;
+    if(dst_size > 0 && !write_data(zck->temp_fd, dst, dst_size)) {
+        free(dst);
+        return -1;
+    }
+    if(!index_add_to_chunk(zck, dst, dst_size, src_size)) {
+        free(dst);
+        return -1;
+    }
+    free(dst);
+    return src_size;
 }
 
 int comp_init(zckCtx *zck) {
@@ -461,27 +487,29 @@ const char PUBLIC *zck_comp_name_from_type(int comp_type) {
 }
 
 ssize_t PUBLIC zck_write(zckCtx *zck, const char *src, const size_t src_size) {
-    VALIDATE_WRITE_SIZE(zck);
+    if(zck->manual_chunk)
+        return comp_write(zck, src, src_size);
 
-    if(!zck->comp.started && !comp_init(zck))
-        return -1;
-
-    if(src_size == 0)
-        return 0;
-
-    char *dst = NULL;
-    size_t dst_size = 0;
-    if(zck->comp.compress(&(zck->comp), src, src_size, &dst, &dst_size, 1) < 0)
-        return -1;
-    if(dst_size > 0 && !write_data(zck->temp_fd, dst, dst_size)) {
-        free(dst);
-        return -1;
+    const char *loc = src;
+    size_t loc_size = src_size;
+    for(size_t i=0; i<loc_size; ) {
+        if((buzhash_update(&(zck->buzhash), loc+i, zck->buzhash_width) &
+            zck->buzhash_bitmask) == 0) {
+            if(comp_write(zck, loc, i) != i)
+                return -1;
+            zck_log(ZCK_LOG_DEBUG, "Automatically ending chunk\n");
+            if(zck_end_chunk(zck) < 0)
+                return -1;
+            loc += i;
+            loc_size -= i;
+            i = 0;
+            buzhash_reset(&(zck->buzhash));
+        } else {
+            i++;
+        }
     }
-    if(!index_add_to_chunk(zck, dst, dst_size, src_size)) {
-        free(dst);
+    if(loc_size > 0 && comp_write(zck, loc, loc_size) != loc_size)
         return -1;
-    }
-    free(dst);
     return src_size;
 }
 
@@ -512,6 +540,7 @@ ssize_t PUBLIC zck_end_chunk(zckCtx *zck) {
         free(dst);
         return -1;
     }
+    zck_log(ZCK_LOG_DEBUG, "Finished chunk size: %lu\n", data_size);
     free(dst);
     return data_size;
 }

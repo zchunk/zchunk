@@ -8,9 +8,12 @@
 typedef struct buzHash {
     uint32_t h;
     int window_size;
+    char *window;
+    int window_loc;
+    int window_fill;
 } buzHash;
 
-uint32_t buzhash_setup(buzHash *b, const char *s, size_t n);
-uint32_t buzhash_update (buzHash *b, const char *s);
+uint32_t buzhash_update (buzHash *b, const char *s, size_t window);
+void buzhash_reset (buzHash *b);
 
 #endif

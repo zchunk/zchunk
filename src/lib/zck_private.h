@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <regex.h>
+#include "buzhash/buzhash.h"
 
 #define BUF_SIZE 32768
 /* Maximum string length for a compressed size_t */
@@ -208,8 +209,10 @@ typedef struct zckCtx {
     char *data;
     size_t data_size;
 
+    buzHash buzhash;
     int buzhash_width;
     int buzhash_match_bits;
+    int buzhash_bitmask;
     int manual_chunk;
 } zckCtx;
 

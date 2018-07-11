@@ -36,7 +36,6 @@
 #include <zck.h>
 
 #include "util_common.h"
-#include "buzhash/buzhash.h"
 #include "memmem.h"
 
 static char doc[] = "zck - Create a new zchunk file";
@@ -44,12 +43,15 @@ static char doc[] = "zck - Create a new zchunk file";
 static char args_doc[] = "<file>";
 
 static struct argp_option options[] = {
-    {"verbose", 'v', 0,        0,
+    {"verbose",      'v', 0,        0,
      "Increase verbosity (can be specified more than once for debugging)"},
-    {"quiet",   'q', 0,        0, "Only show errors"},
-    {"split",   's', "STRING", 0, "Split chunks at beginning of STRING"},
-    {"dict",    'D', "FILE",   0, "Set zstd compression dictionary to FILE"},
-    {"version", 'V', 0,        0, "Show program version"},
+    {"quiet",        'q', 0,        0, "Only show errors"},
+    {"split",        's', "STRING", 0, "Split chunks at beginning of STRING"},
+    {"dict",         'D', "FILE",   0,
+     "Set zstd compression dictionary to FILE"},
+    {"manual-chunk", 'm', 0,        0,
+     "Don't do any automatic chunking (implies -s)"},
+    {"version",      'V', 0,        0, "Show program version"},
     { 0 }
 };
 
@@ -57,6 +59,7 @@ struct arguments {
   char *args[1];
   zck_log_type log_level;
   char *split_string;
+  int manual_chunk;
   char *dict;
 };
 
@@ -74,6 +77,9 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
             break;
         case 's':
             arguments->split_string = arg;
+            break;
+        case 'm':
+            arguments->manual_chunk = 1;
             break;
         case 'D':
             arguments->dict = arg;
@@ -177,6 +183,10 @@ int main (int argc, char *argv[]) {
             exit(1);
     }
     free(dict);
+    if(arguments.manual_chunk) {
+        if(!zck_set_ioption(zck, ZCK_MANUAL_CHUNK, 1))
+            exit(1);
+    }
 
     char *data;
     int in_fd = open(arguments.args[0], O_RDONLY);
@@ -237,7 +247,6 @@ int main (int argc, char *argv[]) {
 
                     }
                     prev_srpm = next_srpm;
-                    printf("Compressing %li bytes\n", (long)(next-found));
                     if(zck_write(zck, found, next-found) < 0)
                         exit(1);
                     if(zck_end_chunk(zck) < 0)
@@ -247,8 +256,6 @@ int main (int argc, char *argv[]) {
                     if(search > data + in_size)
                         search = data + in_size;
                 } else {
-                    printf("Completing %li bytes\n",
-                           (long)(data+in_size-found));
                     if(zck_write(zck, found, data+in_size-found) < 0)
                         exit(1);
                     if(zck_end_chunk(zck) < 0)
@@ -258,40 +265,8 @@ int main (int argc, char *argv[]) {
             }
         /* Buzhash rolling window */
         } else {
-            char *cur_loc = data;
-            char *start = data;
-            char *window_loc;
-            buzHash b = {0};
-            size_t buzhash_width = 48;
-            size_t match_bits = 32768;
-
-            if(arguments.log_level <= ZCK_LOG_INFO) {
-                printf("Using buzhash algorithm for automatic chunking\n");
-                printf("Window size: %lu\n", (unsigned long)buzhash_width);
-            }
-            while(cur_loc < data + in_size) {
-                uint32_t bh = 0;
-                window_loc = cur_loc;
-                if(cur_loc + buzhash_width < data + in_size) {
-                    bh = buzhash_setup(&b, window_loc, buzhash_width);
-                    cur_loc += buzhash_width;
-                    while(cur_loc < data + in_size) {
-                        bh = buzhash_update(&b, cur_loc);
-                        if(((bh) & (match_bits - 1)) == 0)
-                            break;
-                        cur_loc++;
-                    }
-                } else {
-                    cur_loc = data + in_size;
-                }
-                if(arguments.log_level <= ZCK_LOG_DEBUG)
-                    printf("Completing %li bytes\n", (long)(cur_loc-start));
-                if(zck_write(zck, start, cur_loc-start) < 0)
-                    exit(1);
-                if(zck_end_chunk(zck) < 0)
-                    exit(1);
-                start = cur_loc;
-            }
+            if(zck_write(zck, data, in_size) < 0)
+                exit(1);
         }
         free(data);
     }

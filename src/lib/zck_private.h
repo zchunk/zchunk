@@ -210,6 +210,7 @@ typedef struct zckCtx {
 
     int buzhash_width;
     int buzhash_match_bits;
+    int manual_chunk;
 } zckCtx;
 
 int get_tmp_fd()

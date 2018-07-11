@@ -25,6 +25,7 @@ typedef enum zck_ioption {
     ZCK_HASH_CHUNK_TYPE,        /* Set chunk hash type using zck_hash */
     ZCK_VAL_HEADER_HASH_TYPE,   /* Set what the header hash type *should* be */
     ZCK_VAL_HEADER_LENGTH,      /* Set what the header length *should* be */
+    ZCK_MANUAL_CHUNK,           /* Disable auto-chunking */
     ZCK_COMP_TYPE = 100,        /* Set compression type using zck_comp */
     ZCK_ZSTD_COMP_LEVEL = 1000  /* Set zstd compression level */
 } zck_ioption;

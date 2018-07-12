@@ -1,7 +1,7 @@
 #ifndef ZCK_H
 #define ZCK_H
 
-#define ZCK_VERSION "0.7.5"
+#define ZCK_VERSION "0.7.6"
 
 #define True 1
 #define False 0
@@ -9,6 +9,8 @@
 typedef enum zck_hash {
     ZCK_HASH_SHA1,
     ZCK_HASH_SHA256,
+    ZCK_HASH_SHA512,
+    ZCK_HASH_SHA512_128,
     ZCK_HASH_UNKNOWN
 } zck_hash;
 
@@ -23,6 +25,7 @@ typedef enum zck_ioption {
     ZCK_HASH_CHUNK_TYPE,        /* Set chunk hash type using zck_hash */
     ZCK_VAL_HEADER_HASH_TYPE,   /* Set what the header hash type *should* be */
     ZCK_VAL_HEADER_LENGTH,      /* Set what the header length *should* be */
+    ZCK_MANUAL_CHUNK,           /* Disable auto-chunking */
     ZCK_COMP_TYPE = 100,        /* Set compression type using zck_comp */
     ZCK_ZSTD_COMP_LEVEL = 1000  /* Set zstd compression level */
 } zck_ioption;

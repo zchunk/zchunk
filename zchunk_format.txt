@@ -7,12 +7,11 @@ of four parts:
 
 Definitions:
 (ci)
- Compressed (unsigned) integer - An variable length little endian
- integer where the first seven bits of the number are stored in the
- first byte, followed by the next seven bits in the next byte, and so
- on.  The top bit of all bytes except the final byte must be zero, and
- the top bit of the final byte must be one, indicating the end of the
- number.
+ Compressed (unsigned) integer - An variable length little endian integer where
+ the first seven bits of the number are stored in the first byte, followed by
+ the next seven bits in the next byte, and so on.  The top bit of all bytes
+ except the final byte must be zero, and the top bit of the final byte must be
+ one, indicating the end of the number.
 
 The lead:
 +-+-+-+-+-+====================+==================+=================+
@@ -23,8 +22,8 @@ ID
  '\0ZCK1', identifies file as zchunk version 1 file
 
 Checksum type
- This is an integer containing the type of checksum used to generate the
- header checksum and the total data checksum, but *not* the chunk checksums.
+ This is an integer containing the type of checksum used to generate the header
+ checksum and the total data checksum, but *not* the chunk checksums.
 
  Current values:
    0 = SHA-1
@@ -34,8 +33,8 @@ Header size:
  This is an integer containing the size of the header, not including the lead
 
 Header checksum
- This is the checksum of everything from the beginning of the file
- until the end of the signatures, ignoring the header checksum.
+ This is the checksum of everything from the beginning of the file until the end
+ of the signatures, ignoring the header checksum.
 
 
 The preface:
@@ -44,21 +43,20 @@ The preface:
 +===============+-+-+-+-+========================+
 
 Data checksum
- This is the checksum of everything after the header, including the
- compressed dict and all the compressed chunks.  This checksum is
- generated using the overall checksum type, *not* the chunk checksum
- type.
+ This is the checksum of everything after the header, including the compressed
+ dict and all the compressed chunks.  This checksum is generated using the
+ overall checksum type, *not* the chunk checksum type.
 
 Flags
- 32 bits for flags.  All unused flags MUST be set to 0.  If a decoder sees
- a flag set that it doesn't recognize, it MUST exit with an error.  Flags
+ 32 bits for flags.  All unused flags MUST be set to 0.  If a decoder sees a
+ flag set that it doesn't recognize, it MUST exit with an error.
 
  Current flags are:
   bit 0: File has data streams
 
 Compression type
- This is an integer containing the type of compression used to
- compress dict and chunks.
+ This is an integer containing the type of compression used to compress dict and
+ chunks.
 
  Current values:
    0 - Uncompressed
@@ -90,8 +88,8 @@ Index size
  This is an integer containing the size of the index.
 
 Chunk checksum type
- This is an integer containing the type of checksum used to generate
- the chunk checksums.
+ This is an integer containing the type of checksum used to generate the chunk
+ checksums.
 
  Current values:
    0 = SHA-1
@@ -101,42 +99,41 @@ Chunk count
  This is a count of the number of chunks in the zchunk file.
 
 Dict stream
- If the data streams flag is set, this must always be 0, otherwise don't
- include this integer
+ If the data streams flag is set, this must always be 0, otherwise don't include
+ this integer
 
 Dict checksum
- This is the checksum of the compressed dict, used to detect whether
- two dicts are identical.  If there is no dict, the checksum must be
- all zeros.
+ This is the checksum of the compressed dict, used to detect whether two dicts
+ are identical.  If there is no dict, the checksum must be all zeros.
 
 Dict length
- This is an integer containing the length of the dict.  If there is no
- dict, this must be a zero.
+ This is an integer containing the length of the dict.  If there is no dict,
+ this must be a zero.
 
 Uncompressed dict length
- This is an integer containing the length of the dict after it has
- been decompressed.  If there is no dict, this must be a zero.
+ This is an integer containing the length of the dict after it has been
+ decompressed.  If there is no dict, this must be a zero.
 
 Chunk stream
- If the data streams flag is set, this indicates which stream this chunk
- belongs to.  1 is the default, so decoders SHOULD decode stream 1 by default.
- If the data streams flag isn't set, don't include this integer.
+ If the data streams flag is set, this indicates which stream this chunk belongs
+ to.  1 is the default, so decoders SHOULD decode stream 1 by default.  If the
+ data streams flag isn't set, don't include this integer.
 
 Chunk checksum
- This is the checksum of the compressed chunk, used to detect whether
- any two chunks are identical.
+ This is the checksum of the compressed chunk, used to detect whether any two
+ chunks are identical.
 
 Chunk length
  This is an integer containing the length of the chunk.
 
 Uncompressed dict length
- This is an integer containing the length of the chunk after it has
- been decompressed.
+ This is an integer containing the length of the chunk after it has been
+ decompressed.
 
-The index is designed to be able to be extracted from the file on the
-server and downloaded separately, to facilitate downloading only the
-parts of the file that are needed, but must then be re-embedded when
-assembling the file so the user only needs to keep one file.
+The index is designed to be able to be extracted from the file on the server and
+downloaded separately, to facilitate downloading only the parts of the file that
+are needed, but must then be re-embedded when assembling the file so the user
+only needs to keep one file.
 
 Streams can be used to separate file metadata and data.  An example might be a
 package format with the files stored in a tarball in stream 1, but the metadata
@@ -156,23 +153,23 @@ Signature count
  This is an integer countaining the number of signatures.
 
 Signature type
- This is an integer containing the type of signature.  Currently there are
- no recognized signature types.
+ This is an integer containing the type of signature.  Currently there are no
+ recognized signature types.
 
 Signature size
  This is an integer containing the size of the signature.
 
 Signature
  The actual signature.  The signature MUST only apply to the header, excluding
- the header checksum, the signature count and the signatures.
+ the header size, the header checksum, the signature count and the signatures.
 
 Signatures are designed so that anyone can add a new signature to a file
-without changing the validity of other signatures, but the header checksum
-must be recalculated.
+without changing the validity of other signatures, but the header size and
+checksum must be recalculated.
 
-We only sign the header so the signature can be validated independently of the
+We sign only the header so the signature can be validated independently of the
 data, though the data can then be validated through both the chunk checksums
-and the full data checksum, both of which will be signed by the signatures.
+and the full data checksum, both of which are embedded in the signed header.
 
 
 
@@ -186,12 +183,10 @@ After the header, we have the body, which has the following:
 [+===========================+]
 
 Compressed Dict (optional)
- This is a custom dictionary used when compressing each chunk.
- Because each chunk is compressed completely separately from the
- others, the custom dictionary gives us much better overall
- compression.  The custom dictionary is compressed without a custom
- dictionary (for obvious reasons).
+ This is a custom dictionary used when compressing each chunk. Because each
+ chunk is compressed completely separately from the others, the custom
+ dictionary gives us much better overall compression.  The custom dictionary is
+ compressed without a custom dictionary (for obvious reasons).
 
 Chunk
- This is a chunk of data, compressed with the custom dictionary
- provided above.
+ This is a chunk of data, compressed with the custom dictionary provided above.

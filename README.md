@@ -12,7 +12,6 @@ shouldn't see any further changes, the API is still not fixed.  Please do not
 use zchunk for any mission-critical systems yet.**
 
 
-
 ## Installation
 To build and install zchunk, first install meson and run
 ```

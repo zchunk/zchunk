@@ -54,30 +54,21 @@
                                 return False; \
                             }
 
-static int check_flags(zckCtx *zck, char *header, size_t *length, size_t max_length) {
-    if(max_length < 4) {
-        zck_log(ZCK_LOG_ERROR, "Read past end of header\n");
-        return False;
-    }
-    zck->has_streams = header[3] & 0x01;
+static int check_flags(zckCtx *zck, size_t flags) {
+    zck->has_streams = flags & 1;
     if(zck->has_streams) {
         zck_log(ZCK_LOG_ERROR, "This version of zchunk doesn't support streams\n");
         return False;
     }
-    if((header[3] & 0xfe) != 0 || header[2] != 0 || header[1] != 0 ||
-       header[0] != 0) {
+    flags = flags & (SIZE_MAX - 1);
+    if(flags != 0) {
         zck_log(ZCK_LOG_ERROR, "Unknown flags(s) set\n");
         return False;
     }
-    *length += 4;
     return True;
 }
 
 static int read_header_from_file(zckCtx *zck) {
-    if(zck->header_length > MAX_HEADER_IN_MEM) {
-
-    }
-
     /* Allocate header and store any extra bytes at beginning of header */
     zck->header = realloc(zck->header, zck->lead_size + zck->header_length);
     if(zck->header == NULL) {
@@ -146,7 +137,10 @@ static int read_preface(zckCtx *zck) {
     length += zck->hash_type.digest_size;
 
     /* Read flags */
-    if(!check_flags(zck, header+length, &length, max_length-length))
+    size_t flags = 0;
+    if(!compint_to_size(&flags, header+length, &length, max_length))
+        return False;
+    if(!check_flags(zck, flags))
         return False;
 
     /* Setup for reading compression type */
@@ -248,12 +242,10 @@ static int preface_create(zckCtx *zck) {
     length += zck->hash_type.digest_size;
 
     /* Write out flags */
-    memset(header + length, 0, 3);
-    length += 3;
-    /* Final byte for flags */
+    size_t flags = 0;
     if(zck->has_streams)
-        header[length] &= 1;
-    length += 1;
+        flags &= 1;
+    compint_from_size(header+length, flags, &length);
 
     /* Write out compression type and index size */
     if(!compint_from_int(header+length, zck->comp.type, &length)) {

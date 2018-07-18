@@ -38,9 +38,9 @@ Header checksum
 
 
 The preface:
-+===============+-+-+-+-+========================+
-| Data checksum | Flags | Compression type (ci ) |
-+===============+-+-+-+-+========================+
++===============+============+========================+
+| Data checksum | Flags (ci) | Compression type (ci ) |
++===============+============+========================+
 
 Data checksum
  This is the checksum of everything after the header, including the compressed
@@ -48,8 +48,9 @@ Data checksum
  overall checksum type, *not* the chunk checksum type.
 
 Flags
- 32 bits for flags.  All unused flags MUST be set to 0.  If a decoder sees a
- flag set that it doesn't recognize, it MUST exit with an error.
+ This is a compressed integer containing a bitmask of the flags.  All unused
+ flags MUST be set to 0.  If a decoder sees a flag set that it doesn't
+ recognize, it MUST exit with an error.
 
  Current flags are:
   bit 0: File has data streams

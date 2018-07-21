@@ -97,7 +97,8 @@ Chunk checksum type
    1 = SHA-256
 
 Chunk count
- This is a count of the number of chunks in the zchunk file.
+ This is a count of the number of chunks in the zchunk file including the
+ dictionary chunk.
 
 Dict stream
  If the data streams flag is set, this must always be 0, otherwise don't include

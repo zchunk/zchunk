@@ -27,39 +27,42 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include <stdarg.h>
 #include <zck.h>
 
 #include "zck_private.h"
 
-void set_fatal_error(zckCtx *zck, const char *msg) {
-    assert(zck != NULL && zck->msg == NULL && msg != NULL);
+char *snprintf_error = "String conversion error";
 
-    zck->fatal_msg = zmalloc(strlen(msg)+1);
-    strncpy(zck->fatal_msg, msg, strlen(msg));
-}
+void set_error_wf(zckCtx *zck, int fatal, const char *format, ...) {
+    va_list args;
+    int size = 0;
+    assert(zck != NULL && zck->msg == NULL && format != NULL);
+    zck->error_state = 1 + (fatal > 0 ? 1 : 0);
 
-void set_error(zckCtx *zck, const char *msg) {
-    assert(zck != NULL && zck->msg == NULL && msg != NULL);
-
-    zck->msg = zmalloc(strlen(msg)+1);
-    strncpy(zck->msg, msg, strlen(msg));
+    va_start(args, format);
+    size = vsnprintf(NULL, 0, format, args);
+    if(size < 0)
+        return;
+    zck->msg = zmalloc(size+1);
+    vsnprintf(zck->msg, size+1, format, args);
+    va_end(args);
 }
 
 char PUBLIC *zck_get_error(zckCtx *zck) {
     assert(zck != NULL);
 
-    if(zck->fatal_msg)
-        return zck->fatal_msg;
     return zck->msg;
 }
 
 int PUBLIC zck_clear_error(zckCtx *zck) {
     assert(zck != NULL);
 
-    if(zck->fatal_msg)
+    if(zck->error_state > 1)
         return False;
 
     free(zck->msg);
     zck->msg = NULL;
+    zck->error_state = 0;
     return True;
 }

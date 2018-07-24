@@ -92,10 +92,7 @@ static void zck_clear(zckCtx *zck) {
         free(zck->msg);
         zck->msg = NULL;
     }
-    if(zck->fatal_msg) {
-        free(zck->fatal_msg);
-        zck->fatal_msg = NULL;
-    }
+    zck->error_state = 0;
     zck->fd = -1;
 }
 

@@ -43,12 +43,19 @@ void PUBLIC zck_set_log_fd(int fd) {
     log_fd = fd;
 }
 
+void zck_log_v(const char *function, zck_log_type lt, const char *format,
+     va_list args) {
+    if(lt < log_level)
+        return;
+
+    dprintf(log_fd, "%s: ", function);
+    vdprintf(log_fd, format, args);
+    dprintf(log_fd, "\n");
+}
+
 void zck_log_wf(const char *function, zck_log_type lt, const char *format, ...) {
-    if(lt >= log_level) {
-        va_list args;
-        va_start(args, format);
-        dprintf(log_fd, "%s: ", function);
-        vdprintf(log_fd, format, args);
-        va_end(args);
-    }
+    va_list args;
+    va_start(args, format);
+    zck_log_v(function, lt, format, args);
+    va_end(args);
 }

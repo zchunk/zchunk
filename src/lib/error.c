@@ -32,33 +32,62 @@
 
 #include "zck_private.h"
 
-char *snprintf_error = "String conversion error";
+char *snprintf_error = "Unknown error";
 
-void set_error_wf(zckCtx *zck, int fatal, const char *format, ...) {
+void set_error_wf(zckCtx *zck, int fatal, const char *function,
+                  const char *format, ...) {
     va_list args;
     int size = 0;
-    assert(zck != NULL && zck->msg == NULL && format != NULL);
-    zck->error_state = 1 + (fatal > 0 ? 1 : 0);
+    char *old_msg = NULL;
+    int old_size = 0;
+    assert(zck != NULL && format != NULL);
 
+
+    zck->error_state = 1 + (fatal > 0 ? 1 : 0);
     va_start(args, format);
     size = vsnprintf(NULL, 0, format, args);
+    va_end(args);
+    va_start(args, format);
+    zck_log_v(function, ZCK_LOG_ERROR, format, args);
+    va_end(args);
     if(size < 0)
         return;
-    zck->msg = zmalloc(size+1);
-    vsnprintf(zck->msg, size+1, format, args);
+    if(zck->msg != NULL) {
+        old_size = strlen(zck->msg);
+        old_msg = zck->msg;
+    }
+    if(old_msg)
+        zck->msg = zmalloc(size + old_size + 3);
+    else
+        zck->msg = zmalloc(size + 2);
+    va_start(args, format);
+    vsnprintf(zck->msg, size + 1, format, args);
     va_end(args);
+    if(old_msg) {
+        snprintf(zck->msg + size, old_size + 3, ": %s", old_msg);
+        free(old_msg);
+    } else {
+        snprintf(zck->msg + size, 2, "\n");
+    }
+
+}
+
+int PUBLIC zck_is_error(zckCtx *zck) {
+    if(zck == NULL)
+        return 1;
+
+    return zck->error_state;
 }
 
 char PUBLIC *zck_get_error(zckCtx *zck) {
-    assert(zck != NULL);
+    if(zck == NULL)
+        return "zckCtx is NULL\n";
 
     return zck->msg;
 }
 
 int PUBLIC zck_clear_error(zckCtx *zck) {
-    assert(zck != NULL);
-
-    if(zck->error_state > 1)
+    if(zck == NULL || zck->error_state > 1)
         return False;
 
     free(zck->msg);

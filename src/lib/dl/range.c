@@ -34,14 +34,16 @@
 
 #include "zck_private.h"
 
-static zckRangeItem *range_insert_new(zckRangeItem *prev, zckRangeItem *next,
-                                      uint64_t start, uint64_t end,
-                                      zckRange *info, zckChunk *idx,
-                                      int add_index) {
+static zckRangeItem *range_insert_new(zckCtx *zck, zckRangeItem *prev,
+                                      zckRangeItem *next, uint64_t start,
+                                      uint64_t end, zckRange *info,
+                                      zckChunk *idx, int add_index) {
+    VALIDATE_CHAR(zck);
+
     zckRangeItem *new = zmalloc(sizeof(zckRangeItem));
     if(!new) {
-        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
-                sizeof(zckRangeItem));
+        set_fatal_error(zck, "Unable to allocate %lu bytes",
+                        sizeof(zckRangeItem));
         return NULL;
     }
     new->start = start;
@@ -63,7 +65,7 @@ static zckRangeItem *range_insert_new(zckRangeItem *prev, zckRangeItem *next,
     return new;
 }
 
-static void range_remove(zckRangeItem *range) {
+static void range_remove(zckCtx *zck, zckRangeItem *range) {
     if(range->prev)
         range->prev->next = range->next;
     if(range->next)
@@ -71,16 +73,16 @@ static void range_remove(zckRangeItem *range) {
     free(range);
 }
 
-static void range_merge_combined(zckRange *info) {
+static void range_merge_combined(zckCtx *zck, zckRange *info) {
     if(!info) {
-        zck_log(ZCK_LOG_ERROR, "zckRange not allocated\n");
+        set_error(zck, "zckRange not allocated");
         return;
     }
     for(zckRangeItem *ptr=info->first; ptr;) {
         if(ptr->next && ptr->end >= ptr->next->start-1) {
             if(ptr->end < ptr->next->end)
                 ptr->end = ptr->next->end;
-            range_remove(ptr->next);
+            range_remove(zck, ptr->next);
             info->count -= 1;
         } else {
             ptr = ptr->next;
@@ -90,7 +92,7 @@ static void range_merge_combined(zckRange *info) {
 
 static int range_add(zckRange *info, zckChunk *chk, zckCtx *zck) {
     if(info == NULL || chk == NULL) {
-        zck_log(ZCK_LOG_ERROR, "zckRange or zckChunk not allocated\n");
+        set_error(zck, "zckRange or zckChunk not allocated");
         return False;
     }
     size_t header_len = 0;
@@ -109,32 +111,32 @@ static int range_add(zckRange *info, zckChunk *chk, zckCtx *zck) {
             ptr = ptr->next;
             continue;
         } else if(start < ptr->start) {
-            if(range_insert_new(ptr->prev, ptr, start, end, info, chk,
+            if(range_insert_new(zck, ptr->prev, ptr, start, end, info, chk,
                                 add_index) == NULL)
                 return False;
             if(info->first == ptr) {
                 info->first = ptr->prev;
             }
             info->count += 1;
-            range_merge_combined(info);
+            range_merge_combined(zck, info);
             return True;
         } else { // start == ptr->start
             if(end > ptr->end)
                 ptr->end = end;
             info->count += 1;
-            range_merge_combined(info);
+            range_merge_combined(zck, info);
             return True;
         }
     }
     /* We've only reached here if we should be last item */
-    zckRangeItem *new = range_insert_new(prev, NULL, start, end, info, chk,
+    zckRangeItem *new = range_insert_new(zck, prev, NULL, start, end, info, chk,
                                          add_index);
     if(new == NULL)
         return False;
     if(info->first == NULL)
         info->first = new;
     info->count += 1;
-    range_merge_combined(info);
+    range_merge_combined(zck, info);
     return True;
 }
 
@@ -150,11 +152,11 @@ void PUBLIC zck_range_free(zckRange **info) {
     *info = NULL;
 }
 
-char PUBLIC *zck_get_range_char(zckRange *range) {
+char PUBLIC *zck_get_range_char(zckCtx *zck, zckRange *range) {
     int buf_size=BUF_SIZE;
     char *output=malloc(buf_size);
     if(!output) {
-        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n", buf_size);
+        set_fatal_error(zck, "Unable to allocate %lu bytes", buf_size);
         return NULL;
     }
 
@@ -166,8 +168,7 @@ char PUBLIC *zck_get_range_char(zckRange *range) {
                               (long unsigned)ri->start,
                               (long unsigned)ri->end);
         if(length < 0) {
-            zck_log(ZCK_LOG_ERROR, "Unable to get range: %s\n",
-                    strerror(errno));
+            set_fatal_error(zck, "Unable to get range: %s", strerror(errno));
             free(output);
             return NULL;
         }
@@ -175,8 +176,7 @@ char PUBLIC *zck_get_range_char(zckRange *range) {
             buf_size = (int)(buf_size * 1.5);
             output = realloc(output, buf_size);
             if(output == NULL) {
-                zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
-                        buf_size);
+                set_fatal_error(zck, "Unable to allocate %lu bytes", buf_size);
                 return NULL;
             }
             continue;
@@ -188,8 +188,7 @@ char PUBLIC *zck_get_range_char(zckRange *range) {
     output[loc-1]='\0'; // Remove final comma
     output = realloc(output, loc);
     if(output == NULL) {
-        zck_log(ZCK_LOG_ERROR, "Unable to shrink range to %lu bytes\n",
-                loc);
+        set_fatal_error(zck, "Unable to shrink range to %lu bytes", loc);
         free(output);
         return NULL;
     }
@@ -197,10 +196,11 @@ char PUBLIC *zck_get_range_char(zckRange *range) {
 }
 
 zckRange PUBLIC *zck_get_missing_range(zckCtx *zck, int max_ranges) {
+    VALIDATE_CHAR(zck);
+
     zckRange *range = zmalloc(sizeof(zckRange));
     if(range == NULL) {
-        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
-                sizeof(zckRange));
+        set_fatal_error(zck, "Unable to allocate %lu bytes", sizeof(zckRange));
         return NULL;
     }
     for(zckChunk *chk = zck->index.first; chk; chk = chk->next) {
@@ -220,14 +220,17 @@ zckRange PUBLIC *zck_get_missing_range(zckCtx *zck, int max_ranges) {
 char PUBLIC *zck_get_range(size_t start, size_t end) {
     zckRange range = {0};
     zckRangeItem ri = {0};
+    zckCtx *zck = zck_create();
     range.first = &ri;
     ri.start = start;
     ri.end = end;
-    return zck_get_range_char(&range);
+    char *ret = zck_get_range_char(zck, &range);
+    zck_free(&zck);
+    return ret;
 }
 
 int PUBLIC zck_get_range_count(zckRange *range) {
-    if(range == NULL)
-        return -1;
+    _VALIDATE_TRI(range);
+
     return range->count;
 }

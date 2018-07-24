@@ -114,8 +114,14 @@ int main (int argc, char *argv[]) {
         perror("");
         exit(1);
     }
-    zckCtx *zck = zck_init_read(src_fd);
+
+    zckCtx *zck = zck_create();
     if(zck == NULL) {
+        printf("Unable to create zchunk context\n");
+        exit(1);
+    }
+    if(!zck_init_read(zck, src_fd)) {
+        printf(zck_get_error(zck));
         printf("Unable to read zchunk header\n");
         exit(1);
     }

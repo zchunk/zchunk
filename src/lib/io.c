@@ -33,41 +33,47 @@
 
 #include "zck_private.h"
 
-ssize_t read_data(int fd, char *data, size_t length) {
+ssize_t read_data(zckCtx *zck, char *data, size_t length) {
+    VALIDATE_READ_TRI(zck);
+
     if(length == 0)
         return 0;
     if(data == NULL) {
-        zck_log(ZCK_LOG_ERROR, "Unable to read to NULL data pointer\n");
+        set_error(zck, "Unable to read to NULL data pointer");
         return -1;
     }
-    ssize_t read_bytes = read(fd, data, length);
+    ssize_t read_bytes = read(zck->fd, data, length);
     if(read_bytes == -1) {
-        zck_log(ZCK_LOG_ERROR, "Error reading data: %s\n", strerror(errno));
+        set_error(zck, "Error reading data: %s", strerror(errno));
         return -1;
     }
     return read_bytes;
 }
 
-int write_data(int fd, const char *data, size_t length) {
+int write_data(zckCtx *zck, int fd, const char *data, size_t length) {
+    VALIDATE_WRITE_TRI(zck);
+
     if(length == 0)
         return True;
     if(data == NULL) {
-        zck_log(ZCK_LOG_ERROR, "Unable to write from NULL data pointer\n");
+        set_error(zck, "Unable to write from NULL data pointer");
         return False;
     }
     ssize_t write_bytes = write(fd, data, length);
     if(write_bytes == -1) {
-        zck_log(ZCK_LOG_ERROR, "Error write data: %s\n", strerror(errno));
+        set_error(zck, "Error write data: %s", strerror(errno));
         return False;
     } else if(write_bytes != length) {
-        zck_log(ZCK_LOG_ERROR, "Short write\n");
+        set_fatal_error(zck, "Short write");
         return False;
     }
     return True;
 }
 
-int seek_data(int fd, off_t offset, int whence) {
-    if(lseek(fd, offset, whence) == -1) {
+int seek_data(zckCtx *zck, off_t offset, int whence) {
+    VALIDATE_TRI(zck);
+
+    if(lseek(zck->fd, offset, whence) == -1) {
         char *wh_str = NULL;
 
         if(whence == SEEK_CUR) {
@@ -79,15 +85,15 @@ int seek_data(int fd, off_t offset, int whence) {
         } else {
             wh_str = "using unknown measurement";
         }
-        zck_log(ZCK_LOG_ERROR, "Unable to seek to %lu %s: %s\n", offset, wh_str,
-                strerror(errno));
+        set_error(zck, "Unable to seek to %lu %s: %s", offset, wh_str,
+                  strerror(errno));
         return False;
     }
     return True;
 }
 
-ssize_t tell_data(int fd) {
-    ssize_t loc = lseek(fd, 0, SEEK_CUR);
+ssize_t tell_data(zckCtx *zck) {
+    ssize_t loc = lseek(zck->fd, 0, SEEK_CUR);
     return loc;
 }
 
@@ -101,7 +107,7 @@ int chunks_from_temp(zckCtx *zck) {
         return False;
 
     while((read_count = read(zck->temp_fd, data, BUF_SIZE)) > 0) {
-        if(read_count == -1 || !write_data(zck->fd, data, read_count)) {
+        if(read_count == -1 || !write_data(zck, zck->fd, data, read_count)) {
             free(data);
             return False;
         }

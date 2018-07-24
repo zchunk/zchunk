@@ -282,8 +282,12 @@ int main (int argc, char *argv[]) {
             perror("");
             exit(10);
         }
-        zck_src = zck_init_read(src_fd);
+        zck_src = zck_create();
         if(zck_src == NULL) {
+            printf("Unable to create zchunk context\n");
+            exit(10);
+        }
+        if(!zck_init_read(zck_src, src_fd)) {
             printf("Unable to open %s\n", arguments.source);
             exit(10);
         }
@@ -305,9 +309,15 @@ int main (int argc, char *argv[]) {
         free(outname_full);
         exit(10);
     }
-    zckCtx *zck_tgt = zck_init_adv_read(dst_fd);
-    if(zck_tgt == NULL)
+    zckCtx *zck_tgt = zck_create();
+    if(zck_tgt == NULL) {
+        printf("Unable to create zchunk context\n");
         exit(10);
+    }
+    if(!zck_init_adv_read(zck_tgt, dst_fd)) {
+        printf(zck_get_error(zck_tgt));
+        exit(10);
+    }
 
     zckDL *dl = zck_dl_init(zck_tgt);
     if(dl == NULL)
@@ -393,8 +403,9 @@ int main (int argc, char *argv[]) {
             while(range_attempt[ra_index] > 1 &&
                   range_attempt[ra_index+1] > zck_get_range_count(range))
                 ra_index++;
-            char *range_string = zck_get_range_char(range);
+            char *range_string = zck_get_range_char(zck_src, range);
             if(range_string == NULL) {
+                printf(zck_get_error(zck_src));
                 exit_val = 10;
                 goto out;
             }

@@ -111,8 +111,12 @@ int main (int argc, char *argv[]) {
         perror("");
         exit(1);
     }
-    zckCtx *zck_src = zck_init_read(src_fd);
+    zckCtx *zck_src = zck_create();
     if(zck_src == NULL) {
+        printf("Unable to create zchunk context\n");
+        exit(1);
+    }
+    if(!zck_init_read(zck_src, src_fd)) {
         printf("Unable to read header from %s\n", arguments.args[0]);
         exit(1);
     }
@@ -124,8 +128,12 @@ int main (int argc, char *argv[]) {
         perror("");
         exit(1);
     }
-    zckCtx *zck_tgt = zck_init_read(tgt_fd);
+    zckCtx *zck_tgt = zck_create();
     if(zck_tgt == NULL) {
+        printf("Unable to create zchunk context\n");
+        exit(1);
+    }
+    if(!zck_init_read(zck_tgt, tgt_fd)) {
         printf("Unable to open %s\n", arguments.args[1]);
         exit(1);
     }

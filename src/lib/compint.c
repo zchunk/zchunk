@@ -42,8 +42,10 @@ void compint_from_size(char *compint, size_t val, size_t *length) {
     return;
 }
 
-int compint_to_size(size_t *val, const char *compint, size_t *length,
-                    size_t max_length) {
+int compint_to_size(zckCtx *zck, size_t *val, const char *compint,
+                    size_t *length, size_t max_length) {
+    VALIDATE_BOOL(zck);
+
     *val = 0;
     size_t old_val = 0;
     const unsigned char *i = (unsigned char *)compint;
@@ -67,9 +69,9 @@ int compint_to_size(size_t *val, const char *compint, size_t *length,
         /* Make sure we're not overflowing and fail if we do */
         if(count > MAX_COMP_SIZE || count > max_length || *val < old_val) {
             if(count > max_length)
-                zck_log(ZCK_LOG_ERROR, "Read past end of header\n");
+                set_fatal_error(zck, "Read past end of header");
             else
-                zck_log(ZCK_LOG_ERROR, "Number too large\n");
+                set_fatal_error(zck, "Number too large");
             *length -= count;
             *val = 0;
             return False;
@@ -79,9 +81,11 @@ int compint_to_size(size_t *val, const char *compint, size_t *length,
     return True;
 }
 
-int compint_from_int(char *compint, int val, size_t *length) {
+int compint_from_int(zckCtx *zck, char *compint, int val, size_t *length) {
+    VALIDATE_BOOL(zck);
+
     if(val < 0) {
-        zck_log(ZCK_LOG_ERROR, "Unable to compress negative integers\n");
+        set_error(zck, "Unable to compress negative integers");
         return False;
     }
 
@@ -89,14 +93,16 @@ int compint_from_int(char *compint, int val, size_t *length) {
     return True;
 }
 
-int compint_to_int(int *val, const char *compint, size_t *length,
+int compint_to_int(zckCtx *zck, int *val, const char *compint, size_t *length,
                    size_t max_length) {
+    VALIDATE_BOOL(zck);
+
     size_t new = (size_t)*val;
-    if(!compint_to_size(&new, compint, length, max_length))
+    if(!compint_to_size(zck, &new, compint, length, max_length))
         return False;
     *val = (int)new;
     if(*val < 0) {
-        zck_log(ZCK_LOG_ERROR, "Overflow error: compressed int is negative\n");
+        set_fatal_error(zck, "Overflow error: compressed int is negative");
         return False;
     }
     return True;

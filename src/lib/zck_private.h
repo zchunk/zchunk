@@ -22,23 +22,82 @@
 
 #define zck_log(...) zck_log_wf(__func__, __VA_ARGS__)
 
-#define set_error(zck, ...) set_error_wf(zck, 0, __VA_ARGS__); \
-                            zck_log(__VA_ARGS__)
-#define set_fatal_error(zck, ...) set_error_wf(zck, 1, __VA_ARGS__); \
-                                  zck_log(__VA_ARGS__)
-struct zckComp;
+#define set_error(zck, ...) set_error_wf(zck, 0, __func__, __VA_ARGS__)
+#define set_fatal_error(zck, ...) set_error_wf(zck, 1, __func__, __VA_ARGS__)
 
-typedef int (*finit)(struct zckComp *comp);
-typedef int (*fparam)(struct zckComp *comp, int option, const void *value);
-typedef int (*fccompend)(struct zckComp *comp, char **dst, size_t *dst_size,
-                         int use_dict);
-typedef ssize_t (*fcomp)(struct zckComp *comp, const char *src,
+#define _VALIDATE_BOOL(f)   if(!f) { \
+                                zck_log(ZCK_LOG_NONE, \
+                                        "zckCtx not initialized\n"); \
+                                return False; \
+                            }
+#define _VALIDATE_TRI(f)    if(!f) { \
+                                zck_log(ZCK_LOG_NONE, \
+                                        "zckCtx not initialized\n"); \
+                                return -1; \
+                            }
+#define _VALIDATE_CHAR(f)   if(!f) { \
+                                zck_log(ZCK_LOG_NONE, \
+                                        "zckCtx not initialized\n"); \
+                                return NULL; \
+                            }
+#define VALIDATE_BOOL(f)    _VALIDATE_BOOL(f) \
+                            if((f)->error_state > 0) return False;
+#define VALIDATE_TRI(f)     _VALIDATE_TRI(f) \
+                            if((f)->error_state > 0) return -1;
+#define VALIDATE_CHAR(f)    _VALIDATE_CHAR(f) \
+                            if((f)->error_state > 0) return NULL;
+
+#define VALIDATE_READ_BOOL(f)   VALIDATE_BOOL(f); \
+                                if(f->mode != ZCK_MODE_READ) { \
+                                    set_error(f, \
+                                        "zckCtx not opened for reading\n"); \
+                                    return False; \
+                                }
+#define VALIDATE_READ_TRI(f)    VALIDATE_TRI(f); \
+                                if(f->mode != ZCK_MODE_READ) { \
+                                    set_error(f, \
+                                        "zckCtx not opened for reading\n"); \
+                                    return -1; \
+                                }
+#define VALIDATE_READ_CHAR(f)   VALIDATE_CHAR(f); \
+                                if(f->mode != ZCK_MODE_READ) { \
+                                    set_error(f, \
+                                        "zckCtx not opened for reading\n"); \
+                                    return NULL; \
+                                }
+
+#define VALIDATE_WRITE_BOOL(f)  VALIDATE_BOOL(f); \
+                                if(f->mode != ZCK_MODE_WRITE) { \
+                                    set_error(f, \
+                                        "zckCtx not opened for writing\n"); \
+                                    return False; \
+                                }
+#define VALIDATE_WRITE_TRI(f)   VALIDATE_TRI(f); \
+                                if(f->mode != ZCK_MODE_WRITE) { \
+                                    set_error(f, \
+                                        "zckCtx not opened for writing\n"); \
+                                    return -1; \
+                                }
+#define VALIDATE_WRITE_CHAR(f)  VALIDATE_CHAR(f); \
+                                if(f->mode != ZCK_MODE_WRITE) { \
+                                    set_error(f, \
+                                        "zckCtx not opened for writing\n"); \
+                                    return NULL; \
+                                }
+typedef struct zckComp zckComp;
+typedef zckCtx zckCtx;
+
+typedef int (*finit)(zckCtx *zck, zckComp *comp);
+typedef int (*fparam)(zckCtx *zck,zckComp *comp, int option, const void *value);
+typedef int (*fccompend)(zckCtx *zck, zckComp *comp, char **dst,
+                         size_t *dst_size, int use_dict);
+typedef ssize_t (*fcomp)(zckCtx *zck, zckComp *comp, const char *src,
                          const size_t src_size, char **dst, size_t *dst_size,
                          int use_dict);
-typedef int (*fdecomp)(struct zckComp *comp, const int use_dict);
-typedef int (*fdcompend)(struct zckComp *comp, const int use_dict,
+typedef int (*fdecomp)(zckCtx *zck, zckComp *comp, const int use_dict);
+typedef int (*fdcompend)(zckCtx *zck, zckComp *comp, const int use_dict,
                          const size_t fd_size);
-typedef int (*fcclose)(struct zckComp *comp);
+typedef int (*fcclose)(zckCtx *zck, zckComp *comp);
 
 typedef enum zck_log_type zck_log_type;
 
@@ -230,13 +289,14 @@ int import_dict(zckCtx *zck)
 
 
 /* hash/hash.h */
-int hash_setup(zckHashType *ht, int h)
+int hash_setup(zckCtx *zck, zckHashType *ht, int h)
     __attribute__ ((warn_unused_result));
-int hash_init(zckHash *hash, zckHashType *hash_type)
+int hash_init(zckCtx *zck, zckHash *hash, zckHashType *hash_type)
     __attribute__ ((warn_unused_result));
-int hash_update(zckHash *hash, const char *message, const size_t size)
+int hash_update(zckCtx *zck, zckHash *hash, const char *message,
+                const size_t size)
     __attribute__ ((warn_unused_result));
-char *hash_finalize(zckHash *hash)
+char *hash_finalize(zckCtx *zck, zckHash *hash)
     __attribute__ ((warn_unused_result));
 void hash_close(zckHash *hash);
 void hash_reset(zckHashType *ht);
@@ -281,13 +341,13 @@ int write_index(zckCtx *zck)
 
 
 /* io.c */
-int seek_data(int fd, off_t offset, int whence)
+int seek_data(zckCtx *zck, off_t offset, int whence)
     __attribute__ ((warn_unused_result));
-ssize_t tell_data(int fd)
+ssize_t tell_data(zckCtx *zck)
     __attribute__ ((warn_unused_result));
-ssize_t read_data(int fd, char *data, size_t length)
+ssize_t read_data(zckCtx *zck, char *data, size_t length)
     __attribute__ ((warn_unused_result));
-int write_data(int fd, const char *data, size_t length)
+int write_data(zckCtx *zck, int fd, const char *data, size_t length)
     __attribute__ ((warn_unused_result));
 int chunks_from_temp(zckCtx *zck)
     __attribute__ ((warn_unused_result));
@@ -305,7 +365,7 @@ int comp_close(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 int comp_reset(zckCtx *zck)
     __attribute__ ((warn_unused_result));
-int comp_add_to_dc(zckComp *comp, const char *src, size_t src_size)
+int comp_add_to_dc(zckCtx *zck, zckComp *comp, const char *src, size_t src_size)
     __attribute__ ((warn_unused_result));
 ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, int use_dict)
     __attribute__ ((warn_unused_result));
@@ -331,20 +391,23 @@ int dl_write_range(zckDL *dl, const char *at, size_t length)
     __attribute__ ((warn_unused_result));
 
 /* compint.c */
-int compint_from_int(char *compint, int val, size_t *length)
+int compint_from_int(zckCtx *zck, char *compint, int val, size_t *length)
     __attribute__ ((warn_unused_result));
 void compint_from_size(char *compint, size_t val, size_t *length);
-int compint_to_int(int *val, const char *compint, size_t *length,
+int compint_to_int(zckCtx *zck, int *val, const char *compint, size_t *length,
                    size_t max_length)
     __attribute__ ((warn_unused_result));
-int compint_to_size(size_t *val, const char *compint, size_t *length,
-                    size_t max_length)
+int compint_to_size(zckCtx *zck, size_t *val, const char *compint,
+                    size_t *length, size_t max_length)
     __attribute__ ((warn_unused_result));
 
 /* log.c */
+void zck_log_v(const char *function, zck_log_type lt, const char *format,
+     va_list args);
 void zck_log_wf(const char *function, zck_log_type lt, const char *format, ...);
 
 /* error.c */
-void set_error_wf(zckCtx *zck, int fatal, const char *format, ...);
+void set_error_wf(zckCtx *zck, int fatal, const char *function,
+                  const char *format, ...);
 
 #endif

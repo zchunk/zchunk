@@ -31,35 +31,30 @@
 
 #include "zck_private.h"
 
-#define VALIDATE(f)     if(!f) { \
-                            zck_log(ZCK_LOG_ERROR, "zckCtx not initialized\n"); \
-                            return False; \
-                        }
-
 static int create_chunk(zckCtx *zck) {
-    VALIDATE(zck);
+    VALIDATE_BOOL(zck);
 
     clear_work_index(zck);
     zck->work_index_item = zmalloc(sizeof(zckChunk));
     if(zck->work_index_item == NULL) {
-        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
-                sizeof(zckChunk));
+        set_error(zck, "Unable to allocate %lu bytes",
+                  sizeof(zckChunk));
         return False;
     }
-    if(!hash_init(&(zck->work_index_hash), &(zck->chunk_hash_type)))
+    if(!hash_init(zck, &(zck->work_index_hash), &(zck->chunk_hash_type)))
         return False;
     return True;
 }
 
 static int finish_chunk(zckIndex *index, zckChunk *item, char *digest,
                         int valid, zckCtx *zck) {
-    VALIDATE(index);
-    VALIDATE(item);
+    VALIDATE_BOOL(zck);
+    _VALIDATE_BOOL(index);
+    _VALIDATE_BOOL(item);
 
     item->digest = zmalloc(index->digest_size);
     if(item->digest == NULL) {
-        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
-                index->digest_size);
+        set_error(zck, "Unable to allocate %lu bytes", index->digest_size);
         return False;
     }
     if(digest) {
@@ -83,14 +78,14 @@ static int finish_chunk(zckIndex *index, zckChunk *item, char *digest,
 }
 
 int index_create(zckCtx *zck) {
-    VALIDATE(zck);
+    VALIDATE_BOOL(zck);
 
     char *index;
     size_t index_malloc = 0;
     size_t index_size = 0;
 
 
-    zck->full_hash_digest = hash_finalize(&(zck->full_hash));
+    zck->full_hash_digest = hash_finalize(zck, &(zck->full_hash));
     if(zck->full_hash_digest == NULL)
         return False;
 
@@ -129,30 +124,31 @@ int index_create(zckCtx *zck) {
     /* Shrink index to actual size */
     index = realloc(index, index_size);
     if(index == NULL) {
-        zck_log(ZCK_LOG_ERROR, "Unable to reallocate %lu bytes\n", index_size);
+        set_fatal_error(zck, "Unable to reallocate %lu bytes", index_size);
         return False;
     }
     zck->index_string = index;
     zck->index_size = index_size;
-    zck_log(ZCK_LOG_DEBUG, "Generated index: %lu bytes\n", zck->index_size);
+    zck_log(ZCK_LOG_DEBUG, "Generated index: %lu bytes", zck->index_size);
     return True;
 }
 
 int index_new_chunk(zckIndex *index, char *digest, int digest_size,
                     size_t comp_size, size_t orig_size, int finished,
                     zckCtx *zck) {
+    VALIDATE_BOOL(zck);
+
     if(index == NULL) {
-        zck_log(ZCK_LOG_ERROR, "Invalid index\n");
+        set_error(zck, "Invalid index");
         return False;
     }
     if(digest_size == 0) {
-        zck_log(ZCK_LOG_ERROR, "Digest size 0 too small\n");
+        set_error(zck, "Digest size 0 too small");
         return False;
     }
     zckChunk *chk = zmalloc(sizeof(zckChunk));
     if(chk == NULL) {
-        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
-                sizeof(zckChunk));
+        set_error(zck, "Unable to allocate %lu bytes", sizeof(zckChunk));
         return False;
     }
     index->digest_size = digest_size;
@@ -163,7 +159,7 @@ int index_new_chunk(zckIndex *index, char *digest, int digest_size,
 
 int index_add_to_chunk(zckCtx *zck, char *data, size_t comp_size,
                            size_t orig_size) {
-    VALIDATE(zck);
+    VALIDATE_BOOL(zck);
 
     if(zck->work_index_item == NULL && !create_chunk(zck))
         return False;
@@ -172,9 +168,9 @@ int index_add_to_chunk(zckCtx *zck, char *data, size_t comp_size,
     if(comp_size == 0)
         return True;
 
-    if(!hash_update(&(zck->full_hash), data, comp_size))
+    if(!hash_update(zck, &(zck->full_hash), data, comp_size))
         return False;
-    if(!hash_update(&(zck->work_index_hash), data, comp_size))
+    if(!hash_update(zck, &(zck->work_index_hash), data, comp_size))
         return False;
 
     zck->work_index_item->comp_length += comp_size;
@@ -182,7 +178,7 @@ int index_add_to_chunk(zckCtx *zck, char *data, size_t comp_size,
 }
 
 int index_finish_chunk(zckCtx *zck) {
-    VALIDATE(zck);
+    VALIDATE_BOOL(zck);
 
     if(zck->work_index_item == NULL && !create_chunk(zck))
         return False;
@@ -190,18 +186,18 @@ int index_finish_chunk(zckCtx *zck) {
     char *digest = NULL;
     if(zck->work_index_item->length > 0) {
         /* Finalize chunk checksum */
-        digest = hash_finalize(&(zck->work_index_hash));
+        digest = hash_finalize(zck, &(zck->work_index_hash));
         if(digest == NULL) {
-            zck_log(ZCK_LOG_ERROR,
-                    "Unable to calculate %s checksum for new chunk\n",
-                    zck_hash_name_from_type(zck->index.hash_type));
+            set_fatal_error(zck,
+                            "Unable to calculate %s checksum for new chunk",
+                            zck_hash_name_from_type(zck->index.hash_type));
             return False;
         }
     } else {
         digest = zmalloc(zck->chunk_hash_type.digest_size);
         if(digest == NULL) {
-            zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
-                    zck->chunk_hash_type.digest_size);
+            set_fatal_error(zck, "Unable to allocate %lu bytes",
+                            zck->chunk_hash_type.digest_size);
             return False;
         }
     }

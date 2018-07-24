@@ -32,48 +32,51 @@
 
 #include "zck_private.h"
 
-#define VALIDATE(f)     if(!f) { \
-                            zck_log(ZCK_LOG_ERROR, "zckCtx not initialized\n"); \
-                            return False; \
-                        }
-
 int index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
-    VALIDATE(zck);
+    VALIDATE_BOOL(zck);
     size_t length = 0;
 
     /* Read and configure hash type */
     int hash_type;
-    if(!compint_to_int(&hash_type, data + length, &length, max_length))
+    if(!compint_to_int(zck, &hash_type, data + length, &length, max_length)) {
+        set_fatal_error(zck, "Unable to read hash type");
         return False;
-    if(!set_chunk_hash_type(zck, hash_type))
+    }
+    if(!set_chunk_hash_type(zck, hash_type)) {
+        set_fatal_error(zck, "Unable to set chunk hash type");
         return False;
+    }
 
     /* Read number of index entries */
     size_t index_count;
-    if(!compint_to_size(&index_count, data + length, &length, max_length))
+    if(!compint_to_size(zck, &index_count, data + length, &length,
+                        max_length)) {
+        set_fatal_error(zck, "Unable to read index count");
         return False;
+    }
     zck->index.count = index_count;
 
     zckChunk *prev = zck->index.first;
     size_t idx_loc = 0;
+    int count = 0;
     while(length < size) {
         if(length + zck->index.digest_size > max_length) {
-            zck_log(ZCK_LOG_ERROR, "Read past end of header\n");
+            set_fatal_error(zck, "Read past end of header");
             return False;
         }
 
         zckChunk *new = zmalloc(sizeof(zckChunk));
         if(!new) {
-            zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
-                    sizeof(zckChunk));
+            set_fatal_error(zck, "Unable to allocate %lu bytes",
+                            sizeof(zckChunk));
             return False;
         }
 
         /* Read index entry digest */
         new->digest = zmalloc(zck->index.digest_size);
         if(!new->digest) {
-            zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n",
-                    zck->index.digest_size);
+            set_fatal_error(zck, "Unable to allocate %lu bytes",
+                                 zck->index.digest_size);
             return False;
         }
         memcpy(new->digest, data+length, zck->index.digest_size);
@@ -82,19 +85,28 @@ int index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
 
         /* Read and store entry length */
         size_t chunk_length = 0;
-        if(!compint_to_size(&chunk_length, data+length, &length, max_length))
+        if(!compint_to_size(zck, &chunk_length, data+length, &length,
+                            max_length)) {
+            set_fatal_error(zck, "Unable to read chunk %i compressed size",
+                            count);
             return False;
+        }
         new->start = idx_loc;
         new->comp_length = chunk_length;
 
         /* Read and store uncompressed entry length */
         chunk_length = 0;
-        if(!compint_to_size(&chunk_length, data+length, &length, max_length))
+        if(!compint_to_size(zck, &chunk_length, data+length, &length,
+                            max_length)) {
+            set_fatal_error(zck, "Unable to read chunk %i uncompressed size",
+                            count);
             return False;
+        }
         new->length = chunk_length;
         new->zck = zck;
         new->valid = 0;
         idx_loc += new->comp_length;
+        count++;
         zck->index.length = idx_loc;
 
         if(prev)
@@ -109,53 +121,56 @@ int index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
 }
 
 ssize_t PUBLIC zck_get_chunk_count(zckCtx *zck) {
-    if(zck == NULL)
-        return -1;
+    VALIDATE_TRI(zck);
+
     return zck->index.count;
 }
 
 zckChunk PUBLIC *zck_get_first_chunk(zckCtx *zck) {
-    if(zck == NULL)
-        return NULL;
+    VALIDATE_CHAR(zck);
+
     return zck->index.first;
 }
 
 zckChunk PUBLIC *zck_get_next_chunk(zckChunk *idx) {
-    if(idx == NULL)
-        return NULL;
+    _VALIDATE_CHAR(idx);
+
     return idx->next;
 }
 
 ssize_t PUBLIC zck_get_chunk_start(zckChunk *idx) {
-    if(idx == NULL)
-        return -1;
-    if(idx->zck)
+    _VALIDATE_TRI(idx);
+
+    if(idx->zck) {
+        VALIDATE_TRI(idx->zck);
         return idx->start + zck_get_header_length(idx->zck);
-    else
+    } else {
         return idx->start;
+    }
 }
 
 ssize_t PUBLIC zck_get_chunk_size(zckChunk *idx) {
-    if(idx == NULL)
-        return -1;
+    _VALIDATE_TRI(idx);
+
     return idx->length;
 }
 
 ssize_t PUBLIC zck_get_chunk_comp_size(zckChunk *idx) {
-    if(idx == NULL)
-        return -1;
+    _VALIDATE_TRI(idx);
+
     return idx->comp_length;
 }
 
 int PUBLIC zck_get_chunk_valid(zckChunk *idx) {
-    if(idx == NULL)
-        return -1;
+    _VALIDATE_TRI(idx);
+
     return idx->valid;
 }
 
 int PUBLIC zck_compare_chunk_digest(zckChunk *a, zckChunk *b) {
-    if(a == NULL || b == NULL)
-        return False;
+    _VALIDATE_BOOL(a);
+    _VALIDATE_BOOL(b);
+
     if(a->digest_size != b->digest_size)
         return False;
     if(memcmp(a->digest, b->digest, a->digest_size) != 0)
@@ -164,10 +179,8 @@ int PUBLIC zck_compare_chunk_digest(zckChunk *a, zckChunk *b) {
 }
 
 int PUBLIC zck_missing_chunks(zckCtx *zck) {
-    if(zck == NULL) {
-        zck_log(ZCK_LOG_ERROR, "zckCtx not initialized\n");
-        return -1;
-    }
+    VALIDATE_READ_TRI(zck);
+
     int missing = 0;
     for(zckChunk *idx = zck->index.first; idx; idx=idx->next)
         if(idx->valid == 0)
@@ -176,10 +189,8 @@ int PUBLIC zck_missing_chunks(zckCtx *zck) {
 }
 
 int PUBLIC zck_failed_chunks(zckCtx *zck) {
-    if(zck == NULL) {
-        zck_log(ZCK_LOG_ERROR, "zckCtx not initialized\n");
-        return -1;
-    }
+    VALIDATE_READ_TRI(zck);
+
     int failed = 0;
     for(zckChunk *idx = zck->index.first; idx; idx=idx->next)
         if(idx->valid == -1)

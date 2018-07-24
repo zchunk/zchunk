@@ -132,11 +132,14 @@ int main (int argc, char *argv[]) {
 
     int good_exit = False;
 
-    zckCtx *zck = zck_init_read(src_fd);
+    zckCtx *zck = zck_create();
     if(zck == NULL)
         goto error1;
 
     char *data = malloc(BUF_SIZE);
+    if(!zck_init_read(zck, src_fd))
+        goto error2;
+
     size_t total = 0;
     while(True) {
         ssize_t read = zck_read(zck, data, BUF_SIZE);
@@ -157,6 +160,8 @@ int main (int argc, char *argv[]) {
     good_exit = True;
 error2:
     free(data);
+    if(!good_exit)
+        printf(zck_get_error(zck));
     zck_free(&zck);
 error1:
     if(!good_exit)

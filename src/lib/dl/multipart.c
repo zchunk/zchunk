@@ -33,60 +33,63 @@
 
 #include "zck_private.h"
 
-#define VALIDATE(f)     if(!f) { \
-                            zck_log(ZCK_LOG_ERROR, "zckDL not allocated\n"); \
-                            return False; \
-                        }
+static char *add_boundary_to_regex(zckCtx *zck, const char *regex,
+                                   const char *boundary) {
+    VALIDATE_CHAR(zck);
 
-static char *add_boundary_to_regex(const char *regex, const char *boundary) {
     if(regex == NULL || boundary == NULL)
         return NULL;
     char *regex_b = zmalloc(strlen(regex) + strlen(boundary) + 1);
     if(regex_b == NULL) {
-        zck_log(ZCK_LOG_ERROR,
-                "Unable to reallocate %lu bytes for regular expression\n",
-                strlen(regex) + strlen(boundary) - 2);
+        set_fatal_error(zck,
+                        "Unable to reallocate %lu bytes for regular expression",
+                        strlen(regex) + strlen(boundary) - 2);
         return NULL;
     }
     if(snprintf(regex_b, strlen(regex) + strlen(boundary), regex,
                 boundary) != strlen(regex) + strlen(boundary) - 2) {
         free(regex_b);
-        zck_log(ZCK_LOG_ERROR, "Unable to build regular expression\n");
+        set_error(zck, "Unable to build regular expression");
         return NULL;
     }
     return regex_b;
 }
 
-static int create_regex(regex_t *reg, const char *regex) {
+static int create_regex(zckCtx *zck, regex_t *reg, const char *regex) {
+    VALIDATE_BOOL(zck);
+
     if(reg == NULL || regex == NULL) {
-        zck_log(ZCK_LOG_ERROR, "Regular expression not initialized\n");
+        set_error(zck, "Regular expression not initialized");
         return False;
     }
     if(regcomp(reg, regex, REG_ICASE | REG_EXTENDED) != 0) {
-        zck_log(ZCK_LOG_ERROR, "Unable to compile regular expression\n");
+        set_error(zck, "Unable to compile regular expression");
         return False;
     }
     return True;
 }
 
 static int gen_regex(zckDL *dl) {
+    _VALIDATE_BOOL(dl);
+    VALIDATE_BOOL(dl->zck);
+
     char *next = "\r\n--%s\r\ncontent-type:.*\r\n" \
                  "content-range: *bytes *([0-9]+) *- *([0-9]+) */.*\r\n\r";
     char *end =  "\r\n--%s--\r\n\r";
-    char *regex_n = add_boundary_to_regex(next, dl->boundary);
+    char *regex_n = add_boundary_to_regex(dl->zck, next, dl->boundary);
     if(regex_n == NULL)
         return False;
-    char *regex_e = add_boundary_to_regex(end, dl->boundary);
+    char *regex_e = add_boundary_to_regex(dl->zck, end, dl->boundary);
     if(regex_n == NULL)
         return False;
     dl->dl_regex = zmalloc(sizeof(regex_t));
-    if(!create_regex(dl->dl_regex, regex_n)) {
+    if(!create_regex(dl->zck, dl->dl_regex, regex_n)) {
         free(regex_n);
         return False;
     }
     free(regex_n);
     dl->end_regex = zmalloc(sizeof(regex_t));
-    if(!create_regex(dl->end_regex, regex_e)) {
+    if(!create_regex(dl->zck, dl->end_regex, regex_e)) {
         free(regex_e);
         return False;
     }
@@ -103,7 +106,9 @@ void reset_mp(zckMP *mp) {
 }
 
 size_t multipart_extract(zckDL *dl, char *b, size_t l) {
-    VALIDATE(dl);
+    _VALIDATE_BOOL(dl);
+    VALIDATE_BOOL(dl->zck);
+
     if(dl == NULL || dl->mp == NULL)
         return 0;
     zckMP *mp = dl->mp;
@@ -114,8 +119,8 @@ size_t multipart_extract(zckDL *dl, char *b, size_t l) {
     if(mp->buffer) {
         buf = realloc(mp->buffer, mp->buffer_len + l);
         if(buf == NULL) {
-            zck_log(ZCK_LOG_ERROR, "Unable to reallocate %lu bytes for zckDL\n",
-                    mp->buffer_len + l);
+            set_fatal_error(dl->zck, "Unable to reallocate %lu bytes for zckDL",
+                            mp->buffer_len + l);
             return 0;
         }
         memcpy(buf + mp->buffer_len, b, l);
@@ -184,7 +189,7 @@ size_t multipart_extract(zckDL *dl, char *b, size_t l) {
         regmatch_t match[4] = {{0}};
         if(regexec(dl->dl_regex, i, 3, match, 0) != 0) {
             if(regexec(dl->end_regex, i, 3, match, 0) != 0)
-                zck_log(ZCK_LOG_ERROR, "Unable to find multipart download range\n");
+                set_error(dl->zck, "Unable to find multipart download range");
             goto end;
         }
 
@@ -199,7 +204,7 @@ size_t multipart_extract(zckDL *dl, char *b, size_t l) {
             rend = rend*10 + (size_t)(c[0] - 48);
 
         i += match[0].rm_eo + 1;
-        zck_log(ZCK_LOG_DEBUG, "Download range: %lu-%lu\n", rstart, rend);
+        zck_log(ZCK_LOG_DEBUG, "Download range: %lu-%lu", rstart, rend);
         mp->length = rend-rstart+1;
         mp->state = 1;
     }
@@ -210,7 +215,9 @@ end:
 }
 
 size_t multipart_get_boundary(zckDL *dl, char *b, size_t size) {
-    VALIDATE(dl);
+    _VALIDATE_BOOL(dl);
+    VALIDATE_BOOL(dl->zck);
+
     if(dl == NULL)
         return 0;
 
@@ -218,7 +225,7 @@ size_t multipart_get_boundary(zckDL *dl, char *b, size_t size) {
     if(dl->hdr_regex == NULL) {
         char *regex = "boundary *= *([0-9a-fA-F]+)";
         dl->hdr_regex = zmalloc(sizeof(regex_t));
-        if(!create_regex(dl->hdr_regex, regex))
+        if(!create_regex(dl->zck, dl->hdr_regex, regex))
             return 0;
     }
 
@@ -226,8 +233,8 @@ size_t multipart_get_boundary(zckDL *dl, char *b, size_t size) {
      * terminated string */
     char *buf = zmalloc(size+1);
     if(buf == NULL) {
-        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes for header\n",
-                size+1);
+        set_fatal_error(dl->zck, "Unable to allocate %lu bytes for header",
+                        size+1);
         return 0;
     }
     buf[size] = '\0';
@@ -239,7 +246,7 @@ size_t multipart_get_boundary(zckDL *dl, char *b, size_t size) {
         reset_mp(dl->mp);
         char *boundary = zmalloc(match[1].rm_eo - match[1].rm_so + 1);
         memcpy(boundary, buf + match[1].rm_so, match[1].rm_eo - match[1].rm_so);
-        zck_log(ZCK_LOG_DEBUG, "Multipart boundary: %s\n", boundary);
+        zck_log(ZCK_LOG_DEBUG, "Multipart boundary: %s", boundary);
         dl->boundary = boundary;
     }
     if(buf)

@@ -31,11 +31,11 @@
 
 #include "zck_private.h"
 
-static int init(zckComp *comp) {
+static int init(zckCtx *zck, zckComp *comp) {
     return True;
 }
 
-static int end_cchunk(zckComp *comp, char **dst, size_t *dst_size,
+static int end_cchunk(zckCtx *zck, zckComp *comp, char **dst, size_t *dst_size,
                      int use_dict) {
     *dst = NULL;
     *dst_size = 0;
@@ -43,11 +43,12 @@ static int end_cchunk(zckComp *comp, char **dst, size_t *dst_size,
     return True;
 }
 
-static ssize_t compress(zckComp *comp, const char *src, const size_t src_size,
-                        char **dst, size_t *dst_size, int use_dict) {
+static ssize_t compress(zckCtx *zck, zckComp *comp, const char *src,
+                        const size_t src_size, char **dst, size_t *dst_size,
+                        int use_dict) {
     *dst = zmalloc(src_size);
     if(dst == NULL) {
-        zck_log(ZCK_LOG_ERROR, "Unable to allocate %lu bytes\n", src_size);
+        set_fatal_error(zck, "Unable to allocate %lu bytes", src_size);
         return -1;
     }
 
@@ -58,12 +59,12 @@ static ssize_t compress(zckComp *comp, const char *src, const size_t src_size,
 }
 
 
-static int decompress(zckComp *comp, const int use_dict) {
+static int decompress(zckCtx *zck, zckComp *comp, const int use_dict) {
     char *src = comp->data;
     char src_size = comp->data_size;
     comp->data = NULL;
     comp->data_size = 0;
-    if(!comp_add_to_dc(comp, src, src_size)) {
+    if(!comp_add_to_dc(zck, comp, src, src_size)) {
         free(src);
         return False;
     }
@@ -71,27 +72,29 @@ static int decompress(zckComp *comp, const int use_dict) {
     return True;
 }
 
-static int end_dchunk(zckComp *comp, const int use_dict, const size_t fd_size) {
+static int end_dchunk(zckCtx *zck, zckComp *comp, const int use_dict,
+                      const size_t fd_size) {
     return True;
 }
 
-static int close(zckComp *comp) {
+static int close(zckCtx *zck, zckComp *comp) {
     return True;
 }
 
 /* Nocomp doesn't support any parameters, so return error if setting a parameter
  * was attempted */
-static int set_parameter(zckComp *comp, int option, const void *value) {
-    zck_log(ZCK_LOG_ERROR, "Invalid compression parameter for ZCK_COMP_NONE\n");
+static int set_parameter(zckCtx *zck, zckComp *comp, int option,
+                         const void *value) {
+    set_error(zck, "Invalid compression parameter for ZCK_COMP_NONE");
     return False;
 }
 
 /* No default parameters to set when there's no compression */
-static int set_default_parameters(zckComp *comp) {
+static int set_default_parameters(zckCtx *zck, zckComp *comp) {
     return True;
 }
 
-int nocomp_setup(zckComp *comp) {
+int nocomp_setup(zckCtx *zck, zckComp *comp) {
     comp->init = init;
     comp->set_parameter = set_parameter;
     comp->compress = compress;
@@ -100,5 +103,5 @@ int nocomp_setup(zckComp *comp) {
     comp->end_dchunk = end_dchunk;
     comp->close = close;
     comp->type = ZCK_COMP_NONE;
-    return set_default_parameters(comp);
+    return set_default_parameters(zck, comp);
 }

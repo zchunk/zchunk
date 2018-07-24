@@ -31,15 +31,19 @@
 char *get_hash(char *data, size_t length, int type) {
     zckHashType hash_type = {0};
     zckHash hash = {0};
-    if(!hash_setup(&hash_type, type))
+    zckCtx *zck = zck_create();
+    if(zck == NULL)
         return NULL;
-    if(!hash_init(&hash, &hash_type))
+    if(!hash_setup(zck, &hash_type, type))
         return NULL;
-    if(!hash_update(&hash, data, length))
+    if(!hash_init(zck, &hash, &hash_type))
         return NULL;
-    char *digest = hash_finalize(&hash);
+    if(!hash_update(zck, &hash, data, length))
+        return NULL;
+    char *digest = hash_finalize(zck, &hash);
     if(digest == NULL)
         return NULL;
+    zck_free(&zck);
     return get_digest_string(digest, hash_type.digest_size);
 }
 

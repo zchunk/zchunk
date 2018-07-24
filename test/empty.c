@@ -45,9 +45,13 @@ int main (int argc, char *argv[]) {
         perror("Unable to open empty.zck for writing");
         exit(1);
     }
-    zckCtx *zck = zck_init_write(out);
+    zckCtx *zck = zck_create();
     if(zck == NULL)
         exit(1);
+    if(!zck_init_write(zck, out)) {
+        printf(zck_get_error(zck));
+        exit(1);
+    }
 
     if(!zck_close(zck))
         exit(1);
@@ -83,9 +87,13 @@ int main (int argc, char *argv[]) {
         perror("Unable to seek to beginning of empty.zck");
         exit(1);
     }
-    zck = zck_init_read(in);
+    zck = zck_create();
     if(zck == NULL)
         exit(1);
+    if(!zck_init_read(zck, in)) {
+        printf(zck_get_error(zck));
+        exit(1);
+    }
     memset(data, 0, 1000);
     len = zck_read(zck, data, 1000);
     if(len > 0) {

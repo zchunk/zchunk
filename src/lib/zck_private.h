@@ -214,6 +214,9 @@ typedef struct zckCtx {
     int buzhash_match_bits;
     int buzhash_bitmask;
     int manual_chunk;
+
+    char *msg;
+    char *fatal_msg;
 } zckCtx;
 
 int get_tmp_fd()
@@ -334,7 +337,11 @@ int compint_to_size(size_t *val, const char *compint, size_t *length,
                     size_t max_length)
     __attribute__ ((warn_unused_result));
 
-
 /* log.c */
 void zck_log_wf(const char *function, zck_log_type lt, const char *format, ...);
+
+/* error.c */
+void set_fatal_error(zckCtx *zck, const char *msg);
+void set_error(zckCtx *zck, const char *msg);
+
 #endif

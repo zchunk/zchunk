@@ -25,30 +25,41 @@
  */
 
 #include <stdio.h>
-#include <stdint.h>
-#include <stdarg.h>
-#include <unistd.h>
+#include <assert.h>
+#include <string.h>
 #include <zck.h>
 
 #include "zck_private.h"
 
-static zck_log_type log_level = ZCK_LOG_ERROR;
-static int log_fd = STDERR_FILENO;
+void set_fatal_error(zckCtx *zck, const char *msg) {
+    assert(zck != NULL && zck->msg == NULL && msg != NULL);
 
-void PUBLIC zck_set_log_level(zck_log_type ll) {
-    log_level = ll;
+    zck->fatal_msg = zmalloc(strlen(msg)+1);
+    strncpy(zck->fatal_msg, msg, strlen(msg));
 }
 
-void PUBLIC zck_set_log_fd(int fd) {
-    log_fd = fd;
+void set_error(zckCtx *zck, const char *msg) {
+    assert(zck != NULL && zck->msg == NULL && msg != NULL);
+
+    zck->msg = zmalloc(strlen(msg)+1);
+    strncpy(zck->msg, msg, strlen(msg));
 }
 
-void zck_log_wf(const char *function, zck_log_type lt, const char *format, ...) {
-    if(lt >= log_level) {
-        va_list args;
-        va_start(args, format);
-        dprintf(log_fd, "%s: ", function);
-        vdprintf(log_fd, format, args);
-        va_end(args);
-    }
+char PUBLIC *zck_get_error(zckCtx *zck) {
+    assert(zck != NULL);
+
+    if(zck->fatal_msg)
+        return zck->fatal_msg;
+    return zck->msg;
+}
+
+int PUBLIC zck_clear_error(zckCtx *zck) {
+    assert(zck != NULL);
+
+    if(zck->fatal_msg)
+        return False;
+
+    free(zck->msg);
+    zck->msg = NULL;
+    return True;
 }

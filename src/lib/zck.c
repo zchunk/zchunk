@@ -88,6 +88,14 @@ static void zck_clear(zckCtx *zck) {
         close(zck->temp_fd);
         zck->temp_fd = 0;
     }
+    if(zck->msg) {
+        free(zck->msg);
+        zck->msg = NULL;
+    }
+    if(zck->fatal_msg) {
+        free(zck->fatal_msg);
+        zck->fatal_msg = NULL;
+    }
     zck->fd = -1;
 }
 

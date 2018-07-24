@@ -105,10 +105,22 @@ int zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t value)
 
 
 /*******************************************************************
- * Miscellaneous utilities
+ * Error handling
  *******************************************************************/
 /* Set logging level */
 void zck_set_log_level(zck_log_type ll);
+/* Set logging fd */
+void zck_set_log_fd(int fd);
+/* Get error message
+ * Returns char* containing error message, or NULL if there isn't one */
+char *zck_get_error(zckCtx *zck);
+/* Clear error message
+ * Returns 1 if message was cleared, 0 if error is fatal and can't be cleared */
+int zck_clear_error(zckCtx *zck);
+
+/*******************************************************************
+ * Miscellaneous utilities
+ *******************************************************************/
 /* Validate the chunk and data checksums for the current file.
  * Returns -1 for error, 0 for invalid checksum and 1 for valid checksum */
 int zck_validate_checksums(zckCtx *zck)

@@ -262,6 +262,18 @@ int comp_ioption(zckCtx *zck, zck_ioption option, ssize_t value) {
     }
     if(option == ZCK_COMP_TYPE) {
         return set_comp_type(zck, value);
+
+    /* Manual chunking */
+    } else if(option == ZCK_MANUAL_CHUNK) {
+        VALIDATE_WRITE_BOOL(zck);
+        if(value != 0) {
+            zck_log(ZCK_LOG_DEBUG, "Disabling automatic chunking");
+            zck->manual_chunk = 1;
+        } else {
+            zck_log(ZCK_LOG_DEBUG, "Enabling automatic chunking");
+            zck->manual_chunk = 0;
+        }
+
     } else {
         if(zck && zck->comp.set_parameter)
             return zck->comp.set_parameter(zck, &(zck->comp), option, &value);

@@ -270,15 +270,6 @@ int PUBLIC zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t value) {
             return False;
         }
         zck->prep_hdr_size = value;
-    } else if(option == ZCK_MANUAL_CHUNK) {
-        VALIDATE_WRITE_BOOL(zck);
-        if(value != 0) {
-            zck_log(ZCK_LOG_DEBUG, "Disabling automatic chunking");
-            zck->manual_chunk = 1;
-        } else {
-            zck_log(ZCK_LOG_DEBUG, "Enabling automatic chunking");
-            zck->manual_chunk = 0;
-        }
 
     /* Hash options */
     } else if(option < 100) {

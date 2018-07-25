@@ -45,7 +45,6 @@ static char args_doc[] = "<file 1> <file 2>";
 static struct argp_option options[] = {
     {"verbose", 'v', 0,        0,
      "Increase verbosity (can be specified more than once for debugging)"},
-    {"quiet",   'q', 0,        0, "Only show errors"},
     {"version", 'V', 0,        0, "Show program version"},
     { 0 }
 };
@@ -63,9 +62,6 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
             arguments->log_level--;
             if(arguments->log_level < ZCK_LOG_DDEBUG)
                 arguments->log_level = ZCK_LOG_DDEBUG;
-            break;
-        case 'q':
-            arguments->log_level = ZCK_LOG_ERROR;
             break;
         case 'V':
             version();
@@ -99,7 +95,7 @@ int main (int argc, char *argv[]) {
     struct arguments arguments = {0};
 
     /* Defaults */
-    arguments.log_level = ZCK_LOG_WARNING;
+    arguments.log_level = ZCK_LOG_ERROR;
 
     argp_parse (&argp, argc, argv, 0, 0, &arguments);
 
@@ -117,7 +113,8 @@ int main (int argc, char *argv[]) {
         exit(1);
     }
     if(!zck_init_read(zck_src, src_fd)) {
-        printf("Unable to read header from %s\n", arguments.args[0]);
+        printf("Error reading %s: %s", arguments.args[0],
+               zck_get_error(zck_src));
         exit(1);
     }
     close(src_fd);
@@ -134,7 +131,8 @@ int main (int argc, char *argv[]) {
         exit(1);
     }
     if(!zck_init_read(zck_tgt, tgt_fd)) {
-        printf("Unable to open %s\n", arguments.args[1]);
+        printf("Error reading %s: %s", arguments.args[1],
+               zck_get_error(zck_tgt));
         exit(1);
     }
     close(tgt_fd);

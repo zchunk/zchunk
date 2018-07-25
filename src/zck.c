@@ -45,7 +45,6 @@ static char args_doc[] = "<file>";
 static struct argp_option options[] = {
     {"verbose",      'v', 0,        0,
      "Increase verbosity (can be specified more than once for debugging)"},
-    {"quiet",        'q', 0,        0, "Only show errors"},
     {"split",        's', "STRING", 0, "Split chunks at beginning of STRING"},
     {"dict",         'D', "FILE",   0,
      "Set zstd compression dictionary to FILE"},
@@ -71,9 +70,6 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
             arguments->log_level--;
             if(arguments->log_level < ZCK_LOG_DDEBUG)
                 arguments->log_level = ZCK_LOG_DDEBUG;
-            break;
-        case 'q':
-            arguments->log_level = ZCK_LOG_ERROR;
             break;
         case 's':
             arguments->split_string = arg;
@@ -116,7 +112,7 @@ int main (int argc, char *argv[]) {
     struct arguments arguments = {0};
 
     /* Defaults */
-    arguments.log_level = ZCK_LOG_WARNING;
+    arguments.log_level = ZCK_LOG_ERROR;
 
     argp_parse (&argp, argc, argv, 0, 0, &arguments);
 
@@ -166,7 +162,6 @@ int main (int argc, char *argv[]) {
         free(out_name);
         exit(1);
     }
-    free(out_name);
 
     zckCtx *zck = zck_create();
     if(zck == NULL) {
@@ -174,9 +169,10 @@ int main (int argc, char *argv[]) {
         exit(1);
     }
     if(!zck_init_write(zck, dst_fd)) {
-        printf("Unable to write to %s\n", out_name);
+        printf("Unable to write to %s: %s", out_name, zck_get_error(zck));
         exit(1);
     }
+    free(out_name);
 
     /*if(!zck_set_ioption(zck, ZCK_COMP_TYPE, ZCK_COMP_NONE)) {
         perror("Unable to set compression type\n");

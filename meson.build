@@ -1,4 +1,4 @@
-project('zck', 'c', version: '0.9.0')
+project('zck', 'c', version: '0.9.1')
 
 so_version = '1'
 

@@ -1,7 +1,7 @@
 #ifndef ZCK_H
 #define ZCK_H
 
-#define ZCK_VERSION "0.9.0"
+#define ZCK_VERSION "0.9.1"
 
 #define True 1
 #define False 0
@@ -120,7 +120,7 @@ int zck_is_error(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 /* Get error message
  * Returns char* containing error message, or NULL if there isn't one */
-char *zck_get_error(zckCtx *zck);
+const char *zck_get_error(zckCtx *zck);
 /* Clear error message
  * Returns 1 if message was cleared, 0 if error is fatal and can't be cleared */
 int zck_clear_error(zckCtx *zck);

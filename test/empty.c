@@ -49,7 +49,7 @@ int main (int argc, char *argv[]) {
     if(zck == NULL)
         exit(1);
     if(!zck_init_write(zck, out)) {
-        printf(zck_get_error(zck));
+        printf("%s", zck_get_error(zck));
         exit(1);
     }
 
@@ -91,7 +91,7 @@ int main (int argc, char *argv[]) {
     if(zck == NULL)
         exit(1);
     if(!zck_init_read(zck, in)) {
-        printf(zck_get_error(zck));
+        printf("%s", zck_get_error(zck));
         exit(1);
     }
     memset(data, 0, 1000);

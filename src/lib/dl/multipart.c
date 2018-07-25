@@ -35,7 +35,7 @@
 
 static char *add_boundary_to_regex(zckCtx *zck, const char *regex,
                                    const char *boundary) {
-    VALIDATE_CHAR(zck);
+    VALIDATE_PTR(zck);
 
     if(regex == NULL || boundary == NULL)
         return NULL;

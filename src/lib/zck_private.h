@@ -35,7 +35,7 @@
                                         "Object not initialized"); \
                                 return -1; \
                             }
-#define _VALIDATE_CHAR(f)   if(!f) { \
+#define _VALIDATE_PTR(f)    if(!f) { \
                                 zck_log(ZCK_LOG_NONE, \
                                         "Object not initialized"); \
                                 return NULL; \
@@ -44,7 +44,7 @@
                             if((f)->error_state > 0) return False;
 #define VALIDATE_INT(f)     _VALIDATE_INT(f) \
                             if((f)->error_state > 0) return -1;
-#define VALIDATE_CHAR(f)    _VALIDATE_CHAR(f) \
+#define VALIDATE_PTR(f)     _VALIDATE_PTR(f) \
                             if((f)->error_state > 0) return NULL;
 
 #define VALIDATE_READ_BOOL(f)   VALIDATE_BOOL(f); \
@@ -59,7 +59,7 @@
                                         "zckCtx not opened for reading"); \
                                     return -1; \
                                 }
-#define VALIDATE_READ_CHAR(f)   VALIDATE_CHAR(f); \
+#define VALIDATE_READ_PTR(f)    VALIDATE_PTR(f); \
                                 if(f->mode != ZCK_MODE_READ) { \
                                     set_error(f, \
                                         "zckCtx not opened for reading"); \
@@ -78,7 +78,7 @@
                                         "zckCtx not opened for writing"); \
                                     return -1; \
                                 }
-#define VALIDATE_WRITE_CHAR(f)  VALIDATE_CHAR(f); \
+#define VALIDATE_WRITE_PTR(f)   VALIDATE_PTR(f); \
                                 if(f->mode != ZCK_MODE_WRITE) { \
                                     set_error(f, \
                                         "zckCtx not opened for writing"); \

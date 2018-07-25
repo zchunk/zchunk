@@ -503,13 +503,13 @@ ssize_t PUBLIC zck_get_chunk_digest_size(zckCtx *zck) {
 }
 
 char PUBLIC *zck_get_header_digest(zckCtx *zck) {
-    VALIDATE_CHAR(zck);
+    VALIDATE_PTR(zck);
 
     return get_digest_string(zck->header_digest, zck->hash_type.digest_size);
 }
 
 char PUBLIC *zck_get_data_digest(zckCtx *zck) {
-    VALIDATE_CHAR(zck);
+    VALIDATE_PTR(zck);
 
     return get_digest_string(zck->full_hash_digest, zck->hash_type.digest_size);
 }

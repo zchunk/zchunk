@@ -327,7 +327,7 @@ void PUBLIC zck_dl_free(zckDL **dl) {
 }
 
 zckCtx PUBLIC *zck_dl_get_zck(zckDL *dl) {
-    _VALIDATE_CHAR(dl);
+    _VALIDATE_PTR(dl);
 
     return dl->zck;
 }
@@ -346,7 +346,7 @@ int PUBLIC zck_dl_set_range(zckDL *dl, zckRange *range) {
 }
 
 zckRange PUBLIC *zck_dl_get_range(zckDL *dl) {
-    _VALIDATE_CHAR(dl);
+    _VALIDATE_PTR(dl);
 
     return dl->range;
 }

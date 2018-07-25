@@ -127,13 +127,13 @@ ssize_t PUBLIC zck_get_chunk_count(zckCtx *zck) {
 }
 
 zckChunk PUBLIC *zck_get_first_chunk(zckCtx *zck) {
-    VALIDATE_CHAR(zck);
+    VALIDATE_PTR(zck);
 
     return zck->index.first;
 }
 
 zckChunk PUBLIC *zck_get_next_chunk(zckChunk *idx) {
-    _VALIDATE_CHAR(idx);
+    _VALIDATE_PTR(idx);
 
     return idx->next;
 }

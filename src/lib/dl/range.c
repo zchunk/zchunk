@@ -38,7 +38,7 @@ static zckRangeItem *range_insert_new(zckCtx *zck, zckRangeItem *prev,
                                       zckRangeItem *next, uint64_t start,
                                       uint64_t end, zckRange *info,
                                       zckChunk *idx, int add_index) {
-    VALIDATE_CHAR(zck);
+    VALIDATE_PTR(zck);
 
     zckRangeItem *new = zmalloc(sizeof(zckRangeItem));
     if(!new) {
@@ -196,7 +196,7 @@ char PUBLIC *zck_get_range_char(zckCtx *zck, zckRange *range) {
 }
 
 zckRange PUBLIC *zck_get_missing_range(zckCtx *zck, int max_ranges) {
-    VALIDATE_CHAR(zck);
+    VALIDATE_PTR(zck);
 
     zckRange *range = zmalloc(sizeof(zckRange));
     if(range == NULL) {

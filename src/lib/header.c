@@ -534,7 +534,8 @@ int PUBLIC zck_validate_lead(zckCtx *zck) {
     VALIDATE_BOOL(zck);
 
     int retval = read_lead(zck);
-    zck_clear_error(zck);
+    if(!zck_clear_error(zck))
+        return False;
     free(zck->header);
     free(zck->header_digest);
     zck->header = NULL;

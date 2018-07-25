@@ -127,7 +127,7 @@ int main (int argc, char *argv[]) {
         exit(1);
     }
     if(!zck_init_read(zck, src_fd)) {
-        printf(zck_get_error(zck));
+        printf("%s", zck_get_error(zck));
         printf("Unable to read zchunk header\n");
         exit(1);
     }

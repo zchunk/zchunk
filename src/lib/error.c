@@ -32,7 +32,7 @@
 
 #include "zck_private.h"
 
-char *snprintf_error = "Unknown error";
+static const char *empty_error = "";
 
 void set_error_wf(zckCtx *zck, int fatal, const char *function,
                   const char *format, ...) {
@@ -79,10 +79,12 @@ int PUBLIC zck_is_error(zckCtx *zck) {
     return zck->error_state;
 }
 
-char PUBLIC *zck_get_error(zckCtx *zck) {
+const char PUBLIC *zck_get_error(zckCtx *zck) {
     if(zck == NULL)
         return "zckCtx is NULL\n";
 
+    if(zck->msg == NULL)
+        return empty_error;
     return zck->msg;
 }
 

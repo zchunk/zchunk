@@ -315,7 +315,7 @@ int main (int argc, char *argv[]) {
         exit(10);
     }
     if(!zck_init_adv_read(zck_tgt, dst_fd)) {
-        printf(zck_get_error(zck_tgt));
+        printf("%s", zck_get_error(zck_tgt));
         exit(10);
     }
 
@@ -405,7 +405,7 @@ int main (int argc, char *argv[]) {
                 ra_index++;
             char *range_string = zck_get_range_char(zck_src, range);
             if(range_string == NULL) {
-                printf(zck_get_error(zck_src));
+                printf("%s", zck_get_error(zck_src));
                 exit_val = 10;
                 goto out;
             }

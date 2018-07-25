@@ -180,14 +180,14 @@ int main (int argc, char *argv[]) {
     }*/
     if(dict_size > 0) {
         if(!zck_set_soption(zck, ZCK_COMP_DICT, dict, dict_size)) {
-            printf(zck_get_error(zck));
+            printf("%s\n", zck_get_error(zck));
             exit(1);
         }
     }
     free(dict);
     if(arguments.manual_chunk) {
         if(!zck_set_ioption(zck, ZCK_MANUAL_CHUNK, 1)) {
-            printf(zck_get_error(zck));
+            printf("%s\n", zck_get_error(zck));
             exit(1);
         }
     }
@@ -270,14 +270,14 @@ int main (int argc, char *argv[]) {
         /* Buzhash rolling window */
         } else {
             if(zck_write(zck, data, in_size) < 0) {
-                printf(zck_get_error(zck));
+                printf("%s", zck_get_error(zck));
                 exit(1);
             }
         }
         free(data);
     }
     if(!zck_close(zck)) {
-        printf(zck_get_error(zck));
+        printf("%s", zck_get_error(zck));
         exit(1);
     }
     if(arguments.log_level <= ZCK_LOG_INFO) {

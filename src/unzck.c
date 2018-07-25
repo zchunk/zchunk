@@ -164,7 +164,7 @@ int main (int argc, char *argv[]) {
 error2:
     free(data);
     if(!good_exit)
-        printf(zck_get_error(zck));
+        printf("%s", zck_get_error(zck));
     zck_free(&zck);
 error1:
     if(!good_exit)

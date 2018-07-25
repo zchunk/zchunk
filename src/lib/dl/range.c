@@ -230,7 +230,7 @@ char PUBLIC *zck_get_range(size_t start, size_t end) {
 }
 
 int PUBLIC zck_get_range_count(zckRange *range) {
-    _VALIDATE_INT(range);
+    ALLOCD_INT(range);
 
     return range->count;
 }

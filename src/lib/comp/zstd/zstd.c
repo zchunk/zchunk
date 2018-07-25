@@ -34,7 +34,7 @@
 
 static int init(zckCtx *zck, zckComp *comp) {
     VALIDATE_BOOL(zck);
-    _VALIDATE_BOOL(comp);
+    ALLOCD_BOOL(comp);
 
     comp->cctx = ZSTD_createCCtx();
     comp->dctx = ZSTD_createDCtx();
@@ -63,7 +63,7 @@ static ssize_t compress(zckCtx *zck, zckComp *comp, const char *src,
                         const size_t src_size, char **dst, size_t *dst_size,
                         int use_dict) {
     VALIDATE_INT(zck);
-    _VALIDATE_INT(comp);
+    ALLOCD_INT(comp);
 
     comp->dc_data = realloc(comp->dc_data, comp->dc_data_size + src_size);
     if(comp->dc_data == NULL) {
@@ -81,7 +81,7 @@ static ssize_t compress(zckCtx *zck, zckComp *comp, const char *src,
 static int end_cchunk(zckCtx *zck, zckComp *comp, char **dst, size_t *dst_size,
                       int use_dict) {
     VALIDATE_BOOL(zck);
-    _VALIDATE_BOOL(comp);
+    ALLOCD_BOOL(comp);
 
     size_t max_size = ZSTD_compressBound(comp->dc_data_size);
     if(ZSTD_isError(max_size)) {
@@ -118,7 +118,7 @@ static int end_cchunk(zckCtx *zck, zckComp *comp, char **dst, size_t *dst_size,
 
 static int decompress(zckCtx *zck, zckComp *comp, const int use_dict) {
     VALIDATE_BOOL(zck);
-    _VALIDATE_BOOL(comp);
+    ALLOCD_BOOL(comp);
 
     return True;
 }
@@ -126,7 +126,7 @@ static int decompress(zckCtx *zck, zckComp *comp, const int use_dict) {
 static int end_dchunk(zckCtx *zck, zckComp *comp, const int use_dict,
                       const size_t fd_size) {
     VALIDATE_BOOL(zck);
-    _VALIDATE_BOOL(comp);
+    ALLOCD_BOOL(comp);
 
     char *src = comp->data;
     size_t src_size = comp->data_size;

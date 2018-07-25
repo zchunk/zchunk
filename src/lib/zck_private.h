@@ -25,26 +25,26 @@
 #define set_error(zck, ...) set_error_wf(zck, 0, __func__, __VA_ARGS__)
 #define set_fatal_error(zck, ...) set_error_wf(zck, 1, __func__, __VA_ARGS__)
 
-#define _VALIDATE_BOOL(f)   if(!f) { \
+#define ALLOCD_BOOL(f)      if(!f) { \
                                 zck_log(ZCK_LOG_NONE, \
                                         "Object not initialized"); \
                                 return False; \
                             }
-#define _VALIDATE_INT(f)    if(!f) { \
+#define ALLOCD_INT(f)       if(!f) { \
                                 zck_log(ZCK_LOG_NONE, \
                                         "Object not initialized"); \
                                 return -1; \
                             }
-#define _VALIDATE_PTR(f)    if(!f) { \
+#define ALLOCD_PTR(f)       if(!f) { \
                                 zck_log(ZCK_LOG_NONE, \
                                         "Object not initialized"); \
                                 return NULL; \
                             }
-#define VALIDATE_BOOL(f)    _VALIDATE_BOOL(f) \
+#define VALIDATE_BOOL(f)    ALLOCD_BOOL(f) \
                             if((f)->error_state > 0) return False;
-#define VALIDATE_INT(f)     _VALIDATE_INT(f) \
+#define VALIDATE_INT(f)     ALLOCD_INT(f) \
                             if((f)->error_state > 0) return -1;
-#define VALIDATE_PTR(f)     _VALIDATE_PTR(f) \
+#define VALIDATE_PTR(f)     ALLOCD_PTR(f) \
                             if((f)->error_state > 0) return NULL;
 
 #define VALIDATE_READ_BOOL(f)   VALIDATE_BOOL(f); \

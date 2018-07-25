@@ -133,13 +133,13 @@ zckChunk PUBLIC *zck_get_first_chunk(zckCtx *zck) {
 }
 
 zckChunk PUBLIC *zck_get_next_chunk(zckChunk *idx) {
-    _VALIDATE_PTR(idx);
+    ALLOCD_PTR(idx);
 
     return idx->next;
 }
 
 ssize_t PUBLIC zck_get_chunk_start(zckChunk *idx) {
-    _VALIDATE_INT(idx);
+    ALLOCD_INT(idx);
 
     if(idx->zck) {
         VALIDATE_INT(idx->zck);
@@ -150,26 +150,26 @@ ssize_t PUBLIC zck_get_chunk_start(zckChunk *idx) {
 }
 
 ssize_t PUBLIC zck_get_chunk_size(zckChunk *idx) {
-    _VALIDATE_INT(idx);
+    ALLOCD_INT(idx);
 
     return idx->length;
 }
 
 ssize_t PUBLIC zck_get_chunk_comp_size(zckChunk *idx) {
-    _VALIDATE_INT(idx);
+    ALLOCD_INT(idx);
 
     return idx->comp_length;
 }
 
 int PUBLIC zck_get_chunk_valid(zckChunk *idx) {
-    _VALIDATE_INT(idx);
+    ALLOCD_INT(idx);
 
     return idx->valid;
 }
 
 int PUBLIC zck_compare_chunk_digest(zckChunk *a, zckChunk *b) {
-    _VALIDATE_BOOL(a);
-    _VALIDATE_BOOL(b);
+    ALLOCD_BOOL(a);
+    ALLOCD_BOOL(b);
 
     if(a->digest_size != b->digest_size)
         return False;

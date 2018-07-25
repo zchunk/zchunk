@@ -49,8 +49,8 @@ static int create_chunk(zckCtx *zck) {
 static int finish_chunk(zckIndex *index, zckChunk *item, char *digest,
                         int valid, zckCtx *zck) {
     VALIDATE_BOOL(zck);
-    _VALIDATE_BOOL(index);
-    _VALIDATE_BOOL(item);
+    ALLOCD_BOOL(index);
+    ALLOCD_BOOL(item);
 
     item->digest = zmalloc(index->digest_size);
     if(item->digest == NULL) {

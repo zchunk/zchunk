@@ -86,8 +86,8 @@ static int set_comp_type(zckCtx *zck, ssize_t type) {
 static size_t comp_read_from_dc(zckCtx *zck, zckComp *comp, char *dst,
                                 size_t dst_size) {
     VALIDATE_INT(zck);
-    _VALIDATE_INT(comp);
-    _VALIDATE_INT(dst);
+    ALLOCD_INT(comp);
+    ALLOCD_INT(dst);
 
     size_t dl_size = dst_size;
     if(dl_size > comp->dc_data_size - comp->dc_data_loc)
@@ -103,8 +103,8 @@ static size_t comp_read_from_dc(zckCtx *zck, zckComp *comp, char *dst,
 static int comp_add_to_data(zckCtx *zck, zckComp *comp, const char *src,
                             size_t src_size) {
     VALIDATE_BOOL(zck);
-    _VALIDATE_BOOL(comp);
-    _VALIDATE_BOOL(src);
+    ALLOCD_BOOL(comp);
+    ALLOCD_BOOL(src);
 
     comp->data = realloc(comp->data, comp->data_size + src_size);
     if(comp->data == NULL) {
@@ -223,7 +223,7 @@ int comp_init(zckCtx *zck) {
 }
 
 int comp_reset(zckCtx *zck) {
-    _VALIDATE_BOOL(zck);
+    ALLOCD_BOOL(zck);
 
     zck->comp.started = 0;
     if(zck->comp.dc_data) {
@@ -238,7 +238,7 @@ int comp_reset(zckCtx *zck) {
 }
 
 int comp_close(zckCtx *zck) {
-    _VALIDATE_BOOL(zck);
+    ALLOCD_BOOL(zck);
 
     zck_log(ZCK_LOG_DEBUG, "Closing compression");
     if(zck->comp.data) {
@@ -299,8 +299,8 @@ int comp_soption(zckCtx *zck, zck_soption option, const void *value,
 int comp_add_to_dc(zckCtx *zck, zckComp *comp, const char *src,
                    size_t src_size) {
     VALIDATE_BOOL(zck);
-    _VALIDATE_BOOL(comp);
-    _VALIDATE_BOOL(src);
+    ALLOCD_BOOL(comp);
+    ALLOCD_BOOL(src);
 
     /* Get rid of any already read data and allocate space for new data */
     char *temp = zmalloc(comp->dc_data_size - comp->dc_data_loc + src_size);

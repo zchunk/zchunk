@@ -121,7 +121,7 @@ int index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
 }
 
 ssize_t PUBLIC zck_get_chunk_count(zckCtx *zck) {
-    VALIDATE_TRI(zck);
+    VALIDATE_INT(zck);
 
     return zck->index.count;
 }
@@ -139,10 +139,10 @@ zckChunk PUBLIC *zck_get_next_chunk(zckChunk *idx) {
 }
 
 ssize_t PUBLIC zck_get_chunk_start(zckChunk *idx) {
-    _VALIDATE_TRI(idx);
+    _VALIDATE_INT(idx);
 
     if(idx->zck) {
-        VALIDATE_TRI(idx->zck);
+        VALIDATE_INT(idx->zck);
         return idx->start + zck_get_header_length(idx->zck);
     } else {
         return idx->start;
@@ -150,19 +150,19 @@ ssize_t PUBLIC zck_get_chunk_start(zckChunk *idx) {
 }
 
 ssize_t PUBLIC zck_get_chunk_size(zckChunk *idx) {
-    _VALIDATE_TRI(idx);
+    _VALIDATE_INT(idx);
 
     return idx->length;
 }
 
 ssize_t PUBLIC zck_get_chunk_comp_size(zckChunk *idx) {
-    _VALIDATE_TRI(idx);
+    _VALIDATE_INT(idx);
 
     return idx->comp_length;
 }
 
 int PUBLIC zck_get_chunk_valid(zckChunk *idx) {
-    _VALIDATE_TRI(idx);
+    _VALIDATE_INT(idx);
 
     return idx->valid;
 }
@@ -179,7 +179,7 @@ int PUBLIC zck_compare_chunk_digest(zckChunk *a, zckChunk *b) {
 }
 
 int PUBLIC zck_missing_chunks(zckCtx *zck) {
-    VALIDATE_READ_TRI(zck);
+    VALIDATE_READ_INT(zck);
 
     int missing = 0;
     for(zckChunk *idx = zck->index.first; idx; idx=idx->next)
@@ -189,7 +189,7 @@ int PUBLIC zck_missing_chunks(zckCtx *zck) {
 }
 
 int PUBLIC zck_failed_chunks(zckCtx *zck) {
-    VALIDATE_READ_TRI(zck);
+    VALIDATE_READ_INT(zck);
 
     int failed = 0;
     for(zckChunk *idx = zck->index.first; idx; idx=idx->next)

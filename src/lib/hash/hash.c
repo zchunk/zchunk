@@ -479,25 +479,25 @@ const char PUBLIC *zck_hash_name_from_type(int hash_type) {
 }
 
 int PUBLIC zck_get_full_hash_type(zckCtx *zck) {
-    VALIDATE_TRI(zck);
+    VALIDATE_INT(zck);
 
     return zck->hash_type.type;
 }
 
 ssize_t PUBLIC zck_get_full_digest_size(zckCtx *zck) {
-    VALIDATE_TRI(zck);
+    VALIDATE_INT(zck);
 
     return zck->hash_type.digest_size;
 }
 
 int PUBLIC zck_get_chunk_hash_type(zckCtx *zck) {
-    VALIDATE_TRI(zck);
+    VALIDATE_INT(zck);
 
     return zck->index.hash_type;
 }
 
 ssize_t PUBLIC zck_get_chunk_digest_size(zckCtx *zck) {
-    VALIDATE_TRI(zck);
+    VALIDATE_INT(zck);
 
     return zck->index.digest_size;
 }

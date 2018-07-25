@@ -85,9 +85,9 @@ static int set_comp_type(zckCtx *zck, ssize_t type) {
 
 static size_t comp_read_from_dc(zckCtx *zck, zckComp *comp, char *dst,
                                 size_t dst_size) {
-    VALIDATE_TRI(zck);
-    _VALIDATE_TRI(comp);
-    _VALIDATE_TRI(dst);
+    VALIDATE_INT(zck);
+    _VALIDATE_INT(comp);
+    _VALIDATE_INT(dst);
 
     size_t dl_size = dst_size;
     if(dl_size > comp->dc_data_size - comp->dc_data_loc)
@@ -121,7 +121,7 @@ static int comp_add_to_data(zckCtx *zck, zckComp *comp, const char *src,
 }
 
 static ssize_t comp_end_dchunk(zckCtx *zck, int use_dict, size_t fd_size) {
-    VALIDATE_READ_TRI(zck);
+    VALIDATE_READ_INT(zck);
 
     ssize_t rb = zck->comp.end_dchunk(zck, &(zck->comp), use_dict, fd_size);
     if(validate_current_chunk(zck) < 1)
@@ -134,7 +134,7 @@ static ssize_t comp_end_dchunk(zckCtx *zck, int use_dict, size_t fd_size) {
 }
 
 static ssize_t comp_write(zckCtx *zck, const char *src, const size_t src_size) {
-    VALIDATE_WRITE_TRI(zck);
+    VALIDATE_WRITE_INT(zck);
 
     if(!zck->comp.started && !comp_init(zck))
         return -1;
@@ -328,7 +328,7 @@ int comp_add_to_dc(zckCtx *zck, zckComp *comp, const char *src,
 }
 
 ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, int use_dict) {
-    VALIDATE_READ_TRI(zck);
+    VALIDATE_READ_INT(zck);
 
     if(!zck->comp.started) {
         set_error(zck, "Compression hasn't been initialized yet");
@@ -478,7 +478,7 @@ ssize_t PUBLIC zck_write(zckCtx *zck, const char *src, const size_t src_size) {
 }
 
 ssize_t PUBLIC zck_end_chunk(zckCtx *zck) {
-    VALIDATE_WRITE_TRI(zck);
+    VALIDATE_WRITE_INT(zck);
 
     if(!zck->comp.started && !comp_init(zck))
         return -1;
@@ -511,7 +511,7 @@ ssize_t PUBLIC zck_end_chunk(zckCtx *zck) {
 }
 
 ssize_t PUBLIC zck_read(zckCtx *zck, char *dst, size_t dst_size) {
-    VALIDATE_READ_TRI(zck);
+    VALIDATE_READ_INT(zck);
 
     return comp_read(zck, dst, dst_size, 1);
 }

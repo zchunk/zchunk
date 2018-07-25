@@ -34,7 +34,7 @@
 #include "zck_private.h"
 
 ssize_t read_data(zckCtx *zck, char *data, size_t length) {
-    VALIDATE_READ_TRI(zck);
+    VALIDATE_READ_INT(zck);
 
     if(length == 0)
         return 0;
@@ -51,7 +51,7 @@ ssize_t read_data(zckCtx *zck, char *data, size_t length) {
 }
 
 int write_data(zckCtx *zck, int fd, const char *data, size_t length) {
-    VALIDATE_WRITE_TRI(zck);
+    VALIDATE_WRITE_INT(zck);
 
     if(length == 0)
         return True;
@@ -71,7 +71,7 @@ int write_data(zckCtx *zck, int fd, const char *data, size_t length) {
 }
 
 int seek_data(zckCtx *zck, off_t offset, int whence) {
-    VALIDATE_TRI(zck);
+    VALIDATE_INT(zck);
 
     if(lseek(zck->fd, offset, whence) == -1) {
         char *wh_str = NULL;

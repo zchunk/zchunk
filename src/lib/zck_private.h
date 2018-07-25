@@ -30,7 +30,7 @@
                                         "Object not initialized"); \
                                 return False; \
                             }
-#define _VALIDATE_TRI(f)    if(!f) { \
+#define _VALIDATE_INT(f)    if(!f) { \
                                 zck_log(ZCK_LOG_NONE, \
                                         "Object not initialized"); \
                                 return -1; \
@@ -42,7 +42,7 @@
                             }
 #define VALIDATE_BOOL(f)    _VALIDATE_BOOL(f) \
                             if((f)->error_state > 0) return False;
-#define VALIDATE_TRI(f)     _VALIDATE_TRI(f) \
+#define VALIDATE_INT(f)     _VALIDATE_INT(f) \
                             if((f)->error_state > 0) return -1;
 #define VALIDATE_CHAR(f)    _VALIDATE_CHAR(f) \
                             if((f)->error_state > 0) return NULL;
@@ -53,7 +53,7 @@
                                         "zckCtx not opened for reading"); \
                                     return False; \
                                 }
-#define VALIDATE_READ_TRI(f)    VALIDATE_TRI(f); \
+#define VALIDATE_READ_INT(f)    VALIDATE_INT(f); \
                                 if(f->mode != ZCK_MODE_READ) { \
                                     set_error(f, \
                                         "zckCtx not opened for reading"); \
@@ -72,7 +72,7 @@
                                         "zckCtx not opened for writing"); \
                                     return False; \
                                 }
-#define VALIDATE_WRITE_TRI(f)   VALIDATE_TRI(f); \
+#define VALIDATE_WRITE_INT(f)   VALIDATE_INT(f); \
                                 if(f->mode != ZCK_MODE_WRITE) { \
                                     set_error(f, \
                                         "zckCtx not opened for writing"); \

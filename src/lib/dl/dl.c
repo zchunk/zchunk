@@ -95,8 +95,8 @@ static int set_chunk_valid(zckDL *dl) {
 
 /* Write length or to end of current chunk, whichever comes first */
 static int dl_write(zckDL *dl, const char *at, size_t length) {
-    _VALIDATE_TRI(dl);
-    VALIDATE_TRI(dl->zck);
+    _VALIDATE_INT(dl);
+    VALIDATE_INT(dl->zck);
 
     int wb = 0;
     if(dl->write_in_chunk > 0) {
@@ -266,13 +266,13 @@ int PUBLIC zck_copy_chunks(zckCtx *src, zckCtx *tgt) {
 }
 
 ssize_t PUBLIC zck_dl_get_bytes_downloaded(zckDL *dl) {
-    _VALIDATE_TRI(dl);
+    _VALIDATE_INT(dl);
 
     return dl->dl;
 }
 
 ssize_t PUBLIC zck_dl_get_bytes_uploaded(zckDL *dl) {
-    _VALIDATE_TRI(dl);
+    _VALIDATE_INT(dl);
 
     return dl->ul;
 }

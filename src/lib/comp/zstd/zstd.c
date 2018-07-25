@@ -62,8 +62,8 @@ static int init(zckCtx *zck, zckComp *comp) {
 static ssize_t compress(zckCtx *zck, zckComp *comp, const char *src,
                         const size_t src_size, char **dst, size_t *dst_size,
                         int use_dict) {
-    VALIDATE_TRI(zck);
-    _VALIDATE_TRI(comp);
+    VALIDATE_INT(zck);
+    _VALIDATE_INT(comp);
 
     comp->dc_data = realloc(comp->dc_data, comp->dc_data_size + src_size);
     if(comp->dc_data == NULL) {

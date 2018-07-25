@@ -133,9 +133,8 @@ int index_create(zckCtx *zck) {
     return True;
 }
 
-int index_new_chunk(zckIndex *index, char *digest, int digest_size,
-                    size_t comp_size, size_t orig_size, int finished,
-                    zckCtx *zck) {
+int index_new_chunk(zckCtx *zck, zckIndex *index, char *digest, int digest_size,
+                    size_t comp_size, size_t orig_size, int finished) {
     VALIDATE_BOOL(zck);
 
     if(index == NULL) {

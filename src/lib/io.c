@@ -51,7 +51,7 @@ ssize_t read_data(zckCtx *zck, char *data, size_t length) {
 }
 
 int write_data(zckCtx *zck, int fd, const char *data, size_t length) {
-    VALIDATE_WRITE_INT(zck);
+    VALIDATE_INT(zck);
 
     if(length == 0)
         return True;

@@ -120,7 +120,7 @@ static int write_and_verify_chunk(zckCtx *src, zckCtx *tgt,
                                   zckChunk *src_idx,
                                   zckChunk *tgt_idx) {
     VALIDATE_READ_BOOL(src);
-    VALIDATE_WRITE_BOOL(tgt);
+    VALIDATE_READ_BOOL(tgt);
 
     static char buf[BUF_SIZE] = {0};
 

@@ -39,7 +39,7 @@
 
 /* If lead format changes, this needs to be changed */
 int PUBLIC zck_get_min_download_size() {
-    /* Lead + hash type + hash digest + header size */
+    /* Magic + hash type + hash digest + header size */
     return 5 + MAX_COMP_SIZE*2 + get_max_hash_size();
 }
 
@@ -54,7 +54,7 @@ static void zck_clear(zckCtx *zck) {
     zck->header = NULL;
     zck->header_size = 0;
     if(!comp_close(zck))
-        zck_log(ZCK_LOG_WARNING, "Unable to close compression\n");
+        zck_log(ZCK_LOG_WARNING, "Unable to close compression");
     hash_close(&(zck->full_hash));
     hash_close(&(zck->check_full_hash));
     hash_close(&(zck->check_chunk_hash));
@@ -92,7 +92,7 @@ static char *ascii_checksum_to_bin (zckCtx *zck, char *checksum) {
     int cl = strlen(checksum);
     char *raw_checksum = zmalloc(cl/2);
     if(raw_checksum == NULL) {
-        set_error(zck, "Unable to allocate %lu bytes\n", cl/2);
+        set_error(zck, "Unable to allocate %lu bytes", cl/2);
         return NULL;
     }
     char *rp = raw_checksum;
@@ -129,7 +129,7 @@ int get_tmp_fd(zckCtx *zck) {
     }
     fname = zmalloc(strlen(template) + strlen(tmpdir) + 2);
     if(fname == NULL) {
-        set_error(zck, "Unable to allocate %lu bytes\n",
+        set_error(zck, "Unable to allocate %lu bytes",
                   strlen(template) + strlen(tmpdir) + 2);
         return -1;
     }
@@ -140,12 +140,12 @@ int get_tmp_fd(zckCtx *zck) {
     temp_fd = mkstemp(fname);
     if(temp_fd < 0) {
         free(fname);
-        set_error(zck, "Unable to create temporary file\n");
+        set_error(zck, "Unable to create temporary file");
         return -1;
     }
     if(unlink(fname) < 0) {
         free(fname);
-        set_error(zck, "Unable to delete temporary file\n");
+        set_error(zck, "Unable to delete temporary file");
         return -1;
     }
     free(fname);
@@ -161,25 +161,24 @@ int import_dict(zckCtx *zck) {
     if(size == 0)
         return True;
 
-    zck_log(ZCK_LOG_DEBUG, "Reading compression dict\n");
+    zck_log(ZCK_LOG_DEBUG, "Reading compression dict");
     char *data = zmalloc(size);
     if(data == NULL) {
-        set_error(zck, "Unable to allocate %lu bytes\n", size);
+        set_error(zck, "Unable to allocate %lu bytes", size);
         return False;
     }
     if(comp_read(zck, data, size, 0) != size) {
-        set_error(zck, "Error reading compressed dict\n");
+        set_error(zck, "Error reading compressed dict");
         return False;
     }
-    zck_log(ZCK_LOG_DEBUG, "Resetting compression\n");
+    zck_log(ZCK_LOG_DEBUG, "Resetting compression");
     if(!comp_reset(zck))
         return False;
-    zck_log(ZCK_LOG_DEBUG, "Setting dict\n");
+    zck_log(ZCK_LOG_DEBUG, "Setting dict");
     if(!comp_soption(zck, ZCK_COMP_DICT, data, size))
         return False;
     if(!comp_init(zck))
         return False;
-    free(data);
 
     return True;
 }
@@ -189,7 +188,7 @@ int PUBLIC zck_set_soption(zckCtx *zck, zck_soption option, const char *value,
     VALIDATE_BOOL(zck);
     char *data = zmalloc(length);
     if(data == NULL) {
-        set_error(zck, "Unable to allocate %lu bytes\n", length);
+        set_error(zck, "Unable to allocate %lu bytes", length);
         return False;
     }
     memcpy(data, value, length);
@@ -201,7 +200,7 @@ int PUBLIC zck_set_soption(zckCtx *zck, zck_soption option, const char *value,
         if(zck->prep_hash_type < 0) {
             free(data);
             set_error(zck, "For validation, you must set the header hash type "
-                           "*before* the header digest itself\n");
+                           "*before* the header digest itself");
             return False;
         }
         if(!hash_setup(zck, &chk_type, zck->prep_hash_type)) {
@@ -212,11 +211,11 @@ int PUBLIC zck_set_soption(zckCtx *zck, zck_soption option, const char *value,
             free(data);
             set_fatal_error(zck, "Hash digest size mismatch for header "
                                  "validation\n"
-                                 "Expected: %lu\nProvided: %lu\n",
+                                 "Expected: %lu\nProvided: %lu",
                                  chk_type.digest_size*2, length);
             return False;
         }
-        zck_log(ZCK_LOG_DEBUG, "Setting expected hash to (%s)%s\n",
+        zck_log(ZCK_LOG_DEBUG, "Setting expected hash to (%s)%s",
                 zck_hash_name_from_type(zck->prep_hash_type), data);
         zck->prep_digest = ascii_checksum_to_bin(zck, data);
         free(data);
@@ -229,7 +228,7 @@ int PUBLIC zck_set_soption(zckCtx *zck, zck_soption option, const char *value,
     /* Unknown options */
     } else {
         free(data);
-        set_error(zck, "Unknown string option %i\n", option);
+        set_error(zck, "Unknown string option %i", option);
         return False;
     }
     return True;
@@ -250,7 +249,7 @@ int PUBLIC zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t value) {
     } else if(option == ZCK_VAL_HEADER_HASH_TYPE) {
         VALIDATE_READ_BOOL(zck);
         if(value < 0) {
-            set_error(zck, "Header hash type can't be less than zero: %li\n",
+            set_error(zck, "Header hash type can't be less than zero: %li",
                       value);
             return False;
         }
@@ -258,7 +257,7 @@ int PUBLIC zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t value) {
          * otherwise we run the risk of a buffer overflow */
         if(zck->prep_digest != NULL) {
             set_error(zck, "For validation, you must set the header hash type "
-                           "*before* the header digest itself\n");
+                           "*before* the header digest itself");
             return False;
         }
         zck->prep_hash_type = value;
@@ -266,7 +265,7 @@ int PUBLIC zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t value) {
         VALIDATE_READ_BOOL(zck);
         if(value < 0) {
             set_error(zck,
-                      "Header size validation can't be less than zero: %li\n",
+                      "Header size validation can't be less than zero: %li",
                       value);
             return False;
         }
@@ -274,17 +273,17 @@ int PUBLIC zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t value) {
     } else if(option == ZCK_MANUAL_CHUNK) {
         VALIDATE_WRITE_BOOL(zck);
         if(value != 0) {
-            zck_log(ZCK_LOG_DEBUG, "Disabling automatic chunking\n");
+            zck_log(ZCK_LOG_DEBUG, "Disabling automatic chunking");
             zck->manual_chunk = 1;
         } else {
-            zck_log(ZCK_LOG_DEBUG, "Enabling automatic chunking\n");
+            zck_log(ZCK_LOG_DEBUG, "Enabling automatic chunking");
             zck->manual_chunk = 0;
         }
 
     /* Hash options */
     } else if(option < 100) {
         /* Currently no hash options other than setting hash type, so bail */
-        set_error(zck, "Unknown option %lu\n", value);
+        set_error(zck, "Unknown option %lu", value);
         return False;
 
     /* Compression options */
@@ -294,7 +293,7 @@ int PUBLIC zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t value) {
 
     /* Unknown options */
     } else {
-        set_error(zck, "Unknown integer option %i\n", option);
+        set_error(zck, "Unknown integer option %i", option);
         return False;
     }
     return True;
@@ -310,10 +309,10 @@ int PUBLIC zck_close(zckCtx *zck) {
             return False;
         if(!write_header(zck))
             return False;
-        zck_log(ZCK_LOG_DEBUG, "Writing chunks\n");
+        zck_log(ZCK_LOG_DEBUG, "Writing chunks");
         if(!chunks_from_temp(zck))
             return False;
-        zck_log(ZCK_LOG_DEBUG, "Finished writing file, cleaning up\n");
+        zck_log(ZCK_LOG_DEBUG, "Finished writing file, cleaning up");
         if(!comp_close(zck))
             return False;
         if(zck->temp_fd) {
@@ -339,7 +338,7 @@ void PUBLIC zck_free(zckCtx **zck) {
 zckCtx PUBLIC *zck_create() {
     zckCtx *zck = zmalloc(sizeof(zckCtx));
     if(zck == NULL) {
-        zck_log(ZCK_LOG_NONE, "Unable to allocate %lu bytes\n",
+        zck_log(ZCK_LOG_NONE, "Unable to allocate %lu bytes",
                 sizeof(zckCtx));
         return NULL;
     }
@@ -362,14 +361,20 @@ int PUBLIC zck_init_adv_read (zckCtx *zck, int src_fd) {
 int PUBLIC zck_init_read (zckCtx *zck, int src_fd) {
     VALIDATE_BOOL(zck);
 
-    if(!zck_init_adv_read(zck, src_fd))
+    if(!zck_init_adv_read(zck, src_fd)) {
+        set_fatal_error(zck, "Unable to read file");
         return False;
+    }
 
-    if(!zck_read_lead(zck))
+    if(!zck_read_lead(zck)) {
+        set_fatal_error(zck, "Unable to read lead");
         return False;
+    }
 
-    if(!zck_read_header(zck))
+    if(!zck_read_header(zck)) {
+        set_fatal_error(zck, "Unable to read header");
         return False;
+    }
 
     return True;
 }

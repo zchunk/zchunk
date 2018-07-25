@@ -27,17 +27,17 @@
 
 #define _VALIDATE_BOOL(f)   if(!f) { \
                                 zck_log(ZCK_LOG_NONE, \
-                                        "Object not initialized\n"); \
+                                        "Object not initialized"); \
                                 return False; \
                             }
 #define _VALIDATE_TRI(f)    if(!f) { \
                                 zck_log(ZCK_LOG_NONE, \
-                                        "Object not initialized\n"); \
+                                        "Object not initialized"); \
                                 return -1; \
                             }
 #define _VALIDATE_CHAR(f)   if(!f) { \
                                 zck_log(ZCK_LOG_NONE, \
-                                        "Object not initialized\n"); \
+                                        "Object not initialized"); \
                                 return NULL; \
                             }
 #define VALIDATE_BOOL(f)    _VALIDATE_BOOL(f) \
@@ -50,38 +50,38 @@
 #define VALIDATE_READ_BOOL(f)   VALIDATE_BOOL(f); \
                                 if(f->mode != ZCK_MODE_READ) { \
                                     set_error(f, \
-                                        "zckCtx not opened for reading\n"); \
+                                        "zckCtx not opened for reading"); \
                                     return False; \
                                 }
 #define VALIDATE_READ_TRI(f)    VALIDATE_TRI(f); \
                                 if(f->mode != ZCK_MODE_READ) { \
                                     set_error(f, \
-                                        "zckCtx not opened for reading\n"); \
+                                        "zckCtx not opened for reading"); \
                                     return -1; \
                                 }
 #define VALIDATE_READ_CHAR(f)   VALIDATE_CHAR(f); \
                                 if(f->mode != ZCK_MODE_READ) { \
                                     set_error(f, \
-                                        "zckCtx not opened for reading\n"); \
+                                        "zckCtx not opened for reading"); \
                                     return NULL; \
                                 }
 
 #define VALIDATE_WRITE_BOOL(f)  VALIDATE_BOOL(f); \
                                 if(f->mode != ZCK_MODE_WRITE) { \
                                     set_error(f, \
-                                        "zckCtx not opened for writing\n"); \
+                                        "zckCtx not opened for writing"); \
                                     return False; \
                                 }
 #define VALIDATE_WRITE_TRI(f)   VALIDATE_TRI(f); \
                                 if(f->mode != ZCK_MODE_WRITE) { \
                                     set_error(f, \
-                                        "zckCtx not opened for writing\n"); \
+                                        "zckCtx not opened for writing"); \
                                     return -1; \
                                 }
 #define VALIDATE_WRITE_CHAR(f)  VALIDATE_CHAR(f); \
                                 if(f->mode != ZCK_MODE_WRITE) { \
                                     set_error(f, \
-                                        "zckCtx not opened for writing\n"); \
+                                        "zckCtx not opened for writing"); \
                                     return NULL; \
                                 }
 typedef struct zckComp zckComp;

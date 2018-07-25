@@ -15,6 +15,8 @@
 
 #define DEFAULT_BUZHASH_WIDTH 48
 #define DEFAULT_BUZHASH_BITS 15
+#define CHUNK_DEFAULT_MIN 1
+#define CHUNK_DEFAULT_MAX 10485760 // 10MB
 
 #define zmalloc(x) calloc(1, x)
 
@@ -276,6 +278,10 @@ typedef struct zckCtx {
     int buzhash_width;
     int buzhash_match_bits;
     int buzhash_bitmask;
+    int chunk_auto_min;
+    int chunk_auto_max;
+    int chunk_min_size;
+    int chunk_max_size;
     int manual_chunk;
 
     char *msg;

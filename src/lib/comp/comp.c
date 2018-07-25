@@ -47,6 +47,14 @@ const static char *COMP_NAME[] = {
     "zstd"
 };
 
+static void update_buzhash_bits(zckCtx *zck) {
+    int s=1;
+    for(int i=0; i<zck->buzhash_match_bits; i++)
+        s *= 2;
+    s -= 1;
+    zck->buzhash_bitmask = s;
+}
+
 static int set_comp_type(zckCtx *zck, ssize_t type) {
     VALIDATE_BOOL(zck);
 
@@ -136,9 +144,6 @@ static ssize_t comp_end_dchunk(zckCtx *zck, int use_dict, size_t fd_size) {
 static ssize_t comp_write(zckCtx *zck, const char *src, const size_t src_size) {
     VALIDATE_WRITE_INT(zck);
 
-    if(!zck->comp.started && !comp_init(zck))
-        return -1;
-
     if(src_size == 0)
         return 0;
 
@@ -177,6 +182,37 @@ int comp_init(zckCtx *zck) {
             zck_comp_name_from_type(comp->type));
     if(!zck->comp.init(zck, &(zck->comp)))
         return False;
+    if(zck->mode == ZCK_MODE_WRITE) {
+        if(zck->chunk_min_size == 0) {
+            zck->chunk_min_size = CHUNK_DEFAULT_MIN;
+            zck_log(ZCK_LOG_DEBUG, "Using default minimum chunk size of %lu",
+                    zck->chunk_min_size);
+        }
+        if(zck->chunk_max_size == 0) {
+            zck->chunk_max_size = CHUNK_DEFAULT_MAX;
+            zck_log(ZCK_LOG_DEBUG, "Using default maximum chunk size of %lu",
+                    zck->chunk_max_size);
+        }
+        if(zck->manual_chunk == 0) {
+            zck_log(ZCK_LOG_DEBUG, "Using buzhash algorithm for chunking");
+            zck->buzhash_width = DEFAULT_BUZHASH_WIDTH;
+            zck->buzhash_match_bits = DEFAULT_BUZHASH_BITS;
+            update_buzhash_bits(zck);
+            zck_log(ZCK_LOG_DEBUG, "Setting average chunk size to %lu",
+                    zck->buzhash_bitmask + 1);
+            zck->chunk_auto_min = (zck->buzhash_bitmask + 1) / 4;
+            if(zck->chunk_auto_min < zck->chunk_min_size)
+                zck->chunk_auto_min = zck->chunk_min_size;
+            zck_log(ZCK_LOG_DEBUG, "Setting automatic minimum chunk size to %lu",
+                    zck->chunk_auto_min);
+            zck->chunk_auto_max = (zck->buzhash_bitmask + 1) * 4;
+            if(zck->chunk_auto_max > zck->chunk_max_size)
+                zck->chunk_auto_max = zck->chunk_max_size;
+            zck_log(ZCK_LOG_DEBUG, "Setting automatic maximum chunk size to %lu",
+                    zck->chunk_auto_max);
+        }
+    }
+
     if(zck->temp_fd) {
         if(zck->comp.dict) {
             char *dst = NULL;
@@ -273,6 +309,37 @@ int comp_ioption(zckCtx *zck, zck_ioption option, ssize_t value) {
             zck_log(ZCK_LOG_DEBUG, "Enabling automatic chunking");
             zck->manual_chunk = 0;
         }
+        return True;
+
+    /* Minimum chunk size */
+    } else if(option == ZCK_CHUNK_MIN) {
+        VALIDATE_WRITE_BOOL(zck);
+        if(value < 1) {
+            set_error(zck, "Minimum chunk size must be > 0");
+            return False;
+        }
+        if(value > zck->chunk_max_size) {
+            set_error(zck, "Minimum chunk size must be <= maximum chunk size");
+            return False;
+        }
+        zck->chunk_min_size = value;
+        zck_log(ZCK_LOG_DEBUG, "Setting minimum chunk size to %li", value);
+        return True;
+
+    /* Maximum chunk size */
+    } else if(option == ZCK_CHUNK_MAX) {
+        VALIDATE_WRITE_BOOL(zck);
+        if(value < 1) {
+            set_error(zck, "Maximum chunk size must be > 0");
+            return False;
+        }
+        if(value < zck->chunk_min_size) {
+            set_error(zck, "Maximum chunk size must be >= minimum chunk size");
+            return False;
+        }
+        zck->chunk_max_size = value;
+        zck_log(ZCK_LOG_DEBUG, "Setting maximum chunk size to %li", value);
+        return True;
 
     } else {
         if(zck && zck->comp.set_parameter)
@@ -436,7 +503,7 @@ ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, int use_dict) {
         if(rb < 0)
             goto read_error;
         if(rb < rs) {
-            zck_log(ZCK_LOG_DEBUG, "EOF");
+            zck_log(ZCK_LOG_DDEBUG, "EOF");
             finished_rd = True;
         }
         if(!hash_update(zck, &(zck->check_full_hash), src, rb) ||
@@ -463,30 +530,70 @@ const char PUBLIC *zck_comp_name_from_type(int comp_type) {
 }
 
 ssize_t PUBLIC zck_write(zckCtx *zck, const char *src, const size_t src_size) {
-    if(zck->manual_chunk)
-        return comp_write(zck, src, src_size);
+    VALIDATE_WRITE_INT(zck);
+
+    zck_log(ZCK_LOG_DDEBUG, "Starting up");
+
+    if(src_size == 0)
+        return 0;
+
+    if(!zck->comp.started && !comp_init(zck))
+        return -1;
+
+    zck_log(ZCK_LOG_DDEBUG, "Starting up");
 
     const char *loc = src;
     size_t loc_size = src_size;
-    for(size_t i=0; i<loc_size; ) {
-        if((buzhash_update(&(zck->buzhash), loc+i, zck->buzhash_width) &
-            zck->buzhash_bitmask) == 0) {
-            if(comp_write(zck, loc, i) != i)
+    size_t loc_written = 0;
+    zck_log(ZCK_LOG_DDEBUG, "Size: %lu", zck->comp.dc_data_size + loc_size);
+
+    if(zck->manual_chunk) {
+        while(zck->comp.dc_data_size + loc_size > zck->chunk_max_size) {
+            loc_written = zck->chunk_max_size - zck->comp.dc_data_size;
+            if(comp_write(zck, loc, loc_written) != loc_written)
                 return -1;
-            zck_log(ZCK_LOG_DEBUG, "Automatically ending chunk");
+            loc_size -= loc_written;
+            loc += loc_written;
+            zck_log(ZCK_LOG_DDEBUG,
+                    "Chunk has reached maximum size, forcing a new chunk");
             if(zck_end_chunk(zck) < 0)
                 return -1;
-            loc += i;
-            loc_size -= i;
-            i = 0;
-            buzhash_reset(&(zck->buzhash));
-        } else {
-            i++;
         }
+        if(comp_write(zck, loc, loc_size) != loc_size)
+            return -1;
+        else
+            return src_size;
+    } else {
+        for(size_t i=0; i<loc_size; ) {
+            if((buzhash_update(&(zck->buzhash), loc+i, zck->buzhash_width) &
+                zck->buzhash_bitmask) == 0 ||
+               zck->comp.dc_data_size + i >= zck->chunk_auto_max) {
+                if(comp_write(zck, loc, i) != i)
+                    return -1;
+                loc += i;
+                loc_size -= i;
+                i = 0;
+                if(zck->comp.dc_data_size >= zck->chunk_max_size)
+                    zck_log(ZCK_LOG_DDEBUG,
+                            "Chunk has reached maximum size, forcing a new "
+                            "chunk");
+                else
+                    zck_log(ZCK_LOG_DDEBUG, "Automatically ending chunk");
+                if(zck->comp.dc_data_size < zck->chunk_auto_min) {
+                    zck_log(ZCK_LOG_DDEBUG,
+                            "Chunk too small, refusing to end chunk");
+                    continue;
+                }
+                if(zck_end_chunk(zck) < 0)
+                    return -1;
+            } else {
+                i++;
+            }
+        }
+        if(loc_size > 0 && comp_write(zck, loc, loc_size) != loc_size)
+            return -1;
+        return src_size;
     }
-    if(loc_size > 0 && comp_write(zck, loc, loc_size) != loc_size)
-        return -1;
-    return src_size;
 }
 
 ssize_t PUBLIC zck_end_chunk(zckCtx *zck) {
@@ -494,6 +601,11 @@ ssize_t PUBLIC zck_end_chunk(zckCtx *zck) {
 
     if(!zck->comp.started && !comp_init(zck))
         return -1;
+
+    if(zck->comp.dc_data_size < zck->chunk_min_size) {
+        zck_log(ZCK_LOG_DDEBUG, "Chunk too small, refusing to end chunk");
+        return zck->comp.dc_data_size;
+    }
 
     buzhash_reset(&(zck->buzhash));
     /* No point in compressing empty data */
@@ -517,7 +629,7 @@ ssize_t PUBLIC zck_end_chunk(zckCtx *zck) {
         free(dst);
         return -1;
     }
-    zck_log(ZCK_LOG_DEBUG, "Finished chunk size: %lu", data_size);
+    zck_log(ZCK_LOG_DDEBUG, "Finished chunk size: %lu", data_size);
     free(dst);
     return data_size;
 }

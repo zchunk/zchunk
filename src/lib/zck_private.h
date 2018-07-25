@@ -27,17 +27,17 @@
 
 #define _VALIDATE_BOOL(f)   if(!f) { \
                                 zck_log(ZCK_LOG_NONE, \
-                                        "zckCtx not initialized\n"); \
+                                        "Object not initialized\n"); \
                                 return False; \
                             }
 #define _VALIDATE_TRI(f)    if(!f) { \
                                 zck_log(ZCK_LOG_NONE, \
-                                        "zckCtx not initialized\n"); \
+                                        "Object not initialized\n"); \
                                 return -1; \
                             }
 #define _VALIDATE_CHAR(f)   if(!f) { \
                                 zck_log(ZCK_LOG_NONE, \
-                                        "zckCtx not initialized\n"); \
+                                        "Object not initialized\n"); \
                                 return NULL; \
                             }
 #define VALIDATE_BOOL(f)    _VALIDATE_BOOL(f) \

@@ -82,8 +82,12 @@ static int read_header_from_file(zckCtx *zck) {
         return False;
     if(!hash_update(zck, &(zck->check_full_hash), header, zck->header_length))
         return False;
-    if(validate_header(zck) < 1)
+    int ret = validate_header(zck);
+    if(ret < 1) {
+        if(ret == -1)
+            set_fatal_error(zck, "Header checksum failed verification");
         return False;
+    }
     return True;
 }
 

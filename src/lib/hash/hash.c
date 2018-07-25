@@ -462,7 +462,12 @@ int PUBLIC zck_validate_data_checksum(zckCtx *zck) {
         }
         idx = idx->next;
     }
-    return validate_file(zck, ZCK_LOG_WARNING);
+    int ret = validate_file(zck, ZCK_LOG_WARNING);
+    if(!seek_data(zck, zck->data_offset, SEEK_SET))
+        return 0;
+    if(!hash_init(zck, &(zck->check_full_hash), &(zck->hash_type)))
+        return 0;
+    return ret;
 }
 
 const char PUBLIC *zck_hash_name_from_type(int hash_type) {

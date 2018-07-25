@@ -223,7 +223,7 @@ int comp_init(zckCtx *zck) {
 }
 
 int comp_reset(zckCtx *zck) {
-    VALIDATE_BOOL(zck);
+    _VALIDATE_BOOL(zck);
 
     zck->comp.started = 0;
     if(zck->comp.dc_data) {
@@ -238,7 +238,7 @@ int comp_reset(zckCtx *zck) {
 }
 
 int comp_close(zckCtx *zck) {
-    VALIDATE_BOOL(zck);
+    _VALIDATE_BOOL(zck);
 
     zck_log(ZCK_LOG_DEBUG, "Closing compression");
     if(zck->comp.data) {

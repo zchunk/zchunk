@@ -44,7 +44,6 @@ static char args_doc[] = "<file>";
 static struct argp_option options[] = {
     {"verbose", 'v', 0,        0,
      "Increase verbosity (can be specified more than once for debugging)"},
-    {"quiet",   'q', 0,        0, "Only show errors"},
     {"stdout",  'c', 0,        0, "Direct output to stdout"},
     {"version", 'V', 0,        0, "Show program version"},
     { 0 }
@@ -64,9 +63,6 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
             arguments->log_level--;
             if(arguments->log_level < ZCK_LOG_DDEBUG)
                 arguments->log_level = ZCK_LOG_DDEBUG;
-            break;
-        case 'q':
-            arguments->log_level = ZCK_LOG_ERROR;
             break;
         case 'c':
             arguments->stdout = 1;
@@ -103,7 +99,7 @@ int main (int argc, char *argv[]) {
     struct arguments arguments = {0};
 
     /* Defaults */
-    arguments.log_level = ZCK_LOG_WARNING;
+    arguments.log_level = ZCK_LOG_ERROR;
 
     argp_parse (&argp, argc, argv, 0, 0, &arguments);
 
@@ -139,6 +135,13 @@ int main (int argc, char *argv[]) {
     char *data = malloc(BUF_SIZE);
     if(!zck_init_read(zck, src_fd))
         goto error2;
+
+    int ret = zck_validate_data_checksum(zck);
+    if(ret < 1) {
+        if(ret == -1)
+            printf("Data checksum failed verification\n");
+        goto error2;
+    }
 
     size_t total = 0;
     while(True) {

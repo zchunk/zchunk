@@ -45,7 +45,7 @@ void PUBLIC zck_set_log_fd(int fd) {
 
 void zck_log_v(const char *function, zck_log_type lt, const char *format,
      va_list args) {
-    if(lt < log_level)
+    if(lt < log_level || log_level == ZCK_LOG_ERROR)
         return;
 
     dprintf(log_fd, "%s: ", function);

@@ -41,17 +41,20 @@ static char doc[] = "zck_read_header - Read header from a zchunk file";
 static char args_doc[] = "<file>";
 
 static struct argp_option options[] = {
-    {"verbose", 'v', 0,        0,
+    {"verbose",     'v', 0,        0,
      "Increase verbosity (can be specified more than once for debugging)"},
-    {"quiet",   'q', 0,        0, "Only show errors"},
-    {"version", 'V', 0,        0, "Show program version"},
-    {"verify",  'f', 0,        0, "Verify full zchunk file"},
+    {"show-chunks", 'c', 0,        0, "Show chunk information"},
+    {"quiet",       'q', 0,        0, "Only show errors"},
+    {"version",     'V', 0,        0, "Show program version"},
+    {"verify",      'f', 0,        0, "Verify full zchunk file"},
     { 0 }
 };
 
 struct arguments {
   char *args[1];
   int verify;
+  int quiet;
+  int show_chunks;
   zck_log_type log_level;
 };
 
@@ -64,8 +67,11 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
             if(arguments->log_level < ZCK_LOG_DDEBUG)
                 arguments->log_level = ZCK_LOG_DDEBUG;
             break;
+        case 'c':
+            arguments->show_chunks = True;
+            break;
         case 'q':
-            arguments->log_level = ZCK_LOG_ERROR;
+            arguments->quiet = True;
             break;
         case 'V':
             version();
@@ -102,7 +108,7 @@ int main (int argc, char *argv[]) {
     struct arguments arguments = {0};
 
     /* Defaults */
-    arguments.log_level = ZCK_LOG_WARNING;
+    arguments.log_level = ZCK_LOG_ERROR;
 
     argp_parse (&argp, argc, argv, 0, 0, &arguments);
 
@@ -134,26 +140,32 @@ int main (int argc, char *argv[]) {
     }
     close(src_fd);
 
-    if(arguments.log_level <= ZCK_LOG_WARNING) {
+    if(!arguments.quiet) {
         printf("Overall checksum type: %s\n",
                zck_hash_name_from_type(zck_get_full_hash_type(zck)));
+        printf("Header size: %lu\n", zck_get_header_length(zck));
         char *digest = zck_get_header_digest(zck);
         printf("Header checksum: %s\n", digest);
         free(digest);
+        printf("Data size: %lu\n", zck_get_data_length(zck));
         digest = zck_get_data_digest(zck);
         printf("Data checksum: %s\n", digest);
         free(digest);
         printf("Chunk count: %lu\n", (long unsigned)zck_get_chunk_count(zck));
         printf("Chunk checksum type: %s\n", zck_hash_name_from_type(zck_get_chunk_hash_type(zck)));
     }
-
-    if(arguments.log_level <= ZCK_LOG_INFO) {
+    if(!arguments.quiet && arguments.show_chunks)
+        printf("\n");
+    if(arguments.show_chunks) {
+        printf("       Chunk Checksum %*c        Start    Comp size         Size\n",
+               (((int)zck_get_chunk_digest_size(zck)*2)-9), ' ');
+        ssize_t count=0;
         for(zckChunk *chk = zck_get_first_chunk(zck); chk;
-            chk=zck_get_next_chunk(chk)) {
+            chk=zck_get_next_chunk(chk), count++) {
             char *digest = zck_get_chunk_digest(chk);
             if(digest == NULL)
                 exit(1);
-            printf("%s %12lu %12lu %12lu", digest,
+            printf("%12lu %s %12lu %12lu %12lu", count, digest,
                    (long unsigned)zck_get_chunk_start(chk),
                    (long unsigned)zck_get_chunk_comp_size(chk),
                    (long unsigned)zck_get_chunk_size(chk));

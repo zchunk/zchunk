@@ -7,9 +7,9 @@ of the file, and also makes zchunk files efficient over rsync.
 zchunk files are protected with strong checksums to verify that the file you
 downloaded is, in fact, the file you wanted.
 
-**Please note that, while the code is pretty reliable and the file format
-shouldn't see any further changes, the API is still not fixed.  Please do not
-use zchunk for any mission-critical systems yet.**
+**zchunk-0.9.0 has been released with the proposed final ABI.  Once zchunk-1.0
+has been released, the ABI will be marked as stable, and the only allowed
+API/ABI and file format changes will be additions**
 
 
 ## Installation

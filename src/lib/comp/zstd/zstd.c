@@ -74,7 +74,6 @@ static ssize_t compress(zckCtx *zck, zckComp *comp, const char *src,
     memcpy(comp->dc_data + comp->dc_data_size, src, src_size);
     *dst = NULL;
     *dst_size = 0;
-    comp->dc_data_size += src_size;
     return 0;
 }
 
@@ -106,7 +105,6 @@ static int end_cchunk(zckCtx *zck, zckComp *comp, char **dst, size_t *dst_size,
     }
     free(comp->dc_data);
     comp->dc_data = NULL;
-    comp->dc_data_size = 0;
     comp->dc_data_loc = 0;
     if(ZSTD_isError(*dst_size)) {
         set_fatal_error(zck, "zstd compression error: %s",

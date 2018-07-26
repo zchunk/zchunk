@@ -32,13 +32,8 @@
 #include "zck_private.h"
 
 static int init(zckCtx *zck, zckComp *comp) {
-    return True;
-}
-
-static int end_cchunk(zckCtx *zck, zckComp *comp, char **dst, size_t *dst_size,
-                     int use_dict) {
-    *dst = NULL;
-    *dst_size = 0;
+    VALIDATE_BOOL(zck);
+    ALLOCD_BOOL(comp);
 
     return True;
 }
@@ -46,6 +41,9 @@ static int end_cchunk(zckCtx *zck, zckComp *comp, char **dst, size_t *dst_size,
 static ssize_t compress(zckCtx *zck, zckComp *comp, const char *src,
                         const size_t src_size, char **dst, size_t *dst_size,
                         int use_dict) {
+    VALIDATE_INT(zck);
+    ALLOCD_INT(comp);
+
     *dst = zmalloc(src_size);
     if(dst == NULL) {
         set_fatal_error(zck, "Unable to allocate %lu bytes", src_size);
@@ -58,8 +56,21 @@ static ssize_t compress(zckCtx *zck, zckComp *comp, const char *src,
     return *dst_size;
 }
 
+static int end_cchunk(zckCtx *zck, zckComp *comp, char **dst, size_t *dst_size,
+                     int use_dict) {
+    VALIDATE_BOOL(zck);
+    ALLOCD_BOOL(comp);
+
+    *dst = NULL;
+    *dst_size = 0;
+
+    return True;
+}
 
 static int decompress(zckCtx *zck, zckComp *comp, const int use_dict) {
+    VALIDATE_BOOL(zck);
+    ALLOCD_BOOL(comp);
+
     char *src = comp->data;
     char src_size = comp->data_size;
     comp->data = NULL;

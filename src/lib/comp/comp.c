@@ -152,6 +152,8 @@ static ssize_t comp_write(zckCtx *zck, const char *src, const size_t src_size) {
     if(zck->comp.compress(zck, &(zck->comp), src, src_size, &dst,
                           &dst_size, 1) < 0)
         return -1;
+    zck->comp.dc_data_size += src_size;
+
     if(dst_size > 0 && !write_data(zck, zck->temp_fd, dst, dst_size)) {
         free(dst);
         return -1;
@@ -221,6 +223,7 @@ int comp_init(zckCtx *zck) {
             if(zck->comp.compress(zck, comp, zck->comp.dict,
                                   zck->comp.dict_size, &dst, &dst_size, 0) < 0)
                 return False;
+            zck->comp.dc_data_size = zck->comp.dict_size;
             if(!write_data(zck, zck->temp_fd, dst, dst_size)) {
                 free(dst);
                 return False;
@@ -236,6 +239,7 @@ int comp_init(zckCtx *zck) {
 
             if(!zck->comp.end_cchunk(zck, comp, &dst, &dst_size, 0))
                 return False;
+            zck->comp.dc_data_size = 0;
             if(!write_data(zck, zck->temp_fd, dst, dst_size)) {
                 free(dst);
                 return False;
@@ -545,7 +549,6 @@ ssize_t PUBLIC zck_write(zckCtx *zck, const char *src, const size_t src_size) {
     const char *loc = src;
     size_t loc_size = src_size;
     size_t loc_written = 0;
-    zck_log(ZCK_LOG_DDEBUG, "Size: %lu", zck->comp.dc_data_size + loc_size);
 
     if(zck->manual_chunk) {
         while(zck->comp.dc_data_size + loc_size > zck->chunk_max_size) {
@@ -617,6 +620,7 @@ ssize_t PUBLIC zck_end_chunk(zckCtx *zck) {
     size_t dst_size = 0;
     if(!zck->comp.end_cchunk(zck, &(zck->comp), &dst, &dst_size, 1))
         return -1;
+    zck->comp.dc_data_size = 0;
     if(dst_size > 0 && !write_data(zck, zck->temp_fd, dst, dst_size)) {
         free(dst);
         return -1;

@@ -7,7 +7,97 @@ file_path = join_paths(meson.source_root(), 'test/files')
 
 test(
     'create and validate empty zchunk file',
-    empty
+    empty,
+    is_parallel: false
+)
+test(
+    'check version info in zck',
+    zck,
+    args: [
+        '-V'
+    ]
+)
+test(
+    'check version info in unzck',
+    unzck,
+    args: [
+        '-V'
+    ]
+)
+test(
+    'check version info in zckdl',
+    zckdl,
+    args: [
+        '-V'
+    ]
+)
+test(
+    'check version info in zck_read_header',
+    zck_read_header,
+    args: [
+        '-V'
+    ]
+)
+test(
+    'check version info in zck_delta_size',
+    zck_delta_size,
+    args: [
+        '-V'
+    ]
+)
+
+test(
+    'check verbosity in unzck',
+    unzck,
+    args: [
+        '-vvvvv',
+        'empty.zck'
+    ],
+    is_parallel: false
+)
+test(
+    'check verbosity in zck',
+    zck,
+    args: [
+        '-vvvvv',
+        'empty'
+    ]
+)
+test(
+    'check verbosity in zckdl',
+    zckdl,
+    args: [
+        '-vvvvv',
+        'file:///empty'
+    ],
+    should_fail: true
+)
+test(
+    'check verbosity in zck_read_header',
+    zck_read_header,
+    args: [
+        '-vvvvvfc',
+        'empty.zck'
+    ]
+)
+test(
+    'check verbosity in zck_delta_size',
+    zck_delta_size,
+    args: [
+        '-vvvvv',
+        'empty.zck',
+        'empty.zck'
+    ]
+)
+test(
+    'decompress auto-chunked file - nocomp',
+    shacheck,
+    args: [
+        unzck,
+        'LICENSE.nocomp.fodt',
+        '394ed6c2fc4ac47e5ee111a46f2a35b8010a56c7747748216f52105e868d5a3e',
+        join_paths(file_path, 'LICENSE.nocomp.fodt.zck')
+    ]
 )
 test(
     'decompress and validate automatically chunked zchunk file with no dict',

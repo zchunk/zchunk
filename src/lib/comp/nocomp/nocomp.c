@@ -72,7 +72,7 @@ static int decompress(zckCtx *zck, zckComp *comp, const int use_dict) {
     ALLOCD_BOOL(comp);
 
     char *src = comp->data;
-    char src_size = comp->data_size;
+    size_t src_size = comp->data_size;
     comp->data = NULL;
     comp->data_size = 0;
     if(!comp_add_to_dc(zck, comp, src, src_size)) {

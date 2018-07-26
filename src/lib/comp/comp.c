@@ -451,7 +451,8 @@ ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, int use_dict) {
         /* Decompress compressed buffer into decompressed buffer */
         size_t dc_data_size = zck->comp.dc_data_size;
         size_t dc_data_loc = zck->comp.dc_data_loc;
-        if(!zck->comp.decompress(zck, &(zck->comp), use_dict))
+        if(zck->comp.data_size > 0 &&
+           !zck->comp.decompress(zck, &(zck->comp), use_dict))
             goto read_error;
 
         /* Check whether we decompressed more data */

@@ -100,7 +100,7 @@ test(
     ]
 )
 test(
-    'decompress and validate automatically chunked zchunk file with no dict',
+    'decompress auto-chunked file - no dict',
     shacheck,
     args: [
         unzck,
@@ -110,7 +110,7 @@ test(
     ]
 )
 test(
-    'decompress and validate automatically chunked zchunk file with dict',
+    'decompress auto-chunked file - dict',
     shacheck,
     args: [
         unzck,
@@ -120,7 +120,7 @@ test(
     ]
 )
 test(
-    'decompress and validate manually chunked zchunk file with no dict',
+    'decompress manual file - no dict',
     shacheck,
     args: [
         unzck,
@@ -130,7 +130,7 @@ test(
     ]
 )
 test(
-    'decompress and validate manually chunked zchunk file with dict',
+    'decompress manual file - dict',
     shacheck,
     args: [
         unzck,
@@ -140,7 +140,7 @@ test(
     ]
 )
 test(
-    'compress and validate automatically chunked zchunk file with no dict',
+    'compress auto-chunked file - no dict',
     shacheck,
     args: [
         zck,
@@ -151,7 +151,7 @@ test(
     ]
 )
 test(
-    'compress and validate automatically chunked zchunk file with dict',
+    'compress auto-chunked file - dict',
     shacheck,
     args: [
         zck,
@@ -163,7 +163,7 @@ test(
     ]
 )
 test(
-    'compress and validate manually chunked zchunk file with no dict',
+    'compress manual file - no dict',
     shacheck,
     args: [
         zck,
@@ -176,7 +176,7 @@ test(
     ]
 )
 test(
-    'compress and validate manually chunked zchunk file with dict',
+    'compress manual file - dict',
     shacheck,
     args: [
         zck,

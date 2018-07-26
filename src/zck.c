@@ -47,6 +47,8 @@ static char args_doc[] = "<file>";
 static struct argp_option options[] = {
     {"verbose",      'v', 0,        0,
      "Increase verbosity (can be specified more than once for debugging)"},
+    {"output",       'o', "FILE",   0,
+     "Output to specified FILE"},
     {"split",        's', "STRING", 0, "Split chunks at beginning of STRING"},
     {"dict",         'D', "FILE",   0,
      "Set zstd compression dictionary to FILE"},
@@ -61,6 +63,7 @@ struct arguments {
   zck_log_type log_level;
   char *split_string;
   int manual_chunk;
+  char *output;
   char *dict;
 };
 
@@ -78,6 +81,9 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
             break;
         case 'm':
             arguments->manual_chunk = 1;
+            break;
+        case 'o':
+            arguments->output = arg;
             break;
         case 'D':
             arguments->dict = arg;
@@ -120,9 +126,17 @@ int main (int argc, char *argv[]) {
 
     zck_set_log_level(arguments.log_level);
 
-    char *base_name = basename(arguments.args[0]);
-    char *out_name = malloc(strlen(base_name) + 5);
-    snprintf(out_name, strlen(base_name) + 5, "%s.zck", base_name);
+    char *base_name = NULL;
+    char *out_name = NULL;
+    if(arguments.output == NULL) {
+        base_name = basename(arguments.args[0]);
+        out_name = malloc(strlen(base_name) + 5);
+        snprintf(out_name, strlen(base_name) + 5, "%s.zck", base_name);
+    } else {
+        base_name = arguments.output;
+        out_name = malloc(strlen(base_name) + 1);
+        snprintf(out_name, strlen(base_name) + 1, "%s", base_name);
+    }
 
     /* Set dictionary if available */
     char *dict = NULL;

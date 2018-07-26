@@ -24,6 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#define _GNU_SOURCE
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -118,10 +120,9 @@ int main (int argc, char *argv[]) {
 
     zck_set_log_level(arguments.log_level);
 
-    char *out_name;
-    out_name = malloc(strlen(arguments.args[0]) + 5);
-    snprintf(out_name, strlen(arguments.args[0]) + 5, "%s.zck",
-             arguments.args[0]);
+    char *base_name = basename(arguments.args[0]);
+    char *out_name = malloc(strlen(base_name) + 5);
+    snprintf(out_name, strlen(base_name) + 5, "%s.zck", base_name);
 
     /* Set dictionary if available */
     char *dict = NULL;

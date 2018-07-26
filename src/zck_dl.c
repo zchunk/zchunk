@@ -24,6 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#define _GNU_SOURCE
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -32,7 +34,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <libgen.h>
 #include <errno.h>
 #include <argp.h>
 #include <zck.h>
@@ -300,13 +301,10 @@ int main (int argc, char *argv[]) {
         exit(10);
     }
 
-    char *outname_full = calloc(1, strlen(arguments.args[0])+1);
-    memcpy(outname_full, arguments.args[0], strlen(arguments.args[0]));
-    char *outname = basename(outname_full);
+    char *outname = basename(arguments.args[0]);
     int dst_fd = open(outname, O_RDWR | O_CREAT, 0644);
     if(dst_fd < 0) {
         printf("Unable to open %s: %s\n", outname, strerror(errno));
-        free(outname_full);
         exit(10);
     }
     zckCtx *zck_tgt = zck_create();
@@ -447,7 +445,6 @@ int main (int argc, char *argv[]) {
             break;
     }
 out:
-    free(outname_full);
     zck_dl_free(&dl);
     zck_free(&zck_tgt);
     zck_free(&zck_src);

@@ -24,6 +24,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#define _GNU_SOURCE
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -111,9 +113,9 @@ int main (int argc, char *argv[]) {
         perror("");
         exit(1);
     }
-
-    char *out_name = malloc(strlen(arguments.args[0]) - 3);
-    snprintf(out_name, strlen(arguments.args[0]) - 3, "%s", arguments.args[0]);
+    char *base_name = basename(arguments.args[0]);
+    char *out_name = malloc(strlen(base_name) - 3);
+    snprintf(out_name, strlen(base_name) - 3, "%s", base_name);
 
     int dst_fd = STDOUT_FILENO;
     if(!arguments.stdout) {

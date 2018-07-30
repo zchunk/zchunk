@@ -26,21 +26,22 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 #include <zck.h>
 
 #include "zck_private.h"
 
-static int init(zckCtx *zck, zckComp *comp) {
+static bool init(zckCtx *zck, zckComp *comp) {
     VALIDATE_BOOL(zck);
     ALLOCD_BOOL(comp);
 
-    return True;
+    return true;
 }
 
 static ssize_t compress(zckCtx *zck, zckComp *comp, const char *src,
                         const size_t src_size, char **dst, size_t *dst_size,
-                        int use_dict) {
+                        bool use_dict) {
     VALIDATE_INT(zck);
     ALLOCD_INT(comp);
 
@@ -56,18 +57,18 @@ static ssize_t compress(zckCtx *zck, zckComp *comp, const char *src,
     return *dst_size;
 }
 
-static int end_cchunk(zckCtx *zck, zckComp *comp, char **dst, size_t *dst_size,
-                     int use_dict) {
+static bool end_cchunk(zckCtx *zck, zckComp *comp, char **dst, size_t *dst_size,
+                       bool use_dict) {
     VALIDATE_BOOL(zck);
     ALLOCD_BOOL(comp);
 
     *dst = NULL;
     *dst_size = 0;
 
-    return True;
+    return true;
 }
 
-static int decompress(zckCtx *zck, zckComp *comp, const int use_dict) {
+static bool decompress(zckCtx *zck, zckComp *comp, const bool use_dict) {
     VALIDATE_BOOL(zck);
     ALLOCD_BOOL(comp);
 
@@ -77,35 +78,35 @@ static int decompress(zckCtx *zck, zckComp *comp, const int use_dict) {
     comp->data_size = 0;
     if(!comp_add_to_dc(zck, comp, src, src_size)) {
         free(src);
-        return False;
+        return false;
     }
     free(src);
-    return True;
+    return true;
 }
 
-static int end_dchunk(zckCtx *zck, zckComp *comp, const int use_dict,
-                      const size_t fd_size) {
-    return True;
+static bool end_dchunk(zckCtx *zck, zckComp *comp, const bool use_dict,
+                       const size_t fd_size) {
+    return true;
 }
 
-static int close(zckCtx *zck, zckComp *comp) {
-    return True;
+static bool close(zckCtx *zck, zckComp *comp) {
+    return true;
 }
 
 /* Nocomp doesn't support any parameters, so return error if setting a parameter
  * was attempted */
-static int set_parameter(zckCtx *zck, zckComp *comp, int option,
-                         const void *value) {
+static bool set_parameter(zckCtx *zck, zckComp *comp, int option,
+                          const void *value) {
     set_error(zck, "Invalid compression parameter for ZCK_COMP_NONE");
-    return False;
+    return false;
 }
 
 /* No default parameters to set when there's no compression */
-static int set_default_parameters(zckCtx *zck, zckComp *comp) {
-    return True;
+static bool set_default_parameters(zckCtx *zck, zckComp *comp) {
+    return true;
 }
 
-int nocomp_setup(zckCtx *zck, zckComp *comp) {
+bool nocomp_setup(zckCtx *zck, zckComp *comp) {
     comp->init = init;
     comp->set_parameter = set_parameter;
     comp->compress = compress;

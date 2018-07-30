@@ -2,6 +2,7 @@
 #define ZCK_PRIVATE_H
 #include <stdarg.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <regex.h>
 #include "buzhash/buzhash.h"
@@ -30,7 +31,7 @@
 #define ALLOCD_BOOL(f)      if(!f) { \
                                 zck_log(ZCK_LOG_NONE, \
                                         "Object not initialized"); \
-                                return False; \
+                                return false; \
                             }
 #define ALLOCD_INT(f)       if(!f) { \
                                 zck_log(ZCK_LOG_NONE, \
@@ -43,7 +44,7 @@
                                 return NULL; \
                             }
 #define VALIDATE_BOOL(f)    ALLOCD_BOOL(f) \
-                            if((f)->error_state > 0) return False;
+                            if((f)->error_state > 0) return false;
 #define VALIDATE_INT(f)     ALLOCD_INT(f) \
                             if((f)->error_state > 0) return -1;
 #define VALIDATE_PTR(f)     ALLOCD_PTR(f) \
@@ -53,7 +54,7 @@
                                 if(f->mode != ZCK_MODE_READ) { \
                                     set_error(f, \
                                         "zckCtx not opened for reading"); \
-                                    return False; \
+                                    return false; \
                                 }
 #define VALIDATE_READ_INT(f)    VALIDATE_INT(f); \
                                 if(f->mode != ZCK_MODE_READ) { \
@@ -72,7 +73,7 @@
                                 if(f->mode != ZCK_MODE_WRITE) { \
                                     set_error(f, \
                                         "zckCtx not opened for writing"); \
-                                    return False; \
+                                    return false; \
                                 }
 #define VALIDATE_WRITE_INT(f)   VALIDATE_INT(f); \
                                 if(f->mode != ZCK_MODE_WRITE) { \
@@ -89,17 +90,17 @@
 typedef struct zckComp zckComp;
 typedef zckCtx zckCtx;
 
-typedef int (*finit)(zckCtx *zck, zckComp *comp);
-typedef int (*fparam)(zckCtx *zck,zckComp *comp, int option, const void *value);
-typedef int (*fccompend)(zckCtx *zck, zckComp *comp, char **dst,
-                         size_t *dst_size, int use_dict);
+typedef bool (*finit)(zckCtx *zck, zckComp *comp);
+typedef bool (*fparam)(zckCtx *zck,zckComp *comp, int option, const void *value);
+typedef bool (*fccompend)(zckCtx *zck, zckComp *comp, char **dst,
+                          size_t *dst_size, bool use_dict);
 typedef ssize_t (*fcomp)(zckCtx *zck, zckComp *comp, const char *src,
                          const size_t src_size, char **dst, size_t *dst_size,
-                         int use_dict);
-typedef int (*fdecomp)(zckCtx *zck, zckComp *comp, const int use_dict);
-typedef int (*fdcompend)(zckCtx *zck, zckComp *comp, const int use_dict,
-                         const size_t fd_size);
-typedef int (*fcclose)(zckCtx *zck, zckComp *comp);
+                         bool use_dict);
+typedef bool (*fdecomp)(zckCtx *zck, zckComp *comp, const bool use_dict);
+typedef bool (*fdcompend)(zckCtx *zck, zckComp *comp, const bool use_dict,
+                          const size_t fd_size);
+typedef bool (*fcclose)(zckCtx *zck, zckComp *comp);
 
 typedef enum zck_log_type zck_log_type;
 
@@ -290,17 +291,17 @@ typedef struct zckCtx {
 
 int get_tmp_fd()
     __attribute__ ((warn_unused_result));
-int import_dict(zckCtx *zck)
+bool import_dict(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 
 
 /* hash/hash.h */
-int hash_setup(zckCtx *zck, zckHashType *ht, int h)
+bool hash_setup(zckCtx *zck, zckHashType *ht, int h)
     __attribute__ ((warn_unused_result));
-int hash_init(zckCtx *zck, zckHash *hash, zckHashType *hash_type)
+bool hash_init(zckCtx *zck, zckHash *hash, zckHashType *hash_type)
     __attribute__ ((warn_unused_result));
-int hash_update(zckCtx *zck, zckHash *hash, const char *message,
-                const size_t size)
+bool hash_update(zckCtx *zck, zckHash *hash, const char *message,
+                 const size_t size)
     __attribute__ ((warn_unused_result));
 char *hash_finalize(zckCtx *zck, zckHash *hash)
     __attribute__ ((warn_unused_result));
@@ -315,9 +316,9 @@ int validate_current_chunk(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 int validate_header(zckCtx *zck)
     __attribute__ ((warn_unused_result));
-int set_full_hash_type(zckCtx *zck, int hash_type)
+bool set_full_hash_type(zckCtx *zck, int hash_type)
     __attribute__ ((warn_unused_result));
-int set_chunk_hash_type(zckCtx *zck, int hash_type)
+bool set_chunk_hash_type(zckCtx *zck, int hash_type)
     __attribute__ ((warn_unused_result));
 int get_max_hash_size()
     __attribute__ ((warn_unused_result));
@@ -326,22 +327,22 @@ char *get_digest_string(const char *digest, int size)
 
 
 /* index/index.c */
-int index_read(zckCtx *zck, char *data, size_t size, size_t max_length)
+bool index_read(zckCtx *zck, char *data, size_t size, size_t max_length)
     __attribute__ ((warn_unused_result));
-int index_create(zckCtx *zck)
+bool index_create(zckCtx *zck)
     __attribute__ ((warn_unused_result));
-int index_new_chunk(zckCtx *zck, zckIndex *index, char *digest, int digest_size,
-                    size_t comp_size, size_t orig_size, int valid)
+bool index_new_chunk(zckCtx *zck, zckIndex *index, char *digest, int digest_size,
+                     size_t comp_size, size_t orig_size, bool valid)
     __attribute__ ((warn_unused_result));
-int index_add_to_chunk(zckCtx *zck, char *data, size_t comp_size,
+bool index_add_to_chunk(zckCtx *zck, char *data, size_t comp_size,
                         size_t orig_size)
     __attribute__ ((warn_unused_result));
-int index_finish_chunk(zckCtx *zck)
+bool index_finish_chunk(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 void index_clean(zckIndex *index);
 void index_free(zckCtx *zck);
 void clear_work_index(zckCtx *zck);
-int write_index(zckCtx *zck)
+bool write_index(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 
 
@@ -358,26 +359,26 @@ int chunks_from_temp(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 
 /* header.c */
-int header_create(zckCtx *zck)
+bool header_create(zckCtx *zck)
     __attribute__ ((warn_unused_result));
-int write_header(zckCtx *zck)
+bool write_header(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 
 /* comp/comp.c */
-int comp_init(zckCtx *zck)
+bool comp_init(zckCtx *zck)
     __attribute__ ((warn_unused_result));
-int comp_close(zckCtx *zck)
+bool comp_close(zckCtx *zck)
     __attribute__ ((warn_unused_result));
-int comp_reset(zckCtx *zck)
+bool comp_reset(zckCtx *zck)
     __attribute__ ((warn_unused_result));
-int comp_add_to_dc(zckCtx *zck, zckComp *comp, const char *src, size_t src_size)
+bool comp_add_to_dc(zckCtx *zck, zckComp *comp, const char *src, size_t src_size)
     __attribute__ ((warn_unused_result));
-ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, int use_dict)
+ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, bool use_dict)
     __attribute__ ((warn_unused_result));
-int comp_ioption(zckCtx *zck, zck_ioption option, ssize_t value)
+bool comp_ioption(zckCtx *zck, zck_ioption option, ssize_t value)
     __attribute__ ((warn_unused_result));
-int comp_soption(zckCtx *zck, zck_soption option, const void *value,
-                 size_t length)
+bool comp_soption(zckCtx *zck, zck_soption option, const void *value,
+                  size_t length)
     __attribute__ ((warn_unused_result));
 
 /* dl/range.c */

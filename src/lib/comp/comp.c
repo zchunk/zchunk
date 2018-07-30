@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 #include <math.h>
 #include <zck.h>
@@ -55,7 +56,7 @@ static void update_buzhash_bits(zckCtx *zck) {
     zck->buzhash_bitmask = s;
 }
 
-static int set_comp_type(zckCtx *zck, ssize_t type) {
+static bool set_comp_type(zckCtx *zck, ssize_t type) {
     VALIDATE_BOOL(zck);
 
     zckComp *comp = &(zck->comp);
@@ -63,7 +64,7 @@ static int set_comp_type(zckCtx *zck, ssize_t type) {
     /* Cannot change compression type after compression has started */
     if(comp->started) {
         set_error(zck, "Unable to set compression type after initialization");
-        return False;
+        return false;
     }
 
     /* Set all values to 0 before setting compression type */
@@ -86,9 +87,9 @@ static int set_comp_type(zckCtx *zck, ssize_t type) {
     } else {
         set_error(zck, "Unsupported compression type: %s",
                   zck_comp_name_from_type(type));
-        return False;
+        return false;
     }
-    return True;
+    return true;
 }
 
 static size_t comp_read_from_dc(zckCtx *zck, zckComp *comp, char *dst,
@@ -108,8 +109,8 @@ static size_t comp_read_from_dc(zckCtx *zck, zckComp *comp, char *dst,
     return dl_size;
 }
 
-static int comp_add_to_data(zckCtx *zck, zckComp *comp, const char *src,
-                            size_t src_size) {
+static bool comp_add_to_data(zckCtx *zck, zckComp *comp, const char *src,
+                             size_t src_size) {
     VALIDATE_BOOL(zck);
     ALLOCD_BOOL(comp);
     ALLOCD_BOOL(src);
@@ -118,17 +119,17 @@ static int comp_add_to_data(zckCtx *zck, zckComp *comp, const char *src,
     if(comp->data == NULL) {
         set_fatal_error(zck, "Unable to reallocate %lu bytes",
                         comp->data_size + src_size);
-        return False;
+        return false;
     }
     zck_log(ZCK_LOG_DEBUG, "Adding %lu bytes to compressed buffer",
         src_size);
     memcpy(comp->data + comp->data_size, src, src_size);
     comp->data_size += src_size;
     comp->data_loc += src_size;
-    return True;
+    return true;
 }
 
-static ssize_t comp_end_dchunk(zckCtx *zck, int use_dict, size_t fd_size) {
+static ssize_t comp_end_dchunk(zckCtx *zck, bool use_dict, size_t fd_size) {
     VALIDATE_READ_INT(zck);
 
     ssize_t rb = zck->comp.end_dchunk(zck, &(zck->comp), use_dict, fd_size);
@@ -166,24 +167,24 @@ static ssize_t comp_write(zckCtx *zck, const char *src, const size_t src_size) {
     return src_size;
 }
 
-int comp_init(zckCtx *zck) {
+bool comp_init(zckCtx *zck) {
     VALIDATE_BOOL(zck);
 
     zckComp *comp = &(zck->comp);
 
     if(zck->comp.started) {
         set_error(zck, "Compression already initialized");
-        return False;
+        return false;
     }
     if((zck->comp.dict && zck->comp.dict_size == 0) ||
        (zck->comp.dict == NULL && zck->comp.dict_size > 0)) {
         set_error(zck, "Invalid dictionary configuration");
-        return False;
+        return false;
     }
     zck_log(ZCK_LOG_DEBUG, "Initializing %s compression",
             zck_comp_name_from_type(comp->type));
     if(!zck->comp.init(zck, &(zck->comp)))
-        return False;
+        return false;
     if(zck->mode == ZCK_MODE_WRITE) {
         if(zck->chunk_min_size == 0) {
             zck->chunk_min_size = CHUNK_DEFAULT_MIN;
@@ -222,47 +223,47 @@ int comp_init(zckCtx *zck) {
 
             if(zck->comp.compress(zck, comp, zck->comp.dict,
                                   zck->comp.dict_size, &dst, &dst_size, 0) < 0)
-                return False;
+                return false;
             zck->comp.dc_data_size = zck->comp.dict_size;
             if(!write_data(zck, zck->temp_fd, dst, dst_size)) {
                 free(dst);
-                return False;
+                return false;
             }
             if(!index_add_to_chunk(zck, dst, dst_size,
                                        zck->comp.dict_size)) {
                 free(dst);
-                return False;
+                return false;
             }
             free(dst);
             dst = NULL;
             dst_size = 0;
 
             if(!zck->comp.end_cchunk(zck, comp, &dst, &dst_size, 0))
-                return False;
+                return false;
             zck->comp.dc_data_size = 0;
             if(!write_data(zck, zck->temp_fd, dst, dst_size)) {
                 free(dst);
-                return False;
+                return false;
             }
             if(!index_add_to_chunk(zck, dst, dst_size, 0) ||
                !index_finish_chunk(zck)) {
                 free(dst);
-                return False;
+                return false;
             }
             free(dst);
         } else {
             if(!index_finish_chunk(zck))
-                return False;
+                return false;
         }
     }
     free(zck->comp.dict);
     zck->comp.dict = NULL;
     zck->comp.dict_size = 0;
-    zck->comp.started = True;
-    return True;
+    zck->comp.started = true;
+    return true;
 }
 
-int comp_reset(zckCtx *zck) {
+bool comp_reset(zckCtx *zck) {
     ALLOCD_BOOL(zck);
 
     zck->comp.started = 0;
@@ -273,11 +274,11 @@ int comp_reset(zckCtx *zck) {
         zck->comp.dc_data_size = 0;
     }
     if(zck->comp.close == NULL)
-        return True;
+        return true;
     return zck->comp.close(zck, &(zck->comp));
 }
 
-int comp_close(zckCtx *zck) {
+bool comp_close(zckCtx *zck) {
     ALLOCD_BOOL(zck);
 
     zck_log(ZCK_LOG_DEBUG, "Closing compression");
@@ -291,14 +292,14 @@ int comp_close(zckCtx *zck) {
     return comp_reset(zck);
 }
 
-int comp_ioption(zckCtx *zck, zck_ioption option, ssize_t value) {
+bool comp_ioption(zckCtx *zck, zck_ioption option, ssize_t value) {
     VALIDATE_BOOL(zck);
 
     /* Cannot change compression parameters after compression has started */
     if(zck && zck->comp.started) {
         set_error(zck,
                   "Unable to set compression parameters after initialization");
-        return False;
+        return false;
     }
     if(option == ZCK_COMP_TYPE) {
         return set_comp_type(zck, value);
@@ -313,37 +314,37 @@ int comp_ioption(zckCtx *zck, zck_ioption option, ssize_t value) {
             zck_log(ZCK_LOG_DEBUG, "Enabling automatic chunking");
             zck->manual_chunk = 0;
         }
-        return True;
+        return true;
 
     /* Minimum chunk size */
     } else if(option == ZCK_CHUNK_MIN) {
         VALIDATE_WRITE_BOOL(zck);
         if(value < 1) {
             set_error(zck, "Minimum chunk size must be > 0");
-            return False;
+            return false;
         }
         if(value > zck->chunk_max_size) {
             set_error(zck, "Minimum chunk size must be <= maximum chunk size");
-            return False;
+            return false;
         }
         zck->chunk_min_size = value;
         zck_log(ZCK_LOG_DEBUG, "Setting minimum chunk size to %li", value);
-        return True;
+        return true;
 
     /* Maximum chunk size */
     } else if(option == ZCK_CHUNK_MAX) {
         VALIDATE_WRITE_BOOL(zck);
         if(value < 1) {
             set_error(zck, "Maximum chunk size must be > 0");
-            return False;
+            return false;
         }
         if(value < zck->chunk_min_size) {
             set_error(zck, "Maximum chunk size must be >= minimum chunk size");
-            return False;
+            return false;
         }
         zck->chunk_max_size = value;
         zck_log(ZCK_LOG_DEBUG, "Setting maximum chunk size to %li", value);
-        return True;
+        return true;
 
     } else {
         if(zck && zck->comp.set_parameter)
@@ -351,20 +352,20 @@ int comp_ioption(zckCtx *zck, zck_ioption option, ssize_t value) {
 
         set_error(zck, "Unsupported compression parameter: %i",
                   option);
-        return False;
+        return false;
     }
-    return True;
+    return true;
 }
 
-int comp_soption(zckCtx *zck, zck_soption option, const void *value,
-                 size_t length) {
+bool comp_soption(zckCtx *zck, zck_soption option, const void *value,
+                  size_t length) {
     VALIDATE_BOOL(zck);
 
     /* Cannot change compression parameters after compression has started */
     if(zck && zck->comp.started) {
         set_error(zck,
                   "Unable to set compression parameters after initialization");
-        return False;
+        return false;
     }
     if(option == ZCK_COMP_DICT) {
         zck->comp.dict = (char *)value;
@@ -374,13 +375,13 @@ int comp_soption(zckCtx *zck, zck_soption option, const void *value,
             return zck->comp.set_parameter(zck, &(zck->comp), option, value);
 
         set_error(zck, "Unsupported compression parameter: %i", option);
-        return False;
+        return false;
     }
-    return True;
+    return true;
 }
 
-int comp_add_to_dc(zckCtx *zck, zckComp *comp, const char *src,
-                   size_t src_size) {
+bool comp_add_to_dc(zckCtx *zck, zckComp *comp, const char *src,
+                    size_t src_size) {
     VALIDATE_BOOL(zck);
     ALLOCD_BOOL(comp);
     ALLOCD_BOOL(src);
@@ -390,7 +391,7 @@ int comp_add_to_dc(zckCtx *zck, zckComp *comp, const char *src,
     if(temp == NULL) {
         set_fatal_error(zck, "Unable to allocate %lu bytes",
                         comp->dc_data_size - comp->dc_data_loc + src_size);
-        return False;
+        return false;
     }
     if(comp->dc_data_loc != 0)
         zck_log(ZCK_LOG_DEBUG, "Freeing %lu bytes from decompressed buffer",
@@ -407,10 +408,10 @@ int comp_add_to_dc(zckCtx *zck, zckComp *comp, const char *src,
     /* Copy new uncompressed data into comp */
     memcpy(comp->dc_data + comp->dc_data_size, src, src_size);
     comp->dc_data_size += src_size;
-    return True;
+    return true;
 }
 
-ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, int use_dict) {
+ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, bool use_dict) {
     VALIDATE_READ_INT(zck);
 
     if(!zck->comp.started) {
@@ -430,10 +431,10 @@ ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, int use_dict) {
     char *src = zmalloc(dst_size - dc);
     if(src == NULL) {
         set_fatal_error(zck, "Unable to allocate %lu bytes", dst_size-dc);
-        return False;
+        return false;
     }
-    int finished_rd = False;
-    int finished_dc = False;
+    bool finished_rd = false;
+    bool finished_dc = false;
     zck_log(ZCK_LOG_DEBUG, "Trying to read %lu bytes", dst_size);
     while(dc < dst_size) {
         /* Get bytes from decompressed buffer */
@@ -486,14 +487,14 @@ ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, int use_dict) {
             if(!comp_end_dchunk(zck, use_dict, zck->comp.data_idx->length))
                 return -1;
             if(zck->comp.data_idx == NULL)
-                zck->comp.data_eof = True;
+                zck->comp.data_eof = true;
             continue;
         }
 
         /* If we finished reading and we've reached here, we're done
          * decompressing */
         if(finished_rd) {
-            finished_dc = True;
+            finished_dc = true;
             continue;
         }
 
@@ -509,7 +510,7 @@ ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, int use_dict) {
             goto read_error;
         if(rb < rs) {
             zck_log(ZCK_LOG_DDEBUG, "EOF");
-            finished_rd = True;
+            finished_rd = true;
         }
         if(!hash_update(zck, &(zck->check_full_hash), src, rb) ||
            !hash_update(zck, &(zck->check_chunk_hash), src, rb) ||

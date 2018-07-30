@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -52,9 +53,9 @@ static struct argp_option options[] = {
 
 struct arguments {
   char *args[1];
-  int verify;
-  int quiet;
-  int show_chunks;
+  bool verify;
+  bool quiet;
+  bool show_chunks;
   zck_log_type log_level;
 };
 
@@ -68,16 +69,16 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
                 arguments->log_level = ZCK_LOG_DDEBUG;
             break;
         case 'c':
-            arguments->show_chunks = True;
+            arguments->show_chunks = true;
             break;
         case 'q':
-            arguments->quiet = True;
+            arguments->quiet = true;
             break;
         case 'V':
             version();
             break;
         case 'f':
-            arguments->verify = True;
+            arguments->verify = true;
             break;
 
         case ARGP_KEY_ARG:

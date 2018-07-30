@@ -26,6 +26,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdarg.h>
 #include <unistd.h>
 #include <zck.h>

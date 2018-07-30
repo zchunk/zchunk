@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 #include <zck.h>
 
@@ -88,7 +89,7 @@ static int validate_checksums(zckCtx *zck, zck_log_type bad_checksums) {
         return 0;
 
     /* Check each chunk checksum */
-    int all_good = True;
+    bool all_good = true;
     int count = 0;
     for(zckChunk *idx = zck->index.first; idx; idx = idx->next, count++) {
         if(idx == zck->index.first && idx->length == 0) {
@@ -117,7 +118,7 @@ static int validate_checksums(zckCtx *zck, zck_log_type bad_checksums) {
             return 0;
         idx->valid = valid_chunk;
         if(all_good && valid_chunk != 1)
-            all_good = False;
+            all_good = false;
     }
     int valid_file = -1;
     if(all_good) {
@@ -151,10 +152,10 @@ char *get_digest_string(const char *digest, int size) {
     return str;
 }
 
-int hash_setup(zckCtx *zck, zckHashType *ht, int h) {
+bool hash_setup(zckCtx *zck, zckHashType *ht, int h) {
     if(!ht) {
         set_error(zck, "zckHashType is null");
-        return False;
+        return false;
     }
     if(h == ZCK_HASH_SHA1) {
         memset(ht, 0, sizeof(zckHashType));
@@ -162,14 +163,14 @@ int hash_setup(zckCtx *zck, zckHashType *ht, int h) {
         ht->digest_size = SHA1_DIGEST_LENGTH;
         zck_log(ZCK_LOG_DEBUG, "Setting up hash type %s",
                 zck_hash_name_from_type(ht->type));
-        return True;
+        return true;
     } else if(h == ZCK_HASH_SHA256) {
         memset(ht, 0, sizeof(zckHashType));
         ht->type = ZCK_HASH_SHA256;
         ht->digest_size = SHA256_DIGEST_SIZE;
         zck_log(ZCK_LOG_DEBUG, "Setting up hash type %s",
                 zck_hash_name_from_type(ht->type));
-        return True;
+        return true;
     } else if(h >= ZCK_HASH_SHA512 &&
               h <= ZCK_HASH_SHA512_128) {
         memset(ht, 0, sizeof(zckHashType));
@@ -180,10 +181,10 @@ int hash_setup(zckCtx *zck, zckHashType *ht, int h) {
             ht->digest_size = 16;
         zck_log(ZCK_LOG_DEBUG, "Setting up hash type %s",
                 zck_hash_name_from_type(ht->type));
-        return True;
+        return true;
     }
     set_error(zck, "Unsupported hash type: %s", zck_hash_name_from_type(h));
-    return False;
+    return false;
 }
 
 void hash_close(zckHash *hash) {
@@ -203,78 +204,78 @@ void hash_reset(zckHashType *ht) {
     return;
 }
 
-int hash_init(zckCtx *zck, zckHash *hash, zckHashType *hash_type) {
+bool hash_init(zckCtx *zck, zckHash *hash, zckHashType *hash_type) {
     hash_close(hash);
     if(hash == NULL || hash_type == NULL) {
         set_error(zck, "Either zckHash or zckHashType struct is null");
-        return False;
+        return false;
     }
     if(hash_type->type == ZCK_HASH_SHA1) {
         zck_log(ZCK_LOG_DDEBUG, "Initializing SHA-1 hash");
         hash->ctx = zmalloc(sizeof(SHA_CTX));
         hash->type = hash_type;
         if(hash->ctx == NULL)
-            return False;
+            return false;
         SHA1_Init((SHA_CTX *) hash->ctx);
-        return True;
+        return true;
     } else if(hash_type->type == ZCK_HASH_SHA256) {
         zck_log(ZCK_LOG_DDEBUG, "Initializing SHA-256 hash");
         hash->ctx = zmalloc(sizeof(SHA256_CTX));
         hash->type = hash_type;
         if(hash->ctx == NULL)
-            return False;
+            return false;
         SHA256_Init((SHA256_CTX *) hash->ctx);
-        return True;
+        return true;
     } else if(hash_type->type >= ZCK_HASH_SHA512 &&
               hash_type->type <= ZCK_HASH_SHA512_128) {
         zck_log(ZCK_LOG_DDEBUG, "Initializing SHA-512 hash");
         hash->ctx = zmalloc(sizeof(SHA512_CTX));
         hash->type = hash_type;
         if(hash->ctx == NULL)
-            return False;
+            return false;
         SHA512_Init((SHA512_CTX *) hash->ctx);
-        return True;
+        return true;
     }
     set_error(zck, "Unsupported hash type: %s",
               zck_hash_name_from_type(hash_type->type));
-    return False;
+    return false;
 }
 
-int hash_update(zckCtx *zck, zckHash *hash, const char *message,
+bool hash_update(zckCtx *zck, zckHash *hash, const char *message,
                 const size_t size) {
     if(message == NULL && size == 0)
-        return True;
+        return true;
     if(message == NULL) {
         set_error(zck,
                   "Hash data is supposed to have %lu bytes, but is NULL", size);
-        return False;
+        return false;
     }
     if(size == 0) {
         set_error(zck,
                   "Hash data is supposed to be 0-length, but is not NULL");
-        return False;
+        return false;
     }
     if(hash && hash->ctx && hash->type) {
         if(hash->type->type == ZCK_HASH_SHA1) {
             SHA1_Update((SHA_CTX *)hash->ctx, (const sha1_byte *)message, size);
-            return True;
+            return true;
         } else if(hash->type->type == ZCK_HASH_SHA256) {
             SHA256_Update((SHA256_CTX *)hash->ctx,
                           (const unsigned char *)message, size);
-            return True;
+            return true;
         } else if(hash->type->type >= ZCK_HASH_SHA512 &&
                   hash->type->type <= ZCK_HASH_SHA512_128) {
             SHA512_Update((SHA512_CTX *)hash->ctx,
                           (const unsigned char *)message, size);
-            return True;
+            return true;
         }
         set_error(zck, "Unsupported hash type: %s",
                   zck_hash_name_from_type(hash->type->type));
 
-        return False;
+        return false;
     }
     set_error(zck, "Hash hasn't been initialized");
-    return False;
+    return false;
 }
 
 char *hash_finalize(zckCtx *zck, zckHash *hash) {
@@ -306,23 +307,23 @@ char *hash_finalize(zckCtx *zck, zckHash *hash) {
     return NULL;
 }
 
-int set_full_hash_type(zckCtx *zck, int hash_type) {
+bool set_full_hash_type(zckCtx *zck, int hash_type) {
     VALIDATE_BOOL(zck);
 
     zck_log(ZCK_LOG_INFO, "Setting full hash to %s",
             zck_hash_name_from_type(hash_type));
     if(!hash_setup(zck, &(zck->hash_type), hash_type)) {
         set_error(zck, "Unable to set full hash");
-        return False;
+        return false;
     }
     if(!hash_init(zck, &(zck->full_hash), &(zck->hash_type))) {
         set_error(zck, "Unable initialize full hash");
-        return False;
+        return false;
     }
-    return True;
+    return true;
 }
 
-int set_chunk_hash_type(zckCtx *zck, int hash_type) {
+bool set_chunk_hash_type(zckCtx *zck, int hash_type) {
     VALIDATE_BOOL(zck);
 
     memset(&(zck->chunk_hash_type), 0, sizeof(zckHashType));
@@ -330,11 +331,11 @@ int set_chunk_hash_type(zckCtx *zck, int hash_type) {
             zck_hash_name_from_type(hash_type));
     if(!hash_setup(zck, &(zck->chunk_hash_type), hash_type)) {
         set_error(zck, "Unable to set chunk hash");
-        return False;
+        return false;
     }
     zck->index.hash_type = zck->chunk_hash_type.type;
     zck->index.digest_size = zck->chunk_hash_type.digest_size;
-    return True;
+    return true;
 }
 
 /* Validate chunk, returning -1 if checksum fails, 1 if good, 0 if error */

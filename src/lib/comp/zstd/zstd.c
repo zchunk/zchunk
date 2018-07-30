@@ -26,13 +26,14 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 #include <zstd.h>
 #include <zck.h>
 
 #include "zck_private.h"
 
-static int init(zckCtx *zck, zckComp *comp) {
+static bool init(zckCtx *zck, zckComp *comp) {
     VALIDATE_BOOL(zck);
     ALLOCD_BOOL(comp);
 
@@ -44,16 +45,16 @@ static int init(zckCtx *zck, zckComp *comp) {
         if(comp->cdict_ctx == NULL) {
             set_fatal_error(zck,
                             "Unable to create zstd compression dict context");
-            return False;
+            return false;
         }
         comp->ddict_ctx = ZSTD_createDDict(comp->dict, comp->dict_size);
         if(comp->ddict_ctx == NULL) {
             set_fatal_error(zck,
                             "Unable to create zstd decompression dict context");
-            return False;
+            return false;
         }
     }
-    return True;
+    return true;
 }
 
 /* The zstd compression format doesn't allow streaming compression with a dict
@@ -61,7 +62,7 @@ static int init(zckCtx *zck, zckComp *comp) {
  * compression where we buffer the data until the chunk ends. */
 static ssize_t compress(zckCtx *zck, zckComp *comp, const char *src,
                         const size_t src_size, char **dst, size_t *dst_size,
-                        int use_dict) {
+                        bool use_dict) {
     VALIDATE_INT(zck);
     ALLOCD_INT(comp);
 
@@ -77,8 +78,8 @@ static ssize_t compress(zckCtx *zck, zckComp *comp, const char *src,
     return 0;
 }
 
-static int end_cchunk(zckCtx *zck, zckComp *comp, char **dst, size_t *dst_size,
-                      int use_dict) {
+static bool end_cchunk(zckCtx *zck, zckComp *comp, char **dst, size_t *dst_size,
+                       bool use_dict) {
     VALIDATE_BOOL(zck);
     ALLOCD_BOOL(comp);
 
@@ -86,13 +87,13 @@ static int end_cchunk(zckCtx *zck, zckComp *comp, char **dst, size_t *dst_size,
     if(ZSTD_isError(max_size)) {
         set_fatal_error(zck, "zstd compression error: %s",
                         ZSTD_getErrorName(max_size));
-        return False;
+        return false;
     }
 
     *dst = zmalloc(max_size);
     if(dst == NULL) {
         set_fatal_error(zck, "Unable to allocate %lu bytes", max_size);
-        return False;
+        return false;
     }
 
     if(use_dict && comp->cdict_ctx) {
@@ -109,20 +110,20 @@ static int end_cchunk(zckCtx *zck, zckComp *comp, char **dst, size_t *dst_size,
     if(ZSTD_isError(*dst_size)) {
         set_fatal_error(zck, "zstd compression error: %s",
                         ZSTD_getErrorName(*dst_size));
-        return False;
+        return false;
     }
-    return True;
+    return true;
 }
 
-static int decompress(zckCtx *zck, zckComp *comp, const int use_dict) {
+static bool decompress(zckCtx *zck, zckComp *comp, const bool use_dict) {
     VALIDATE_BOOL(zck);
     ALLOCD_BOOL(comp);
 
-    return True;
+    return true;
 }
 
-static int end_dchunk(zckCtx *zck, zckComp *comp, const int use_dict,
-                      const size_t fd_size) {
+static bool end_dchunk(zckCtx *zck, zckComp *comp, const bool use_dict,
+                       const size_t fd_size) {
     VALIDATE_BOOL(zck);
     ALLOCD_BOOL(comp);
 
@@ -158,15 +159,15 @@ static int end_dchunk(zckCtx *zck, zckComp *comp, const int use_dict,
         goto decomp_error_2;
     free(dst);
     free(src);
-    return True;
+    return true;
 decomp_error_2:
     free(dst);
 decomp_error_1:
     free(src);
-    return False;
+    return false;
 }
 
-static int close(zckCtx *zck, zckComp *comp) {
+static bool close(zckCtx *zck, zckComp *comp) {
     if(comp->cdict_ctx) {
         ZSTD_freeCDict(comp->cdict_ctx);
         comp->cdict_ctx = NULL;
@@ -183,28 +184,28 @@ static int close(zckCtx *zck, zckComp *comp) {
         ZSTD_freeDCtx(comp->dctx);
         comp->dctx = NULL;
     }
-    return True;
+    return true;
 }
 
-static int set_parameter(zckCtx *zck, zckComp *comp, int option,
-                         const void *value) {
+static bool set_parameter(zckCtx *zck, zckComp *comp, int option,
+                          const void *value) {
     if(option == ZCK_ZSTD_COMP_LEVEL) {
         if(*(int*)value >= 0 && *(int*)value <= ZSTD_maxCLevel()) {
             comp->level = *(int*)value;
-            return True;
+            return true;
         }
     }
     set_error(zck, "Invalid compression parameter for ZCK_COMP_ZSTD");
-    return False;
+    return false;
 }
 
-static int set_default_parameters(zckCtx *zck, zckComp *comp) {
+static bool set_default_parameters(zckCtx *zck, zckComp *comp) {
     /* Set default compression level to 16 */
     int level=16;
     return set_parameter(zck, comp, ZCK_ZSTD_COMP_LEVEL, &level);
 }
 
-int zstd_setup(zckCtx *zck, zckComp *comp) {
+bool zstd_setup(zckCtx *zck, zckComp *comp) {
     comp->init = init;
     comp->set_parameter = set_parameter;
     comp->compress = compress;

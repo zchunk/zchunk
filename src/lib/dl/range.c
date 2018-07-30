@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 #include <math.h>
 #include <errno.h>
@@ -58,7 +59,7 @@ static zckRangeItem *range_insert_new(zckCtx *zck, zckRangeItem *prev,
     }
     if(add_index)
         if(!index_new_chunk(zck, &(info->index), idx->digest, idx->digest_size,
-                                end-start+1, end-start+1, False)) {
+                                end-start+1, end-start+1, false)) {
             free(new);
             return NULL;
         }
@@ -90,16 +91,16 @@ static void range_merge_combined(zckCtx *zck, zckRange *info) {
     }
 }
 
-static int range_add(zckRange *info, zckChunk *chk, zckCtx *zck) {
+static bool range_add(zckRange *info, zckChunk *chk, zckCtx *zck) {
     if(info == NULL || chk == NULL) {
         set_error(zck, "zckRange or zckChunk not allocated");
-        return False;
+        return false;
     }
     size_t header_len = 0;
-    int add_index = False;
+    bool add_index = false;
     if(zck) {
         header_len = zck_get_header_length(zck);
-        add_index = True;
+        add_index = true;
     }
 
     size_t start = chk->start + header_len;
@@ -113,31 +114,31 @@ static int range_add(zckRange *info, zckChunk *chk, zckCtx *zck) {
         } else if(start < ptr->start) {
             if(range_insert_new(zck, ptr->prev, ptr, start, end, info, chk,
                                 add_index) == NULL)
-                return False;
+                return false;
             if(info->first == ptr) {
                 info->first = ptr->prev;
             }
             info->count += 1;
             range_merge_combined(zck, info);
-            return True;
+            return true;
         } else { // start == ptr->start
             if(end > ptr->end)
                 ptr->end = end;
             info->count += 1;
             range_merge_combined(zck, info);
-            return True;
+            return true;
         }
     }
     /* We've only reached here if we should be last item */
     zckRangeItem *new = range_insert_new(zck, prev, NULL, start, end, info, chk,
                                          add_index);
     if(new == NULL)
-        return False;
+        return false;
     if(info->first == NULL)
         info->first = new;
     info->count += 1;
     range_merge_combined(zck, info);
-    return True;
+    return true;
 }
 
 void PUBLIC zck_range_free(zckRange **info) {

@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -62,7 +63,7 @@ struct arguments {
   char *args[1];
   zck_log_type log_level;
   char *split_string;
-  int manual_chunk;
+  bool manual_chunk;
   char *output;
   char *dict;
 };
@@ -80,7 +81,7 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
             arguments->split_string = arg;
             break;
         case 'm':
-            arguments->manual_chunk = 1;
+            arguments->manual_chunk = true;
             break;
         case 'o':
             arguments->output = arg;

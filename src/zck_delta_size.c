@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -157,11 +158,11 @@ int main (int argc, char *argv[]) {
     ssize_t matched_chunks = 0;
     for(tgt_idx = zck_get_first_chunk(zck_tgt); tgt_idx;
         tgt_idx = zck_get_next_chunk(tgt_idx)) {
-        int found = False;
+        bool found = false;
         for(src_idx = zck_get_first_chunk(zck_src); src_idx;
             src_idx = zck_get_next_chunk(src_idx)) {
             if(zck_compare_chunk_digest(tgt_idx, src_idx)) {
-                found = True;
+                found = true;
                 break;
             }
         }

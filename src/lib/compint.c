@@ -26,6 +26,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <zck.h>
 #include "zck_private.h"
 
@@ -50,12 +51,12 @@ int compint_to_size(zckCtx *zck, size_t *val, const char *compint,
     size_t old_val = 0;
     const unsigned char *i = (unsigned char *)compint;
     int count = 0;
-    int done = False;
-    while(True) {
+    bool done = false;
+    while(true) {
         size_t c = i[0];
         if(c >= 128) {
             c -= 128;
-            done = True;
+            done = true;
         }
         /* There *must* be a more elegant way of doing c * 128**count */
         for(int f=0; f<count; f++)
@@ -74,11 +75,11 @@ int compint_to_size(zckCtx *zck, size_t *val, const char *compint,
                 set_fatal_error(zck, "Number too large");
             *length -= count;
             *val = 0;
-            return False;
+            return false;
         }
         old_val = *val;
     }
-    return True;
+    return true;
 }
 
 int compint_from_int(zckCtx *zck, char *compint, int val, size_t *length) {
@@ -86,11 +87,11 @@ int compint_from_int(zckCtx *zck, char *compint, int val, size_t *length) {
 
     if(val < 0) {
         set_error(zck, "Unable to compress negative integers");
-        return False;
+        return false;
     }
 
     compint_from_size(compint, (size_t)val, length);
-    return True;
+    return true;
 }
 
 int compint_to_int(zckCtx *zck, int *val, const char *compint, size_t *length,
@@ -99,11 +100,11 @@ int compint_to_int(zckCtx *zck, int *val, const char *compint, size_t *length,
 
     size_t new = (size_t)*val;
     if(!compint_to_size(zck, &new, compint, length, max_length))
-        return False;
+        return false;
     *val = (int)new;
     if(*val < 0) {
         set_fatal_error(zck, "Overflow error: compressed int is negative");
-        return False;
+        return false;
     }
-    return True;
+    return true;
 }

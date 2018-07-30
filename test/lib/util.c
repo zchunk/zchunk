@@ -25,6 +25,7 @@
  */
 
 #include <stdlib.h>
+#include <stdbool.h>
 #include <zck.h>
 #include "../../src/lib/zck_private.h"
 

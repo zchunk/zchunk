@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -54,7 +55,7 @@ static struct argp_option options[] = {
 struct arguments {
   char *args[1];
   zck_log_type log_level;
-  int stdout;
+  bool stdout;
 };
 
 static error_t parse_opt (int key, char *arg, struct argp_state *state) {
@@ -67,7 +68,7 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
                 arguments->log_level = ZCK_LOG_DDEBUG;
             break;
         case 'c':
-            arguments->stdout = 1;
+            arguments->stdout = true;
             break;
         case 'V':
             version();
@@ -128,7 +129,7 @@ int main (int argc, char *argv[]) {
         }
     }
 
-    int good_exit = False;
+    bool good_exit = false;
 
     zckCtx *zck = zck_create();
     if(zck == NULL)
@@ -146,7 +147,7 @@ int main (int argc, char *argv[]) {
     }
 
     size_t total = 0;
-    while(True) {
+    while(true) {
         ssize_t read = zck_read(zck, data, BUF_SIZE);
         if(read < 0)
             goto error2;
@@ -162,7 +163,7 @@ int main (int argc, char *argv[]) {
         goto error2;
     if(arguments.log_level <= ZCK_LOG_INFO)
         printf("Decompressed %lu bytes\n", (unsigned long)total);
-    good_exit = True;
+    good_exit = true;
 error2:
     free(data);
     if(!good_exit)

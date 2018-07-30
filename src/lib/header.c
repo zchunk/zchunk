@@ -26,34 +26,35 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
 #include <zck.h>
 
 #include "zck_private.h"
 
-static int check_flags(zckCtx *zck, size_t flags) {
+static bool check_flags(zckCtx *zck, size_t flags) {
     zck->has_streams = flags & 1;
     if(zck->has_streams) {
         set_fatal_error(zck,
                         "This version of zchunk doesn't support streams");
-        return False;
+        return false;
     }
     flags = flags & (SIZE_MAX - 1);
     if(flags != 0) {
         set_fatal_error(zck, "Unknown flags(s) set");
-        return False;
+        return false;
     }
-    return True;
+    return true;
 }
 
-static int read_header_from_file(zckCtx *zck) {
+static bool read_header_from_file(zckCtx *zck) {
     /* Allocate header and store any extra bytes at beginning of header */
     zck->header = realloc(zck->header, zck->lead_size + zck->header_length);
     if(zck->header == NULL) {
         set_fatal_error(zck, "Unable to reallocate %lu bytes",
                         zck->lead_size + zck->header_length);
-        return False;
+        return false;
     }
     zck->lead_string = zck->header;
     char *header = zck->header + zck->lead_size;
@@ -61,7 +62,7 @@ static int read_header_from_file(zckCtx *zck) {
 
     if(zck->header_length < zck->header_size - zck->lead_size) {
         set_fatal_error(zck, "Header size is too small for actual data");
-        return False;
+        return false;
     }
     if(zck->lead_size < zck->header_size)
         loaded = zck->header_size - zck->lead_size;
@@ -71,32 +72,32 @@ static int read_header_from_file(zckCtx *zck) {
             zck->header_length);
     if(loaded < zck->header_length) {
         if(!read_data(zck, header + loaded, zck->header_length - loaded))
-            return False;
+            return false;
         zck->header_size = zck->lead_size + zck->header_length;
     }
 
     if(!hash_init(zck, &(zck->check_full_hash), &(zck->hash_type)))
-        return False;
+        return false;
     if(!hash_update(zck, &(zck->check_full_hash), zck->header,
                     zck->hdr_digest_loc))
-        return False;
+        return false;
     if(!hash_update(zck, &(zck->check_full_hash), header, zck->header_length))
-        return False;
+        return false;
     int ret = validate_header(zck);
     if(ret < 1) {
         if(ret == -1)
             set_fatal_error(zck, "Header checksum failed verification");
-        return False;
+        return false;
     }
-    return True;
+    return true;
 }
 
-static int read_preface(zckCtx *zck) {
+static bool read_preface(zckCtx *zck) {
     VALIDATE_READ_BOOL(zck);
 
     if(zck->header_digest == NULL) {
         set_error(zck, "Reading preface before lead is read");
-        return False;
+        return false;
     }
 
     char *header = zck->header + zck->lead_size;
@@ -107,13 +108,13 @@ static int read_preface(zckCtx *zck) {
     zck_log(ZCK_LOG_DEBUG, "Reading data digest");
     if(length + zck->hash_type.digest_size > max_length) {
         set_fatal_error(zck, "Read past end of header");
-        return False;
+        return false;
     }
     zck->full_hash_digest = zmalloc(zck->hash_type.digest_size);
     if(!zck->full_hash_digest) {
         set_fatal_error(zck, "Unable to allocate %lu bytes",
                         zck->hash_type.digest_size);
-        return False;
+        return false;
     }
     memcpy(zck->full_hash_digest, header+length, zck->hash_type.digest_size);
     length += zck->hash_type.digest_size;
@@ -121,9 +122,9 @@ static int read_preface(zckCtx *zck) {
     /* Read flags */
     size_t flags = 0;
     if(!compint_to_size(zck, &flags, header+length, &length, max_length))
-        return False;
+        return false;
     if(!check_flags(zck, flags))
-        return False;
+        return false;
 
     /* Setup for reading compression type */
     zck_log(ZCK_LOG_DEBUG, "Reading compression type and index size");
@@ -131,28 +132,28 @@ static int read_preface(zckCtx *zck) {
 
     /* Read and initialize compression type */
     if(!compint_to_int(zck, &tmp, header+length, &length, max_length))
-        return False;
+        return false;
     if(!comp_ioption(zck, ZCK_COMP_TYPE, tmp))
-        return False;
+        return false;
     if(!comp_init(zck))
-        return False;
+        return false;
 
     /* Read and initialize index size */
     if(!compint_to_int(zck, &tmp, header+length, &length, max_length))
-        return False;
+        return false;
     zck->index_size = tmp;
 
     zck->preface_string = header;
     zck->preface_size = length;
-    return True;
+    return true;
 }
 
-static int read_index(zckCtx *zck) {
+static bool read_index(zckCtx *zck) {
     VALIDATE_READ_BOOL(zck);
 
     if(zck->preface_string == NULL) {
         set_error(zck, "Reading index before preface is read");
-        return False;
+        return false;
     }
 
     char *header = NULL;
@@ -160,23 +161,23 @@ static int read_index(zckCtx *zck) {
     if(zck->lead_size + zck->preface_size + zck->index_size >
        zck->header_size) {
         set_fatal_error(zck, "Read past end of header");
-        return False;
+        return false;
     }
     header = zck->header + zck->lead_size + zck->preface_size;
     int max_length = zck->header_size - (zck->lead_size + zck->preface_size);
     if(!index_read(zck, header, zck->index_size, max_length))
-        return False;
+        return false;
 
     zck->index_string = header;
-    return True;
+    return true;
 }
 
-static int read_sig(zckCtx *zck) {
+static bool read_sig(zckCtx *zck) {
     VALIDATE_READ_BOOL(zck);
 
     if(zck->index_string == NULL) {
         set_error(zck, "Reading signatures before index is read");
-        return False;
+        return false;
     }
 
     char *header = zck->header + zck->lead_size + zck->preface_size +
@@ -186,13 +187,13 @@ static int read_sig(zckCtx *zck) {
     size_t length = 0;
 
     if(!compint_to_int(zck, &(zck->sigs.count), header, &length, max_length))
-        return False;
+        return false;
 
     /* We don't actually support signatures yet, so bail if there is one */
     zck_log(ZCK_LOG_DEBUG, "Signature count: %i", zck->sigs.count);
     if(zck->sigs.count > 0) {
         set_fatal_error(zck, "Signatures aren't supported yet");
-        return False;
+        return false;
     }
 
     /* Set data_offset */
@@ -204,10 +205,10 @@ static int read_sig(zckCtx *zck) {
 
     zck->sig_size = length;
     zck->sig_string = header;
-    return True;
+    return true;
 }
 
-static int preface_create(zckCtx *zck) {
+static bool preface_create(zckCtx *zck) {
     VALIDATE_WRITE_BOOL(zck);
 
     int header_malloc = zck->hash_type.digest_size + 4 + 2*MAX_COMP_SIZE;
@@ -215,7 +216,7 @@ static int preface_create(zckCtx *zck) {
     char *header = zmalloc(header_malloc);
     if(header == NULL) {
         set_error(zck, "Unable to allocate %lu bytes", header_malloc);
-        return False;
+        return false;
     }
     size_t length = 0;
 
@@ -232,7 +233,7 @@ static int preface_create(zckCtx *zck) {
     /* Write out compression type and index size */
     if(!compint_from_int(zck, header+length, zck->comp.type, &length)) {
         free(header);
-        return False;
+        return false;
     }
     compint_from_size(header+length, zck->index_size, &length);
 
@@ -240,20 +241,20 @@ static int preface_create(zckCtx *zck) {
     header = realloc(header, length);
     if(header == NULL) {
         set_fatal_error(zck, "Unable to reallocate %lu bytes", length);
-        return False;
+        return false;
     }
 
     zck->preface_string = header;
     zck->preface_size = length;
     zck_log(ZCK_LOG_DEBUG, "Generated preface: %lu bytes", zck->preface_size);
-    return True;
+    return true;
 }
 
-static int sig_create(zckCtx *zck) {
+static bool sig_create(zckCtx *zck) {
     char *header = zmalloc(MAX_COMP_SIZE);
     if(header == NULL) {
         set_error(zck, "Unable to allocate %lu bytes", MAX_COMP_SIZE);
-        return False;
+        return false;
     }
     size_t length = 0;
 
@@ -262,7 +263,7 @@ static int sig_create(zckCtx *zck) {
     /* Write out signature count and signatures */
     if(!compint_from_int(zck, header+length, zck->sigs.count, &length)) {
         free(header);
-        return False;
+        return false;
     }
     for(int i=0; i<zck->sigs.count; i++) {
         // TODO: Add signatures
@@ -270,15 +271,15 @@ static int sig_create(zckCtx *zck) {
     zck->sig_string = header;
     zck->sig_size = length;
     zck_log(ZCK_LOG_DEBUG, "Generated signatures: %lu bytes", zck->sig_size);
-    return True;
+    return true;
 }
 
-static int lead_create(zckCtx *zck) {
+static bool lead_create(zckCtx *zck) {
     int phs = 5 + 2*MAX_COMP_SIZE + zck->hash_type.digest_size;
     char *header = zmalloc(phs);
     if(header == NULL) {
         set_error(zck, "Unable to allocate %lu bytes", phs);
-        return False;
+        return false;
     }
     size_t length = 0;
     memcpy(header, "\0ZCK1", 5);
@@ -296,16 +297,16 @@ static int lead_create(zckCtx *zck) {
     header = realloc(header, length);
     if(header == NULL) {
         set_fatal_error(zck, "Unable to reallocate %lu bytes", length);
-        return False;
+        return false;
     }
 
     zck->lead_string = header;
     zck->lead_size = length;
     zck_log(ZCK_LOG_DEBUG, "Generated lead: %lu bytes", zck->lead_size);
-    return True;
+    return true;
 }
 
-int header_create(zckCtx *zck) {
+bool header_create(zckCtx *zck) {
     VALIDATE_WRITE_BOOL(zck);
 
     /* Rebuild header without header hash */
@@ -316,19 +317,19 @@ int header_create(zckCtx *zck) {
 
     /* Generate index */
     if(!index_create(zck))
-        return False;
+        return false;
 
     /* Generate preface */
     if(!preface_create(zck))
-        return False;
+        return false;
 
     /* Rebuild signatures */
     if(!sig_create(zck))
-        return False;
+        return false;
 
     /* Rebuild pre-header */
     if(!lead_create(zck))
-        return False;
+        return false;
 
     /* Calculate data offset */
     zck->data_offset = zck->lead_size + zck->preface_size +
@@ -341,7 +342,7 @@ int header_create(zckCtx *zck) {
     if(zck->header == NULL) {
         set_fatal_error(zck, "Unable to allocate %lu bytes",
                         zck->data_offset);
-        return False;
+        return false;
     }
     size_t offs = 0;
     memcpy(zck->header + offs, zck->lead_string, zck->lead_size);
@@ -365,38 +366,38 @@ int header_create(zckCtx *zck) {
 
     /* Calculate hash of header */
     if(!hash_init(zck, &header_hash, &(zck->hash_type)))
-        return False;
+        return false;
     zck_log(ZCK_LOG_DEBUG, "Hashing lead");
     /* Hash lead up to header digest */
     if(!hash_update(zck, &header_hash, zck->lead_string,
                     zck->hdr_digest_loc))
-        return False;
+        return false;
     zck_log(ZCK_LOG_DEBUG, "Hashing the rest");
     /* Hash rest of header */
     if(!hash_update(zck, &header_hash, zck->preface_string, zck->header_length))
-        return False;
+        return false;
     zck->header_digest = hash_finalize(zck, &header_hash);
     if(zck->header_digest == NULL)
-        return False;
+        return false;
 
     /* Write digest to header */
     memcpy(zck->lead_string+zck->hdr_digest_loc, zck->header_digest,
            zck->hash_type.digest_size);
 
-    return True;
+    return true;
 }
 
-int write_header(zckCtx *zck) {
+bool write_header(zckCtx *zck) {
     VALIDATE_WRITE_BOOL(zck);
 
     zck_log(ZCK_LOG_DEBUG, "Writing header: %lu bytes",
             zck->lead_size);
     if(!write_data(zck, zck->fd, zck->header, zck->header_size))
-        return False;
-    return True;
+        return false;
+    return true;
 }
 
-static int read_lead(zckCtx *zck) {
+static bool read_lead(zckCtx *zck) {
     VALIDATE_READ_BOOL(zck);
 
     int lead = 5 + 2*MAX_COMP_SIZE;
@@ -404,17 +405,17 @@ static int read_lead(zckCtx *zck) {
     char *header = zmalloc(lead);
     if(header == NULL) {
         set_error(zck, "Unable to allocate %lu bytes", lead);
-        return False;
+        return false;
     }
     size_t length = 0;
 
     if(read_data(zck, header, lead) < lead)
-        return False;
+        return false;
 
     if(memcmp(header, "\0ZCK1", 5) != 0) {
         free(header);
         set_error(zck, "Invalid lead, perhaps this is not a zck file?");
-        return False;
+        return false;
     }
     length += 5;
 
@@ -422,17 +423,17 @@ static int read_lead(zckCtx *zck) {
     int hash_type = 0;
     if(!compint_to_int(zck, &hash_type, header+length, &length, lead)) {
         free(header);
-        return False;
+        return false;
     }
     if(zck->prep_hash_type > -1 && zck->prep_hash_type != hash_type) {
         free(header);
         set_error(zck, "Hash type (%i) doesn't match requested hash type "
                   "(%i)", hash_type, zck->prep_hash_type);
-        return False;
+        return false;
     }
     if(!hash_setup(zck, &(zck->hash_type), hash_type)) {
         free(header);
-        return False;
+        return false;
     }
     zck_log(ZCK_LOG_DEBUG, "Setting header and full digest hash type to %s",
             zck_hash_name_from_type(hash_type));
@@ -442,7 +443,7 @@ static int read_lead(zckCtx *zck) {
     if(!compint_to_size(zck, &header_length, header+length, &length, lead)) {
         free(header);
         hash_reset(&(zck->hash_type));
-        return False;
+        return false;
     }
     zck->header_length = header_length;
 
@@ -458,7 +459,7 @@ static int read_lead(zckCtx *zck) {
         hash_reset(&(zck->hash_type));
         set_fatal_error(zck, "Unable to re-allocate %lu bytes",
                         length + zck->hash_type.digest_size);
-        return False;
+        return false;
     }
     size_t to_read = 0;
     if(lead < length + zck->hash_type.digest_size)
@@ -468,7 +469,7 @@ static int read_lead(zckCtx *zck) {
         zck->header_length = 0;
         zck->hdr_digest_loc = 0;
         hash_reset(&(zck->hash_type));
-        return False;
+        return false;
     }
     lead += to_read;
 
@@ -485,7 +486,7 @@ static int read_lead(zckCtx *zck) {
                                     zck->hash_type.digest_size),
                   get_digest_string(header + length,
                                     zck->hash_type.digest_size));
-        return False;
+        return false;
     }
     zck->header_digest = zmalloc(zck->hash_type.digest_size);
     if(zck->header_digest == NULL) {
@@ -495,7 +496,7 @@ static int read_lead(zckCtx *zck) {
         hash_reset(&(zck->hash_type));
         set_error(zck, "Unable to allocate %lu bytes",
                   zck->hash_type.digest_size);
-        return False;
+        return false;
     }
     memcpy(zck->header_digest, header + length, zck->hash_type.digest_size);
     length += zck->hash_type.digest_size;
@@ -513,7 +514,7 @@ static int read_lead(zckCtx *zck) {
                   "Header length (%lu) doesn't match requested header length "
                   "(%lu)", zck->header_length + length,
                   zck->prep_hdr_size);
-        return False;
+        return false;
     }
     /* Store pre-header */
     zck->header = header;
@@ -521,21 +522,21 @@ static int read_lead(zckCtx *zck) {
     zck->lead_string = header;
     zck->lead_size = length;
     zck_log(ZCK_LOG_DEBUG, "Parsed lead: %lu bytes", length);
-    return True;
+    return true;
 }
 
-int PUBLIC zck_read_lead(zckCtx *zck) {
+bool PUBLIC zck_read_lead(zckCtx *zck) {
     VALIDATE_BOOL(zck);
 
     return read_lead(zck);
 }
 
-int PUBLIC zck_validate_lead(zckCtx *zck) {
+bool PUBLIC zck_validate_lead(zckCtx *zck) {
     VALIDATE_BOOL(zck);
 
     int retval = read_lead(zck);
     if(!zck_clear_error(zck))
-        return False;
+        return false;
     free(zck->header);
     free(zck->header_digest);
     zck->header = NULL;
@@ -548,22 +549,22 @@ int PUBLIC zck_validate_lead(zckCtx *zck) {
     zck->hdr_digest_loc = 0;
     hash_reset(&(zck->hash_type));
     if(!seek_data(zck, 0, SEEK_SET))
-        return False;
+        return false;
     return retval;
 }
 
-int PUBLIC zck_read_header(zckCtx *zck) {
+bool PUBLIC zck_read_header(zckCtx *zck) {
     VALIDATE_READ_BOOL(zck);
 
     if(!read_header_from_file(zck))
-        return False;
+        return false;
     if(!read_preface(zck))
-        return False;
+        return false;
     if(!read_index(zck))
-        return False;
+        return false;
     if(!read_sig(zck))
-        return False;
-    return True;
+        return false;
+    return true;
 }
 
 ssize_t PUBLIC zck_get_header_length(zckCtx *zck) {

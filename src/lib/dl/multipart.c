@@ -26,6 +26,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
 #include <regex.h>
@@ -55,21 +56,21 @@ static char *add_boundary_to_regex(zckCtx *zck, const char *regex,
     return regex_b;
 }
 
-static int create_regex(zckCtx *zck, regex_t *reg, const char *regex) {
+static bool create_regex(zckCtx *zck, regex_t *reg, const char *regex) {
     VALIDATE_BOOL(zck);
 
     if(reg == NULL || regex == NULL) {
         set_error(zck, "Regular expression not initialized");
-        return False;
+        return false;
     }
     if(regcomp(reg, regex, REG_ICASE | REG_EXTENDED) != 0) {
         set_error(zck, "Unable to compile regular expression");
-        return False;
+        return false;
     }
-    return True;
+    return true;
 }
 
-static int gen_regex(zckDL *dl) {
+static bool gen_regex(zckDL *dl) {
     ALLOCD_BOOL(dl);
     VALIDATE_BOOL(dl->zck);
 
@@ -78,23 +79,23 @@ static int gen_regex(zckDL *dl) {
     char *end =  "\r\n--%s--\r\n\r";
     char *regex_n = add_boundary_to_regex(dl->zck, next, dl->boundary);
     if(regex_n == NULL)
-        return False;
+        return false;
     char *regex_e = add_boundary_to_regex(dl->zck, end, dl->boundary);
     if(regex_n == NULL)
-        return False;
+        return false;
     dl->dl_regex = zmalloc(sizeof(regex_t));
     if(!create_regex(dl->zck, dl->dl_regex, regex_n)) {
         free(regex_n);
-        return False;
+        return false;
     }
     free(regex_n);
     dl->end_regex = zmalloc(sizeof(regex_t));
     if(!create_regex(dl->zck, dl->end_regex, regex_e)) {
         free(regex_e);
-        return False;
+        return false;
     }
     free(regex_e);
-    return True;
+    return true;
 }
 
 void reset_mp(zckMP *mp) {
@@ -113,7 +114,7 @@ size_t multipart_extract(zckDL *dl, char *b, size_t l) {
         return 0;
     zckMP *mp = dl->mp;
     char *buf = b;
-    int alloc_buf = False;
+    bool alloc_buf = false;
 
     /* Add new data to stored buffer */
     if(mp->buffer) {
@@ -127,7 +128,7 @@ size_t multipart_extract(zckDL *dl, char *b, size_t l) {
         l = mp->buffer_len + l;
         mp->buffer = NULL;  // No need to free, buf holds realloc'd buffer
         mp->buffer_len = 0;
-        alloc_buf = True;
+        alloc_buf = true;
     }
 
     /* If regex hasn't been created, create it */

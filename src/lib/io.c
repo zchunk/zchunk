@@ -26,6 +26,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
@@ -54,20 +55,20 @@ int write_data(zckCtx *zck, int fd, const char *data, size_t length) {
     VALIDATE_INT(zck);
 
     if(length == 0)
-        return True;
+        return true;
     if(data == NULL) {
         set_error(zck, "Unable to write from NULL data pointer");
-        return False;
+        return false;
     }
     ssize_t write_bytes = write(fd, data, length);
     if(write_bytes == -1) {
         set_error(zck, "Error write data: %s", strerror(errno));
-        return False;
+        return false;
     } else if(write_bytes != length) {
         set_fatal_error(zck, "Short write");
-        return False;
+        return false;
     }
-    return True;
+    return true;
 }
 
 int seek_data(zckCtx *zck, off_t offset, int whence) {
@@ -87,9 +88,9 @@ int seek_data(zckCtx *zck, off_t offset, int whence) {
         }
         set_error(zck, "Unable to seek to %lu %s: %s", offset, wh_str,
                   strerror(errno));
-        return False;
+        return false;
     }
-    return True;
+    return true;
 }
 
 ssize_t tell_data(zckCtx *zck) {
@@ -101,17 +102,17 @@ int chunks_from_temp(zckCtx *zck) {
     int read_count;
     char *data = zmalloc(BUF_SIZE);
     if(data == NULL)
-        return False;
+        return false;
 
     if(lseek(zck->temp_fd, 0, SEEK_SET) == -1)
-        return False;
+        return false;
 
     while((read_count = read(zck->temp_fd, data, BUF_SIZE)) > 0) {
         if(read_count == -1 || !write_data(zck, zck->fd, data, read_count)) {
             free(data);
-            return False;
+            return false;
         }
     }
     free(data);
-    return True;
+    return true;
 }

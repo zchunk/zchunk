@@ -3,9 +3,6 @@
 
 #define ZCK_VERSION "@version@"
 
-#define True 1
-#define False 0
-
 typedef enum zck_hash {
     ZCK_HASH_SHA1,
     ZCK_HASH_SHA256,
@@ -62,7 +59,7 @@ typedef size_t (*zck_wcb)(void *ptr, size_t l, size_t c, void *dl_v);
 zckCtx *zck_create()
     __attribute__ ((warn_unused_result));
 /* Initialize zchunk for reading */
-int zck_init_read (zckCtx *zck, int src_fd)
+bool zck_init_read (zckCtx *zck, int src_fd)
     __attribute__ ((warn_unused_result));
 /* Decompress dst_size bytes from zchunk file to dst, while verifying hashes */
 ssize_t zck_read(zckCtx *zck, char *dst, size_t dst_size)
@@ -73,7 +70,7 @@ ssize_t zck_read(zckCtx *zck, char *dst, size_t dst_size)
  * Writing a zchunk file
  *******************************************************************/
 /* Initialize zchunk for writing */
-int zck_init_write (zckCtx *zck, int dst_fd)
+bool zck_init_write (zckCtx *zck, int dst_fd)
     __attribute__ ((warn_unused_result));
 /* Compress data src of size src_size, and write to zchunk file
  * Due to the nature of zchunk files and how they are built, no data will
@@ -90,7 +87,7 @@ ssize_t zck_end_chunk(zckCtx *zck)
  *******************************************************************/
 /* Close a zchunk file so it may no longer be read from or written to. The
  * context still contains information about the file */
-int zck_close(zckCtx *zck)
+bool zck_close(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 /* Free a zchunk context.  You must pass the address of the context, and the
  * context will automatically be set to NULL after it is freed */
@@ -101,11 +98,11 @@ void zck_free(zckCtx **zck);
  * Options
  *******************************************************************/
 /* Set string option */
-int zck_set_soption(zckCtx *zck, zck_soption option, const char *value,
-                    size_t length)
+bool zck_set_soption(zckCtx *zck, zck_soption option, const char *value,
+                     size_t length)
     __attribute__ ((warn_unused_result));
 /* Set integer option */
-int zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t value)
+bool zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t value)
     __attribute__ ((warn_unused_result));
 
 
@@ -121,11 +118,12 @@ void zck_set_log_fd(int fd);
 int zck_is_error(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 /* Get error message
- * Returns char* containing error message, or NULL if there isn't one */
+ * Returns char* containing error message.  char* will contain empty string if
+ * there is no error message */
 const char *zck_get_error(zckCtx *zck);
 /* Clear error message
  * Returns 1 if message was cleared, 0 if error is fatal and can't be cleared */
-int zck_clear_error(zckCtx *zck);
+bool zck_clear_error(zckCtx *zck);
 
 /*******************************************************************
  * Miscellaneous utilities
@@ -138,7 +136,8 @@ int zck_validate_checksums(zckCtx *zck)
  * Returns 0 for error, -1 for invalid checksum and 1 for valid checksum */
 int zck_validate_data_checksum(zckCtx *zck)
     __attribute__ ((warn_unused_result));
-/* Go through file and mark valid chunks as valid */
+/* Go through file and mark valid chunks as valid
+ * Returns 0 for error, -1 for invalid checksum and 1 for valid checksum */
 int zck_find_valid_chunks(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 
@@ -155,7 +154,7 @@ char *zck_get_range_char(zckCtx *zck, zckRange *range)
 int zck_get_fd(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 /* Set file descriptor attached to zchunk context */
-int zck_set_fd(zckCtx *zck, int fd)
+bool zck_set_fd(zckCtx *zck, int fd)
     __attribute__ ((warn_unused_result));
 
 /* Return number of missing chunks (-1 if error) */
@@ -211,16 +210,16 @@ const char *zck_comp_name_from_type(int comp_type)
  * Advanced zchunk reading functions
  *******************************************************************/
 /* Initialize zchunk for reading using advanced options */
-int zck_init_adv_read (zckCtx *zck, int src_fd)
+bool zck_init_adv_read (zckCtx *zck, int src_fd)
     __attribute__ ((warn_unused_result));
 /* Read zchunk lead */
-int zck_read_lead(zckCtx *zck)
+bool zck_read_lead(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 /* Read zchunk header */
-int zck_read_header(zckCtx *zck)
+bool zck_read_header(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 /* Validate lead */
-int zck_validate_lead(zckCtx *zck)
+bool zck_validate_lead(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 
 /*******************************************************************
@@ -251,7 +250,7 @@ int zck_get_chunk_valid(zckChunk *idx)
 char *zck_get_chunk_digest(zckChunk *item)
     __attribute__ ((warn_unused_result));
 /* Find out if two chunk digests are the same */
-int zck_compare_chunk_digest(zckChunk *a, zckChunk *b)
+bool zck_compare_chunk_digest(zckChunk *a, zckChunk *b)
     __attribute__ ((warn_unused_result));
 
 /*******************************************************************
@@ -283,7 +282,7 @@ const char *zck_hash_name_from_type(int hash_type)
  * Ranges
  *******************************************************************/
 /* Get any matching chunks from src and put them in the right place in tgt */
-int zck_copy_chunks(zckCtx *src, zckCtx *tgt)
+bool zck_copy_chunks(zckCtx *src, zckCtx *tgt)
     __attribute__ ((warn_unused_result));
 /* Free zckRange */
 void zck_range_free(zckRange **info);
@@ -312,12 +311,12 @@ void zck_dl_free(zckDL **dl);
 zckCtx *zck_dl_get_zck(zckDL *dl)
     __attribute__ ((warn_unused_result));
 /* Set zchunk context in download context */
-int zck_dl_set_zck(zckDL *dl, zckCtx *zck)
+bool zck_dl_set_zck(zckDL *dl, zckCtx *zck)
     __attribute__ ((warn_unused_result));
 /* Clear regex used for extracting download ranges from multipart download */
 void zck_dl_clear_regex(zckDL *dl);
 /* Download and process the header from url */
-int zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url)
+bool zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url)
     __attribute__ ((warn_unused_result));
 /* Get number of bytes downloaded using download context */
 ssize_t zck_dl_get_bytes_downloaded(zckDL *dl)
@@ -326,23 +325,23 @@ ssize_t zck_dl_get_bytes_downloaded(zckDL *dl)
 ssize_t zck_dl_get_bytes_uploaded(zckDL *dl)
     __attribute__ ((warn_unused_result));
 /* Set download ranges for zchunk download context */
-int zck_dl_set_range(zckDL *dl, zckRange *range)
+bool zck_dl_set_range(zckDL *dl, zckRange *range)
     __attribute__ ((warn_unused_result));
 /* Get download ranges from zchunk download context */
 zckRange *zck_dl_get_range(zckDL *dl)
     __attribute__ ((warn_unused_result));
 
 /* Set header callback function */
-int zck_dl_set_header_cb(zckDL *dl, zck_wcb func)
+bool zck_dl_set_header_cb(zckDL *dl, zck_wcb func)
     __attribute__ ((warn_unused_result));
 /* Set header userdata */
-int zck_dl_set_header_data(zckDL *dl, void *data)
+bool zck_dl_set_header_data(zckDL *dl, void *data)
     __attribute__ ((warn_unused_result));
 /* Set write callback function */
-int zck_dl_set_write_cb(zckDL *dl, zck_wcb func)
+bool zck_dl_set_write_cb(zckDL *dl, zck_wcb func)
     __attribute__ ((warn_unused_result));
 /* Set write userdata */
-int zck_dl_set_write_data(zckDL *dl, void *data)
+bool zck_dl_set_write_data(zckDL *dl, void *data)
     __attribute__ ((warn_unused_result));
 
 /* Write callback.  You *must* pass this and your initialized zchunk download

@@ -28,6 +28,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <zck.h>
 
 #include "zck_private.h"
@@ -88,12 +89,12 @@ const char PUBLIC *zck_get_error(zckCtx *zck) {
     return zck->msg;
 }
 
-int PUBLIC zck_clear_error(zckCtx *zck) {
+bool PUBLIC zck_clear_error(zckCtx *zck) {
     if(zck == NULL || zck->error_state > 1)
-        return False;
+        return false;
 
     free(zck->msg);
     zck->msg = NULL;
     zck->error_state = 0;
-    return True;
+    return true;
 }

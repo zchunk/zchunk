@@ -26,13 +26,14 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 #include <endian.h>
 #include <zck.h>
 
 #include "zck_private.h"
 
-int index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
+bool index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
     VALIDATE_BOOL(zck);
     size_t length = 0;
 
@@ -40,11 +41,11 @@ int index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
     int hash_type;
     if(!compint_to_int(zck, &hash_type, data + length, &length, max_length)) {
         set_fatal_error(zck, "Unable to read hash type");
-        return False;
+        return false;
     }
     if(!set_chunk_hash_type(zck, hash_type)) {
         set_fatal_error(zck, "Unable to set chunk hash type");
-        return False;
+        return false;
     }
 
     /* Read number of index entries */
@@ -52,7 +53,7 @@ int index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
     if(!compint_to_size(zck, &index_count, data + length, &length,
                         max_length)) {
         set_fatal_error(zck, "Unable to read index count");
-        return False;
+        return false;
     }
     zck->index.count = index_count;
 
@@ -62,14 +63,14 @@ int index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
     while(length < size) {
         if(length + zck->index.digest_size > max_length) {
             set_fatal_error(zck, "Read past end of header");
-            return False;
+            return false;
         }
 
         zckChunk *new = zmalloc(sizeof(zckChunk));
         if(!new) {
             set_fatal_error(zck, "Unable to allocate %lu bytes",
                             sizeof(zckChunk));
-            return False;
+            return false;
         }
 
         /* Read index entry digest */
@@ -77,7 +78,7 @@ int index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
         if(!new->digest) {
             set_fatal_error(zck, "Unable to allocate %lu bytes",
                                  zck->index.digest_size);
-            return False;
+            return false;
         }
         memcpy(new->digest, data+length, zck->index.digest_size);
         new->digest_size = zck->index.digest_size;
@@ -89,7 +90,7 @@ int index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
                             max_length)) {
             set_fatal_error(zck, "Unable to read chunk %i compressed size",
                             count);
-            return False;
+            return false;
         }
         new->start = idx_loc;
         new->comp_length = chunk_length;
@@ -100,7 +101,7 @@ int index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
                             max_length)) {
             set_fatal_error(zck, "Unable to read chunk %i uncompressed size",
                             count);
-            return False;
+            return false;
         }
         new->length = chunk_length;
         new->zck = zck;
@@ -117,7 +118,7 @@ int index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
     }
     free(zck->index_string);
     zck->index_string = NULL;
-    return True;
+    return true;
 }
 
 ssize_t PUBLIC zck_get_chunk_count(zckCtx *zck) {
@@ -167,15 +168,15 @@ int PUBLIC zck_get_chunk_valid(zckChunk *idx) {
     return idx->valid;
 }
 
-int PUBLIC zck_compare_chunk_digest(zckChunk *a, zckChunk *b) {
+bool PUBLIC zck_compare_chunk_digest(zckChunk *a, zckChunk *b) {
     ALLOCD_BOOL(a);
     ALLOCD_BOOL(b);
 
     if(a->digest_size != b->digest_size)
-        return False;
+        return false;
     if(memcmp(a->digest, b->digest, a->digest_size) != 0)
-        return False;
-    return True;
+        return false;
+    return true;
 }
 
 int PUBLIC zck_missing_chunks(zckCtx *zck) {

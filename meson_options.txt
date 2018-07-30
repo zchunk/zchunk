@@ -1,2 +1,2 @@
-option('with-zstd', type : 'combo', choices : ['yes', 'no', 'auto'], value : 'auto')
-option('with-openssl', type : 'combo', choices : ['yes', 'no', 'auto'], value : 'auto')
+option('with-zstd', type : 'feature', value : 'auto')
+option('with-openssl', type : 'feature', value : 'auto')

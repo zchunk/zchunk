@@ -1,41 +1,19 @@
-project('zck', 'c', version: '0.9.1')
+project('zck', 'c',
+        version : '0.9.1',
+        meson_version : '>=0.47.0')
 
 so_version = '1'
 
-use_zstd = get_option('with-zstd')
-zstd_dep = []
-if use_zstd == 'yes'
-    zstd_required = true
-else
-    zstd_required = false
-endif
-if use_zstd == 'auto' or use_zstd == 'yes'
-    zstd_dep = dependency('libzstd', required:zstd_required)
-    if zstd_dep.found()
-        add_project_arguments('-DZCHUNK_ZSTD', language : 'c')
-        use_zstd = 'yes'
-    else
-        use_zstd = 'no'
-    endif
+zstd_dep = dependency('libzstd', required : get_option('with-zstd'))
+if zstd_dep.found()
+    add_project_arguments('-DZCHUNK_ZSTD', language : 'c')
 endif
 
-curl_dep = dependency('libcurl', required:true)
+curl_dep = dependency('libcurl')
 
-use_openssl = get_option('with-openssl')
-openssl_dep = []
-if use_openssl == 'yes'
-    openssl_required = true
-else
-    openssl_required = false
-endif
-if use_openssl == 'auto' or use_openssl == 'yes'
-    openssl_dep = dependency('openssl', required:openssl_required)
-    if openssl_dep.found()
-        add_project_arguments('-DZCHUNK_OPENSSL', language : 'c')
-        use_openssl = 'yes'
-    else
-        use_openssl = 'no'
-    endif
+openssl_dep = dependency('openssl', required : get_option('with-openssl'))
+if openssl_dep.found()
+    add_project_arguments('-DZCHUNK_OPENSSL', language : 'c')
 endif
 
 inc = include_directories('include')

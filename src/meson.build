@@ -1,5 +1,3 @@
-add_global_arguments('-Wunused-result', language : 'c')
-add_global_arguments('-std=gnu99', language : 'c')
 subdir('lib')
 zck = executable(
     'zck',

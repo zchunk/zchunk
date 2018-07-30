@@ -1,5 +1,5 @@
 lib_sources += files('hash.c')
-if use_openssl == 'no'
+if not openssl_dep.found()
     subdir('sha1')
     subdir('sha2')
 endif

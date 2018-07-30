@@ -116,6 +116,7 @@ int main (int argc, char *argv[]) {
     if(!zck_init_read(zck_src, src_fd)) {
         printf("Error reading %s: %s", arguments.args[0],
                zck_get_error(zck_src));
+        zck_free(&zck_src);
         exit(1);
     }
     close(src_fd);
@@ -124,16 +125,20 @@ int main (int argc, char *argv[]) {
     if(tgt_fd < 0) {
         printf("Unable to open %s\n", arguments.args[1]);
         perror("");
+        zck_free(&zck_src);
         exit(1);
     }
     zckCtx *zck_tgt = zck_create();
     if(zck_tgt == NULL) {
         printf("Unable to create zchunk context\n");
+        zck_free(&zck_src);
         exit(1);
     }
     if(!zck_init_read(zck_tgt, tgt_fd)) {
         printf("Error reading %s: %s", arguments.args[1],
                zck_get_error(zck_tgt));
+        zck_free(&zck_src);
+        zck_free(&zck_tgt);
         exit(1);
     }
     close(tgt_fd);
@@ -142,6 +147,8 @@ int main (int argc, char *argv[]) {
         printf("ERROR: Chunk hash types don't match:\n");
         printf("   %s: %s\n", arguments.args[0], zck_hash_name_from_type(zck_get_chunk_hash_type(zck_tgt)));
         printf("   %s: %s\n", arguments.args[1], zck_hash_name_from_type(zck_get_chunk_hash_type(zck_src)));
+        zck_free(&zck_src);
+        zck_free(&zck_tgt);
         exit(1);
     }
     zckChunk *tgt_idx = zck_get_first_chunk(zck_tgt);

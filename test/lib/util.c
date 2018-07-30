@@ -45,6 +45,8 @@ char *get_hash(char *data, size_t length, int type) {
     if(digest == NULL)
         return NULL;
     zck_free(&zck);
-    return get_digest_string(digest, hash_type.digest_size);
+    char *digest_string = get_digest_string(digest, hash_type.digest_size);
+    free(digest);
+    return digest_string;
 }
 

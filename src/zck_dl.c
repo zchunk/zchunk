@@ -265,14 +265,14 @@ int dl_header(CURL *curl, zckDL *dl, char *url, int fail_no_ranges,
 }
 
 int main (int argc, char *argv[]) {
-    curl_global_init(CURL_GLOBAL_ALL);
-
     struct arguments arguments = {0};
 
     /* Defaults */
     arguments.log_level = ZCK_LOG_INFO;
 
     argp_parse (&argp, argc, argv, 0, 0, &arguments);
+
+    curl_global_init(CURL_GLOBAL_ALL);
 
     zck_set_log_level(arguments.log_level);
 

@@ -82,6 +82,7 @@ int main (int argc, char *argv[]) {
         printf("Expected checksum: (SHA-256)%s\n", checksum);
         exit(1);
     }
+    free(cksum);
 
     /* Go back to beginning of file and read data from it */
     if(lseek(in, 0, SEEK_SET) != 0) {
@@ -104,5 +105,7 @@ int main (int argc, char *argv[]) {
     if(!zck_close(zck))
         exit(1);
 
+    zck_free(&zck);
+    free(data);
     return 0;
 }

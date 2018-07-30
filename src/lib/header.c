@@ -409,8 +409,11 @@ static bool read_lead(zckCtx *zck) {
     }
     size_t length = 0;
 
-    if(read_data(zck, header, lead) < lead)
+    if(read_data(zck, header, lead) < lead) {
+        free(header);
+        set_error(zck, "Short read");
         return false;
+    }
 
     if(memcmp(header, "\0ZCK1", 5) != 0) {
         free(header);

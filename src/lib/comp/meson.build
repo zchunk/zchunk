@@ -1,5 +1,5 @@
 lib_sources += files('comp.c')
-if use_zstd == 'yes'
-        subdir('zstd')
+if zstd_dep.found()
+    subdir('zstd')
 endif
 subdir('nocomp')

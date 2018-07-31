@@ -30,8 +30,8 @@ subdir('src')
 subdir('test')
 
 pkg_mod = import('pkgconfig')
-pkg_mod.generate(libraries: zcklib,
-                 version: meson.project_version(),
-                 name: 'libzck',
-                 filebase: 'zck',
-                 description: 'A library for generating easy-to-delta files.')
+pkg_mod.generate(libraries : zcklib,
+                 version : meson.project_version(),
+                 name : 'libzck',
+                 filebase : 'zck',
+                 description : 'A library for generating easy-to-delta files.')

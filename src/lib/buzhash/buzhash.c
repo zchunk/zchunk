@@ -108,16 +108,16 @@ uint32_t buzhash_update (buzHash *b, const char *s, size_t window) {
         b->window[b->window_fill] = *s;
         b->window_fill++;
         if(b->window_fill < b->window_size) {
-            b->h ^= rol32 (buzhash_table[(size_t) (*s)], window - b->window_fill);
+            b->h ^= rol32 (buzhash_table[(uint8_t) (*s)], window - b->window_fill);
             return 1;
         } else {
-            b->h ^= buzhash_table[(size_t) (*s)];
+            b->h ^= buzhash_table[(uint8_t) (*s)];
             return b->h;
         }
     }
     b->h = rol32 (b->h, 1) ^
-           rol32 (buzhash_table[(size_t) b->window[b->window_loc]], b->window_size) ^
-           buzhash_table[(size_t) *s];
+           rol32 (buzhash_table[(uint8_t) b->window[b->window_loc]], b->window_size) ^
+           buzhash_table[(uint8_t) *s];
     b->window[b->window_loc++] = *s;
     b->window_loc %= b->window_size;
     return b->h;

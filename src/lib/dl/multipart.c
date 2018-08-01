@@ -71,7 +71,7 @@ static bool create_regex(zckCtx *zck, regex_t *reg, const char *regex) {
 }
 
 static bool gen_regex(zckDL *dl) {
-    ALLOCD_BOOL(dl);
+    ALLOCD_BOOL(NULL, dl);
     VALIDATE_BOOL(dl->zck);
 
     char *next = "\r\n--%s\r\ncontent-type:.*\r\n" \
@@ -107,7 +107,7 @@ void reset_mp(zckMP *mp) {
 }
 
 size_t multipart_extract(zckDL *dl, char *b, size_t l) {
-    ALLOCD_BOOL(dl);
+    ALLOCD_BOOL(NULL, dl);
     VALIDATE_BOOL(dl->zck);
 
     if(dl == NULL || dl->mp == NULL)
@@ -216,7 +216,7 @@ end:
 }
 
 size_t multipart_get_boundary(zckDL *dl, char *b, size_t size) {
-    ALLOCD_BOOL(dl);
+    ALLOCD_BOOL(NULL, dl);
     VALIDATE_BOOL(dl->zck);
 
     if(dl == NULL)

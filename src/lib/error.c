@@ -35,14 +35,18 @@
 
 static const char *empty_error = "";
 
+zckCtx zck_none = {0};
+
 void set_error_wf(zckCtx *zck, int fatal, const char *function,
                   const char *format, ...) {
     va_list args;
     int size = 0;
     char *old_msg = NULL;
     int old_size = 0;
-    assert(zck != NULL && format != NULL);
+    assert(format != NULL);
 
+    if(zck == NULL)
+        zck = &zck_none;
 
     zck->error_state = 1 + (fatal > 0 ? 1 : 0);
     va_start(args, format);
@@ -75,14 +79,14 @@ void set_error_wf(zckCtx *zck, int fatal, const char *function,
 
 int PUBLIC zck_is_error(zckCtx *zck) {
     if(zck == NULL)
-        return 1;
+        zck = &zck_none;
 
     return zck->error_state;
 }
 
 const char PUBLIC *zck_get_error(zckCtx *zck) {
     if(zck == NULL)
-        return "zckCtx is NULL\n";
+        zck = &zck_none;
 
     if(zck->msg == NULL)
         return empty_error;
@@ -90,8 +94,11 @@ const char PUBLIC *zck_get_error(zckCtx *zck) {
 }
 
 bool PUBLIC zck_clear_error(zckCtx *zck) {
-    if(zck == NULL || zck->error_state > 1)
+    if(zck != NULL && zck->error_state > 1)
         return false;
+
+    if(zck == NULL)
+        zck = &zck_none;
 
     free(zck->msg);
     zck->msg = NULL;

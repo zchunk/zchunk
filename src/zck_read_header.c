@@ -124,11 +124,13 @@ int main (int argc, char *argv[]) {
 
     zckCtx *zck = zck_create();
     if(zck == NULL) {
-        printf("Unable to create zchunk context\n");
+        dprintf(STDERR_FILENO, "%s", zck_get_error(NULL));
+        zck_clear_error(NULL);
         exit(1);
     }
     if(!zck_init_read(zck, src_fd)) {
-        printf("Error reading zchunk header: %s", zck_get_error(zck));
+        dprintf(STDERR_FILENO, "Error reading zchunk header: %s",
+                zck_get_error(zck));
         zck_free(&zck);
         exit(1);
     }
@@ -164,8 +166,10 @@ int main (int argc, char *argv[]) {
         for(zckChunk *chk = zck_get_first_chunk(zck); chk;
             chk=zck_get_next_chunk(chk), count++) {
             char *digest = zck_get_chunk_digest(chk);
-            if(digest == NULL)
+            if(digest == NULL) {
+                dprintf(STDERR_FILENO, "%s", zck_get_error(zck));
                 exit(1);
+            }
             printf("%12lu %s %12lu %12lu %12lu", count, digest,
                    (long unsigned)zck_get_chunk_start(chk),
                    (long unsigned)zck_get_chunk_comp_size(chk),

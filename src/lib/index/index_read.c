@@ -134,43 +134,76 @@ zckChunk PUBLIC *zck_get_first_chunk(zckCtx *zck) {
 }
 
 zckChunk PUBLIC *zck_get_next_chunk(zckChunk *idx) {
-    ALLOCD_PTR(idx);
+    if(idx && idx->zck) {
+        VALIDATE_PTR(idx->zck);
+        ALLOCD_PTR(idx->zck, idx);
+    } else {
+        ALLOCD_PTR(NULL, idx);
+    }
 
     return idx->next;
 }
 
 ssize_t PUBLIC zck_get_chunk_start(zckChunk *idx) {
-    ALLOCD_INT(idx);
-
-    if(idx->zck) {
+    if(idx && idx->zck) {
         VALIDATE_INT(idx->zck);
-        return idx->start + zck_get_header_length(idx->zck);
+        ALLOCD_INT(idx->zck, idx);
     } else {
-        return idx->start;
+        ALLOCD_INT(NULL, idx);
     }
+
+    if(idx->zck)
+        return idx->start + zck_get_header_length(idx->zck);
+    else
+        return idx->start;
 }
 
 ssize_t PUBLIC zck_get_chunk_size(zckChunk *idx) {
-    ALLOCD_INT(idx);
+    if(idx && idx->zck) {
+        VALIDATE_INT(idx->zck);
+        ALLOCD_INT(idx->zck, idx);
+    } else {
+        ALLOCD_INT(NULL, idx);
+    }
 
     return idx->length;
 }
 
 ssize_t PUBLIC zck_get_chunk_comp_size(zckChunk *idx) {
-    ALLOCD_INT(idx);
+    if(idx && idx->zck) {
+        VALIDATE_INT(idx->zck);
+        ALLOCD_INT(idx->zck, idx);
+    } else {
+        ALLOCD_INT(NULL, idx);
+    }
 
     return idx->comp_length;
 }
 
 int PUBLIC zck_get_chunk_valid(zckChunk *idx) {
-    ALLOCD_INT(idx);
+    if(idx && idx->zck) {
+        VALIDATE_INT(idx->zck);
+        ALLOCD_INT(idx->zck, idx);
+    } else {
+        ALLOCD_INT(NULL, idx);
+    }
 
     return idx->valid;
 }
 
 bool PUBLIC zck_compare_chunk_digest(zckChunk *a, zckChunk *b) {
-    ALLOCD_BOOL(a);
-    ALLOCD_BOOL(b);
+    if(a && a->zck) {
+        VALIDATE_BOOL(a->zck);
+        ALLOCD_BOOL(a->zck, a);
+    } else {
+        ALLOCD_BOOL(NULL, a);
+    }
+    if(b && b->zck) {
+        VALIDATE_BOOL(b->zck);
+        ALLOCD_BOOL(b->zck, b);
+    } else {
+        ALLOCD_BOOL(NULL, b);
+    }
 
     if(a->digest_size != b->digest_size)
         return false;

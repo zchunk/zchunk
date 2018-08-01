@@ -150,7 +150,7 @@ size_t dl_header_cb(char *b, size_t l, size_t c, void *dl_v) {
 int dl_range(dlCtx *dl_ctx, char *url, char *range, int is_chunk) {
     if(dl_ctx == NULL || dl_ctx->dl == NULL) {
         free(range);
-        printf("Struct not defined\n");
+        dprintf(STDERR_FILENO, "Struct not defined\n");
         return 0;
     }
 
@@ -174,13 +174,14 @@ int dl_range(dlCtx *dl_ctx, char *url, char *range, int is_chunk) {
         return -1;
 
     if(res != CURLE_OK) {
-        printf("Download failed: %s\n", curl_easy_strerror(res));
+        dprintf(STDERR_FILENO, "Download failed: %s\n",
+                curl_easy_strerror(res));
         return 0;
     }
     long code;
     curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &code);
     if (code != 206 && code != 200) {
-        printf("HTTP Error: %li when downloading %s\n", code,
+        dprintf(STDERR_FILENO, "HTTP Error: %li when downloading %s\n", code,
                 url);
         return 0;
     }
@@ -206,8 +207,8 @@ int dl_bytes(dlCtx *dl_ctx, char *url, size_t bytes, size_t start,
         int fd = zck_get_fd(zck_dl_get_zck(dl));
 
         if(lseek(fd, *buffer_len, SEEK_SET) == -1) {
-            printf("Seek to download location failed: %s\n",
-                   strerror(errno));
+            dprintf(STDERR_FILENO, "Seek to download location failed: %s\n",
+                    strerror(errno));
             return 0;
         }
         if(*buffer_len >= start + bytes)
@@ -219,13 +220,14 @@ int dl_bytes(dlCtx *dl_ctx, char *url, size_t bytes, size_t start,
             return retval;
 
         if(log_level <= ZCK_LOG_DEBUG)
-            printf("Downloading %lu bytes at position %lu\n",
-                   (unsigned long)start+bytes-*buffer_len,
-                   (unsigned long)*buffer_len);
+            dprintf(STDERR_FILENO, "Downloading %lu bytes at position %lu\n",
+                    (unsigned long)start+bytes-*buffer_len,
+                    (unsigned long)*buffer_len);
         *buffer_len += start + bytes - *buffer_len;
         if(lseek(fd, start, SEEK_SET) == -1) {
-            printf("Seek to byte %lu of temporary file failed: %s\n",
-                   (unsigned long)start, strerror(errno));
+            dprintf(STDERR_FILENO,
+                    "Seek to byte %lu of temporary file failed: %s\n",
+                    (unsigned long)start, strerror(errno));
             return 0;
         }
     }
@@ -280,24 +282,26 @@ int main (int argc, char *argv[]) {
     if(arguments.source) {
         int src_fd = open(arguments.source, O_RDONLY);
         if(src_fd < 0) {
-            printf("Unable to open %s\n", arguments.source);
+            dprintf(STDERR_FILENO, "Unable to open %s\n", arguments.source);
             perror("");
             exit(10);
         }
         zck_src = zck_create();
         if(zck_src == NULL) {
-            printf("Unable to create zchunk context\n");
+            dprintf(STDERR_FILENO, "%s", zck_get_error(NULL));
+            zck_clear_error(NULL);
             exit(10);
         }
         if(!zck_init_read(zck_src, src_fd)) {
-            printf("Unable to open %s\n", arguments.source);
+            dprintf(STDERR_FILENO, "Unable to open %s: %s", arguments.source,
+                    zck_get_error(zck_src));
             exit(10);
         }
     }
 
     CURL *curl_ctx = curl_easy_init();
     if(!curl_ctx) {
-        printf("Unable to allocate %lu bytes for curl context\n",
+        dprintf(STDERR_FILENO, "Unable to allocate %lu bytes for curl context\n",
                 (unsigned long)sizeof(CURL));
         exit(10);
     }
@@ -305,22 +309,27 @@ int main (int argc, char *argv[]) {
     char *outname = basename(arguments.args[0]);
     int dst_fd = open(outname, O_RDWR | O_CREAT, 0644);
     if(dst_fd < 0) {
-        printf("Unable to open %s: %s\n", outname, strerror(errno));
+        dprintf(STDERR_FILENO, "Unable to open %s: %s\n", outname,
+                strerror(errno));
         exit(10);
     }
     zckCtx *zck_tgt = zck_create();
     if(zck_tgt == NULL) {
-        printf("Unable to create zchunk context\n");
+        dprintf(STDERR_FILENO, "%s", zck_get_error(NULL));
+        zck_clear_error(NULL);
         exit(10);
     }
     if(!zck_init_adv_read(zck_tgt, dst_fd)) {
-        printf("%s", zck_get_error(zck_tgt));
+        dprintf(STDERR_FILENO, "%s", zck_get_error(zck_tgt));
         exit(10);
     }
 
     zckDL *dl = zck_dl_init(zck_tgt);
-    if(dl == NULL)
+    if(dl == NULL) {
+        dprintf(STDERR_FILENO, "%s", zck_get_error(NULL));
+        zck_clear_error(NULL);
         exit(10);
+    }
 
     int exit_val = 0;
 
@@ -334,8 +343,9 @@ int main (int argc, char *argv[]) {
     /* The server doesn't support ranges */
     if(retval == -1) {
         if(arguments.fail_no_ranges) {
-            printf("Server doesn't support ranges and --fail-no-ranges was "
-                   "set\n");
+            dprintf(STDERR_FILENO,
+                    "Server doesn't support ranges and --fail-no-ranges was "
+                    "set\n");
             exit_val = 2;
             goto out;
         }
@@ -356,7 +366,6 @@ int main (int argc, char *argv[]) {
         }
         lseek(dst_fd, 0, SEEK_SET);
         if(!zck_read_lead(zck_tgt) || !zck_read_header(zck_tgt)) {
-            printf("Error reading zchunk file\n");
             exit_val = 10;
             goto out;
         }
@@ -404,7 +413,6 @@ int main (int argc, char *argv[]) {
                 ra_index++;
             char *range_string = zck_get_range_char(zck_src, range);
             if(range_string == NULL) {
-                printf("%s", zck_get_error(zck_src));
                 exit_val = 10;
                 goto out;
             }
@@ -414,7 +422,9 @@ int main (int argc, char *argv[]) {
                     ra_index += 1;
                     dl_ctx.max_ranges = range_attempt[ra_index];
                 }
-                printf("Tried downloading too many ranges, reducing to %i\n", dl_ctx.max_ranges);
+                dprintf(STDERR_FILENO,
+                        "Tried downloading too many ranges, reducing to %i\n",
+                        dl_ctx.max_ranges);
             }
             if(!zck_dl_set_range(dl, NULL)) {
                 exit_val = 10;
@@ -446,6 +456,16 @@ int main (int argc, char *argv[]) {
             break;
     }
 out:
+    if(exit_val > 0) {
+        if(zck_is_error(NULL)) {
+            dprintf(STDERR_FILENO, "%s", zck_get_error(NULL));
+            zck_clear_error(NULL);
+        }
+        if(zck_is_error(zck_src))
+            dprintf(STDERR_FILENO, "%s", zck_get_error(zck_src));
+        if(zck_is_error(zck_tgt))
+            dprintf(STDERR_FILENO, "%s", zck_get_error(zck_tgt));
+    }
     zck_dl_free(&dl);
     zck_free(&zck_tgt);
     zck_free(&zck_src);

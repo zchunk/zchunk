@@ -145,7 +145,8 @@ int main (int argc, char *argv[]) {
     if(arguments.dict != NULL) {
         int dict_fd = open(arguments.dict, O_RDONLY);
         if(dict_fd < 0) {
-            printf("Unable to open dictionary %s for reading", arguments.dict);
+            dprintf(STDERR_FILENO, "Unable to open dictionary %s for reading",
+                    arguments.dict);
             perror("");
             exit(1);
         }
@@ -169,7 +170,7 @@ int main (int argc, char *argv[]) {
 
     int dst_fd = open(out_name, O_TRUNC | O_WRONLY | O_CREAT, 0644);
     if(dst_fd < 0) {
-        printf("Unable to open %s", out_name);
+        dprintf(STDERR_FILENO, "Unable to open %s", out_name);
         perror("");
         if(dict) {
             free(dict);
@@ -181,11 +182,13 @@ int main (int argc, char *argv[]) {
 
     zckCtx *zck = zck_create();
     if(zck == NULL) {
-        printf("Unable to allocate zchunk context\n");
+        dprintf(STDERR_FILENO, "%s", zck_get_error(NULL));
+        zck_clear_error(NULL);
         exit(1);
     }
     if(!zck_init_write(zck, dst_fd)) {
-        printf("Unable to write to %s: %s", out_name, zck_get_error(zck));
+        dprintf(STDERR_FILENO, "Unable to write to %s: %s", out_name,
+                zck_get_error(zck));
         exit(1);
     }
     free(out_name);
@@ -196,14 +199,14 @@ int main (int argc, char *argv[]) {
     }*/
     if(dict_size > 0) {
         if(!zck_set_soption(zck, ZCK_COMP_DICT, dict, dict_size)) {
-            printf("%s\n", zck_get_error(zck));
+            dprintf(STDERR_FILENO, "%s\n", zck_get_error(zck));
             exit(1);
         }
     }
     free(dict);
     if(arguments.manual_chunk) {
         if(!zck_set_ioption(zck, ZCK_MANUAL_CHUNK, 1)) {
-            printf("%s\n", zck_get_error(zck));
+            dprintf(STDERR_FILENO, "%s\n", zck_get_error(zck));
             exit(1);
         }
     }
@@ -212,13 +215,14 @@ int main (int argc, char *argv[]) {
     int in_fd = open(arguments.args[0], O_RDONLY);
     off_t in_size = 0;
     if(in_fd < 0) {
-        printf("Unable to open %s for reading", arguments.args[0]);
+        dprintf(STDERR_FILENO, "Unable to open %s for reading",
+                arguments.args[0]);
         perror("");
         exit(1);
     }
     in_size = lseek(in_fd, 0, SEEK_END);
     if(in_size < 0) {
-        perror("Unable to seek to end of input file");
+        dprintf(STDERR_FILENO, "Unable to seek to end of input file");
         exit(1);
     }
     if(lseek(in_fd, 0, SEEK_SET) < 0) {
@@ -228,7 +232,7 @@ int main (int argc, char *argv[]) {
     if(in_size > 0) {
         data = malloc(in_size);
         if(read(in_fd, data, in_size) < in_size) {
-            printf("Unable to read from input file\n");
+            dprintf(STDERR_FILENO, "Unable to read from input file\n");
             exit(1);
         }
         close(in_fd);
@@ -286,7 +290,7 @@ int main (int argc, char *argv[]) {
         /* Buzhash rolling window */
         } else {
             if(zck_write(zck, data, in_size) < 0) {
-                printf("%s", zck_get_error(zck));
+                dprintf(STDERR_FILENO, "%s", zck_get_error(zck));
                 exit(1);
             }
         }
@@ -297,10 +301,10 @@ int main (int argc, char *argv[]) {
         exit(1);
     }
     if(arguments.log_level <= ZCK_LOG_INFO) {
-        printf("Wrote %lu bytes in %lu chunks\n",
-               (unsigned long)(zck_get_data_length(zck) +
-                               zck_get_header_length(zck)),
-               (long)zck_get_chunk_count(zck));
+        dprintf(STDERR_FILENO, "Wrote %lu bytes in %lu chunks\n",
+                (unsigned long)(zck_get_data_length(zck) +
+                                zck_get_header_length(zck)),
+                (long)zck_get_chunk_count(zck));
     }
 
     zck_free(&zck);

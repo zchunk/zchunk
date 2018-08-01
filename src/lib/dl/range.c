@@ -231,7 +231,7 @@ char PUBLIC *zck_get_range(size_t start, size_t end) {
 }
 
 int PUBLIC zck_get_range_count(zckRange *range) {
-    ALLOCD_INT(range);
+    ALLOCD_INT(NULL, range);
 
     return range->count;
 }

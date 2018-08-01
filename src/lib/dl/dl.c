@@ -77,7 +77,7 @@ static bool zero_chunk(zckCtx *tgt, zckChunk *tgt_idx) {
 
 /* Check whether last downloaded chunk is valid and zero it out if it isn't */
 static bool set_chunk_valid(zckDL *dl) {
-    ALLOCD_BOOL(dl);
+    ALLOCD_BOOL(NULL, dl);
     VALIDATE_BOOL(dl->zck);
 
     int retval = validate_chunk(dl->zck, dl->tgt_check, ZCK_LOG_WARNING,
@@ -96,7 +96,7 @@ static bool set_chunk_valid(zckDL *dl) {
 
 /* Write length or to end of current chunk, whichever comes first */
 static int dl_write(zckDL *dl, const char *at, size_t length) {
-    ALLOCD_INT(dl);
+    ALLOCD_INT(NULL, dl);
     VALIDATE_INT(dl->zck);
 
     int wb = 0;
@@ -168,7 +168,7 @@ static bool write_and_verify_chunk(zckCtx *src, zckCtx *tgt,
 
 /* Split current read into the appropriate chunks and write appropriately */
 int dl_write_range(zckDL *dl, const char *at, size_t length) {
-    ALLOCD_BOOL(dl);
+    ALLOCD_BOOL(NULL, dl);
     VALIDATE_BOOL(dl->zck);
 
     if(dl->range == NULL) {
@@ -270,13 +270,13 @@ bool PUBLIC zck_copy_chunks(zckCtx *src, zckCtx *tgt) {
 }
 
 ssize_t PUBLIC zck_dl_get_bytes_downloaded(zckDL *dl) {
-    ALLOCD_INT(dl);
+    ALLOCD_INT(NULL, dl);
 
     return dl->dl;
 }
 
 ssize_t PUBLIC zck_dl_get_bytes_uploaded(zckDL *dl) {
-    ALLOCD_INT(dl);
+    ALLOCD_INT(NULL, dl);
 
     return dl->ul;
 }
@@ -331,53 +331,53 @@ void PUBLIC zck_dl_free(zckDL **dl) {
 }
 
 zckCtx PUBLIC *zck_dl_get_zck(zckDL *dl) {
-    ALLOCD_PTR(dl);
+    ALLOCD_PTR(NULL, dl);
 
     return dl->zck;
 }
 
 bool PUBLIC zck_dl_set_zck(zckDL *dl, zckCtx *zck) {
-    ALLOCD_BOOL(dl);
+    ALLOCD_BOOL(NULL, dl);
 
     dl->zck = zck;
     return true;
 }
 bool PUBLIC zck_dl_set_range(zckDL *dl, zckRange *range) {
-    ALLOCD_BOOL(dl);
+    ALLOCD_BOOL(NULL, dl);
 
     dl->range = range;
     return true;
 }
 
 zckRange PUBLIC *zck_dl_get_range(zckDL *dl) {
-    ALLOCD_PTR(dl);
+    ALLOCD_PTR(NULL, dl);
 
     return dl->range;
 }
 
 bool PUBLIC zck_dl_set_header_cb(zckDL *dl, zck_wcb func) {
-    ALLOCD_BOOL(dl);
+    ALLOCD_BOOL(NULL, dl);
 
     dl->header_cb = func;
     return true;
 }
 
 bool PUBLIC zck_dl_set_header_data(zckDL *dl, void *data) {
-    ALLOCD_BOOL(dl);
+    ALLOCD_BOOL(NULL, dl);
 
     dl->header_data = data;
     return true;
 }
 
 bool PUBLIC zck_dl_set_write_cb(zckDL *dl, zck_wcb func) {
-    ALLOCD_BOOL(dl);
+    ALLOCD_BOOL(NULL, dl);
 
     dl->write_cb = func;
     return true;
 }
 
 bool PUBLIC zck_dl_set_write_data(zckDL *dl, void *data) {
-    ALLOCD_BOOL(dl);
+    ALLOCD_BOOL(NULL, dl);
 
     dl->write_data = data;
     return true;
@@ -388,7 +388,7 @@ bool PUBLIC zck_dl_set_write_data(zckDL *dl, void *data) {
  *******************************************************************/
 
 size_t PUBLIC zck_header_cb(char *b, size_t l, size_t c, void *dl_v) {
-    ALLOCD_BOOL(dl_v);
+    ALLOCD_BOOL(NULL, dl_v);
     zckDL *dl = (zckDL*)dl_v;
 
     if(multipart_get_boundary(dl, b, c*l) == 0)
@@ -401,7 +401,7 @@ size_t PUBLIC zck_header_cb(char *b, size_t l, size_t c, void *dl_v) {
 
 size_t PUBLIC zck_write_zck_header_cb(void *ptr, size_t l, size_t c,
                                       void *dl_v) {
-    ALLOCD_BOOL(dl_v);
+    ALLOCD_BOOL(NULL, dl_v);
     zckDL *dl = (zckDL*)dl_v;
 
     size_t wb = 0;
@@ -415,7 +415,7 @@ size_t PUBLIC zck_write_zck_header_cb(void *ptr, size_t l, size_t c,
 }
 
 size_t PUBLIC zck_write_chunk_cb(void *ptr, size_t l, size_t c, void *dl_v) {
-    ALLOCD_BOOL(dl_v);
+    ALLOCD_BOOL(NULL, dl_v);
     zckDL *dl = (zckDL*)dl_v;
 
     size_t wb = 0;

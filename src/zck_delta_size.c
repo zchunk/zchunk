@@ -104,18 +104,19 @@ int main (int argc, char *argv[]) {
 
     int src_fd = open(arguments.args[0], O_RDONLY);
     if(src_fd < 0) {
-        printf("Unable to open %s\n", arguments.args[0]);
+        dprintf(STDERR_FILENO, "Unable to open %s\n", arguments.args[0]);
         perror("");
         exit(1);
     }
     zckCtx *zck_src = zck_create();
     if(zck_src == NULL) {
-        printf("Unable to create zchunk context\n");
+        dprintf(STDERR_FILENO, "%s", zck_get_error(NULL));
+        zck_clear_error(NULL);
         exit(1);
     }
     if(!zck_init_read(zck_src, src_fd)) {
-        printf("Error reading %s: %s", arguments.args[0],
-               zck_get_error(zck_src));
+        dprintf(STDERR_FILENO, "Error reading %s: %s", arguments.args[0],
+                zck_get_error(zck_src));
         zck_free(&zck_src);
         exit(1);
     }
@@ -123,20 +124,21 @@ int main (int argc, char *argv[]) {
 
     int tgt_fd = open(arguments.args[1], O_RDONLY);
     if(tgt_fd < 0) {
-        printf("Unable to open %s\n", arguments.args[1]);
+        dprintf(STDERR_FILENO, "Unable to open %s\n", arguments.args[1]);
         perror("");
         zck_free(&zck_src);
         exit(1);
     }
     zckCtx *zck_tgt = zck_create();
     if(zck_tgt == NULL) {
-        printf("Unable to create zchunk context\n");
+        dprintf(STDERR_FILENO, "%s", zck_get_error(NULL));
+        zck_clear_error(NULL);
         zck_free(&zck_src);
         exit(1);
     }
     if(!zck_init_read(zck_tgt, tgt_fd)) {
-        printf("Error reading %s: %s", arguments.args[1],
-               zck_get_error(zck_tgt));
+        dprintf(STDERR_FILENO, "Error reading %s: %s", arguments.args[1],
+                zck_get_error(zck_tgt));
         zck_free(&zck_src);
         zck_free(&zck_tgt);
         exit(1);
@@ -144,9 +146,11 @@ int main (int argc, char *argv[]) {
     close(tgt_fd);
 
     if(zck_get_chunk_hash_type(zck_tgt) != zck_get_chunk_hash_type(zck_src)) {
-        printf("ERROR: Chunk hash types don't match:\n");
-        printf("   %s: %s\n", arguments.args[0], zck_hash_name_from_type(zck_get_chunk_hash_type(zck_tgt)));
-        printf("   %s: %s\n", arguments.args[1], zck_hash_name_from_type(zck_get_chunk_hash_type(zck_src)));
+        dprintf(STDERR_FILENO, "ERROR: Chunk hash types don't match:\n");
+        dprintf(STDERR_FILENO, "   %s: %s\n", arguments.args[0],
+                zck_hash_name_from_type(zck_get_chunk_hash_type(zck_tgt)));
+        dprintf(STDERR_FILENO, "   %s: %s\n", arguments.args[1],
+                zck_hash_name_from_type(zck_get_chunk_hash_type(zck_src)));
         zck_free(&zck_src);
         zck_free(&zck_tgt);
         exit(1);
@@ -157,7 +161,7 @@ int main (int argc, char *argv[]) {
         exit(1);
 
     if(!zck_compare_chunk_digest(tgt_idx, src_idx))
-        printf("WARNING: Dicts don't match\n");
+        dprintf(STDERR_FILENO, "WARNING: Dicts don't match\n");
     ssize_t dl_size = zck_get_header_length(zck_tgt);
     if(dl_size < 0)
         exit(1);

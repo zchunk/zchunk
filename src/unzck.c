@@ -110,7 +110,7 @@ int main (int argc, char *argv[]) {
 
     int src_fd = open(arguments.args[0], O_RDONLY);
     if(src_fd < 0) {
-        printf("Unable to open %s\n", arguments.args[0]);
+        dprintf(STDERR_FILENO, "Unable to open %s\n", arguments.args[0]);
         perror("");
         exit(1);
     }
@@ -122,7 +122,7 @@ int main (int argc, char *argv[]) {
     if(!arguments.stdout) {
         dst_fd = open(out_name, O_TRUNC | O_WRONLY | O_CREAT, 0644);
         if(dst_fd < 0) {
-            printf("Unable to open %s", out_name);
+            dprintf(STDERR_FILENO, "Unable to open %s", out_name);
             perror("");
             free(out_name);
             exit(1);
@@ -132,8 +132,11 @@ int main (int argc, char *argv[]) {
     bool good_exit = false;
 
     zckCtx *zck = zck_create();
-    if(zck == NULL)
+    if(zck == NULL) {
+        dprintf(STDERR_FILENO, "%s", zck_get_error(NULL));
+        zck_clear_error(NULL);
         goto error1;
+    }
 
     char *data = malloc(BUF_SIZE);
     if(!zck_init_read(zck, src_fd))
@@ -142,7 +145,7 @@ int main (int argc, char *argv[]) {
     int ret = zck_validate_data_checksum(zck);
     if(ret < 1) {
         if(ret == -1)
-            printf("Data checksum failed verification\n");
+            dprintf(STDERR_FILENO, "Data checksum failed verification\n");
         goto error2;
     }
 
@@ -154,7 +157,7 @@ int main (int argc, char *argv[]) {
         if(read == 0)
             break;
         if(write(dst_fd, data, read) != read) {
-            printf("Error writing to %s\n", out_name);
+            dprintf(STDERR_FILENO, "Error writing to %s\n", out_name);
             goto error2;
         }
         total += read;
@@ -162,12 +165,12 @@ int main (int argc, char *argv[]) {
     if(!zck_close(zck))
         goto error2;
     if(arguments.log_level <= ZCK_LOG_INFO)
-        printf("Decompressed %lu bytes\n", (unsigned long)total);
+        dprintf(STDERR_FILENO, "Decompressed %lu bytes\n", (unsigned long)total);
     good_exit = true;
 error2:
     free(data);
     if(!good_exit)
-        printf("%s", zck_get_error(zck));
+        dprintf(STDERR_FILENO, "%s", zck_get_error(zck));
     zck_free(&zck);
 error1:
     if(!good_exit)

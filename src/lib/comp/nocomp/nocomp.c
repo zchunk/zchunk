@@ -34,7 +34,7 @@
 
 static bool init(zckCtx *zck, zckComp *comp) {
     VALIDATE_BOOL(zck);
-    ALLOCD_BOOL(comp);
+    ALLOCD_BOOL(zck, comp);
 
     return true;
 }
@@ -43,7 +43,7 @@ static ssize_t compress(zckCtx *zck, zckComp *comp, const char *src,
                         const size_t src_size, char **dst, size_t *dst_size,
                         bool use_dict) {
     VALIDATE_INT(zck);
-    ALLOCD_INT(comp);
+    ALLOCD_INT(zck, comp);
 
     *dst = zmalloc(src_size);
     if(dst == NULL) {
@@ -60,7 +60,7 @@ static ssize_t compress(zckCtx *zck, zckComp *comp, const char *src,
 static bool end_cchunk(zckCtx *zck, zckComp *comp, char **dst, size_t *dst_size,
                        bool use_dict) {
     VALIDATE_BOOL(zck);
-    ALLOCD_BOOL(comp);
+    ALLOCD_BOOL(zck, comp);
 
     *dst = NULL;
     *dst_size = 0;
@@ -70,7 +70,7 @@ static bool end_cchunk(zckCtx *zck, zckComp *comp, char **dst, size_t *dst_size,
 
 static bool decompress(zckCtx *zck, zckComp *comp, const bool use_dict) {
     VALIDATE_BOOL(zck);
-    ALLOCD_BOOL(comp);
+    ALLOCD_BOOL(zck, comp);
 
     char *src = comp->data;
     size_t src_size = comp->data_size;

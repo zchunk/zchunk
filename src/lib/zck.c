@@ -322,10 +322,10 @@ void PUBLIC zck_free(zckCtx **zck) {
 zckCtx PUBLIC *zck_create() {
     zckCtx *zck = zmalloc(sizeof(zckCtx));
     if(zck == NULL) {
-        zck_log(ZCK_LOG_NONE, "Unable to allocate %lu bytes",
-                sizeof(zckCtx));
+        set_error(NULL, "Unable to allocate %lu bytes", sizeof(zckCtx));
         return NULL;
     }
+    zck_clear_error(NULL);
     zck->prep_hash_type = -1;
     zck->prep_hdr_size = -1;
     return zck;

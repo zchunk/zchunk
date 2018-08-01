@@ -50,8 +50,8 @@ static bool create_chunk(zckCtx *zck) {
 static bool finish_chunk(zckIndex *index, zckChunk *item, char *digest,
                         bool valid, zckCtx *zck) {
     VALIDATE_BOOL(zck);
-    ALLOCD_BOOL(index);
-    ALLOCD_BOOL(item);
+    ALLOCD_BOOL(zck, index);
+    ALLOCD_BOOL(zck, item);
 
     item->digest = zmalloc(index->digest_size);
     if(item->digest == NULL) {

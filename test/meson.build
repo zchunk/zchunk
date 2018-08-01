@@ -145,7 +145,7 @@ test(
     args: [
         zck,
         'LICENSE.nodict.fodt.zck',
-        'ad9c6c972113615c9b28e67d01b8fa646a7090426f48349a0a53ab8a83457175',
+        '0418aaca75b6b64c3ac9bc50fc0974e48c76691869977907fad25eea834f3c85',
         '-o', 'LICENSE.nodict.fodt.zck',
         join_paths(file_path, 'LICENSE.fodt')
     ]
@@ -156,7 +156,7 @@ test(
     args: [
         zck,
         'LICENSE.dict.fodt.zck',
-        '3fc106134f6f08d25db6f2e46b32b67035333cb3362c29c54e26adb010545712',
+        'fedf75caa19cc03383b2a2abac75a490360f9bab6419c9f9241bae584fe64f04',
         '-D', join_paths(file_path, 'LICENSE.dict'),
         '-o', 'LICENSE.dict.fodt.zck',
         join_paths(file_path, 'LICENSE.fodt')
@@ -181,7 +181,7 @@ test(
     args: [
         zck,
         'LICENSE.manual.dict.fodt.zck',
-        'fd726deb04f1e1cdaf53cb8629ef4c121bb1f11f8388983f638a62610168d079',
+        '1c30587c95a7be32e282272e713f72dd944b446dc7a9250adf8d90e2d524ed13',
         '-D', join_paths(file_path, 'LICENSE.dict'),
         '-m',
         '-s', '<text:',

@@ -61,7 +61,8 @@ test(
     args: [
         '-vvvvv',
         'empty'
-    ]
+    ],
+    is_parallel: false
 )
 test(
     'check verbosity in zckdl',

@@ -25,7 +25,12 @@
 
 #include <string.h>
 
-#define rol32(v,s) (((v) << (s)) | ((v) >> (32 - (s))))
+static uint32_t rol32(uint32_t v, uint32_t s) {
+    s %= 32;
+    if(s == 0)
+        return v;
+    return ((v << s) | (v >> (32 - s)));
+}
 
 const uint32_t buzhash_table[] = {
     0x458be752, 0xc10748cc, 0xfbbcdbb8, 0x6ded5b68,

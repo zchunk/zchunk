@@ -140,49 +140,69 @@ test(
         join_paths(file_path, 'LICENSE.manual.dict.fodt.zck')
     ]
 )
+
+check_sha = '0418aaca75b6b64c3ac9bc50fc0974e48c76691869977907fad25eea834f3c85'
+if zstd_dep.version().version_compare('<=1.3.4')
+    check_sha = '08c9ce94470ad4ab7f8a64e67872e138964eb562d13686d9c941baa3a09d2835'
+endif
 test(
     'compress auto-chunked file - no dict',
     shacheck,
     args: [
         zck,
         'LICENSE.nodict.fodt.zck',
-        '0418aaca75b6b64c3ac9bc50fc0974e48c76691869977907fad25eea834f3c85',
+        check_sha,
         '-o', 'LICENSE.nodict.fodt.zck',
         join_paths(file_path, 'LICENSE.fodt')
     ]
 )
+
+check_sha = 'fedf75caa19cc03383b2a2abac75a490360f9bab6419c9f9241bae584fe64f04'
+if zstd_dep.version().version_compare('<=1.3.4')
+    check_sha = '0512327cc771a73c23377dd3804fffcaa557dd03cfd980dae22100f7b2193255'
+endif
 test(
     'compress auto-chunked file - dict',
     shacheck,
     args: [
         zck,
         'LICENSE.dict.fodt.zck',
-        'fedf75caa19cc03383b2a2abac75a490360f9bab6419c9f9241bae584fe64f04',
+        check_sha,
         '-D', join_paths(file_path, 'LICENSE.dict'),
         '-o', 'LICENSE.dict.fodt.zck',
         join_paths(file_path, 'LICENSE.fodt')
     ]
 )
+
+check_sha = 'cba69c5fc88fda4352470f3eb0fe5df04e9f1f08c88e0af5a96e53ed3f84526c'
+if zstd_dep.version().version_compare('<=1.3.4')
+    check_sha = '53205d490819bbb681224e21acf0b85ec44c62c5c1f46e59bd084ac471ed534c'
+endif
 test(
     'compress manual file - no dict',
     shacheck,
     args: [
         zck,
         'LICENSE.manual.nodict.fodt.zck',
-        'cba69c5fc88fda4352470f3eb0fe5df04e9f1f08c88e0af5a96e53ed3f84526c',
+        check_sha,
         '-m',
         '-s', '<text:',
         '-o', 'LICENSE.manual.nodict.fodt.zck',
         join_paths(file_path, 'LICENSE.fodt')
     ]
 )
+
+check_sha = '1c30587c95a7be32e282272e713f72dd944b446dc7a9250adf8d90e2d524ed13'
+if zstd_dep.version().version_compare('<=1.3.4')
+    check_sha = 'a02d64a7cdbfe07af674b4aa94707d2dd072f8ff1abd0bd9801d313019e69cba'
+endif
 test(
     'compress manual file - dict',
     shacheck,
     args: [
         zck,
         'LICENSE.manual.dict.fodt.zck',
-        '1c30587c95a7be32e282272e713f72dd944b446dc7a9250adf8d90e2d524ed13',
+        check_sha,
         '-D', join_paths(file_path, 'LICENSE.dict'),
         '-m',
         '-s', '<text:',

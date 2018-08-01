@@ -57,6 +57,26 @@ static bool init(zckCtx *zck, zckComp *comp) {
     return true;
 }
 
+static bool close(zckCtx *zck, zckComp *comp) {
+    if(comp->cdict_ctx) {
+        ZSTD_freeCDict(comp->cdict_ctx);
+        comp->cdict_ctx = NULL;
+    }
+    if(comp->ddict_ctx) {
+        ZSTD_freeDDict(comp->ddict_ctx);
+        comp->ddict_ctx = NULL;
+    }
+    if(comp->cctx) {
+        ZSTD_freeCCtx(comp->cctx);
+        comp->cctx = NULL;
+    }
+    if(comp->dctx) {
+        ZSTD_freeDCtx(comp->dctx);
+        comp->dctx = NULL;
+    }
+    return true;
+}
+
 /* The zstd compression format doesn't allow streaming compression with a dict
  * unless you statically link to it.  If we have a dict, we do pseudo-streaming
  * compression where we buffer the data until the chunk ends. */
@@ -96,13 +116,20 @@ static bool end_cchunk(zckCtx *zck, zckComp *comp, char **dst, size_t *dst_size,
         return false;
     }
 
+    /* Currently, compression isn't deterministic when using contexts in
+     * zstd 1.3.5, so this works around it */
     if(use_dict && comp->cdict_ctx) {
-        *dst_size = ZSTD_compress_usingCDict(comp->cctx, *dst, max_size,
-                                             comp->dc_data, comp->dc_data_size,
-                                             comp->cdict_ctx);
+        if(comp->cctx)
+            ZSTD_freeCCtx(comp->cctx);
+        comp->cctx = ZSTD_createCCtx();
+
+        *dst_size = ZSTD_compress_usingDict(comp->cctx, *dst, max_size,
+                                            comp->dc_data, comp->dc_data_size,
+                                            comp->dict, comp->dict_size,
+                                            comp->level);
     } else {
-        *dst_size = ZSTD_compressCCtx(comp->cctx, *dst, max_size, comp->dc_data,
-                                      comp->dc_data_size, comp->level);
+        *dst_size = ZSTD_compress(*dst, max_size, comp->dc_data,
+                                  comp->dc_data_size, comp->level);
     }
     free(comp->dc_data);
     comp->dc_data = NULL;
@@ -165,26 +192,6 @@ decomp_error_2:
 decomp_error_1:
     free(src);
     return false;
-}
-
-static bool close(zckCtx *zck, zckComp *comp) {
-    if(comp->cdict_ctx) {
-        ZSTD_freeCDict(comp->cdict_ctx);
-        comp->cdict_ctx = NULL;
-    }
-    if(comp->ddict_ctx) {
-        ZSTD_freeDDict(comp->ddict_ctx);
-        comp->ddict_ctx = NULL;
-    }
-    if(comp->cctx) {
-        ZSTD_freeCCtx(comp->cctx);
-        comp->cctx = NULL;
-    }
-    if(comp->dctx) {
-        ZSTD_freeDCtx(comp->dctx);
-        comp->dctx = NULL;
-    }
-    return true;
 }
 
 static bool set_parameter(zckCtx *zck, zckComp *comp, int option,

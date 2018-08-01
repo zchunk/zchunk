@@ -256,9 +256,6 @@ bool comp_init(zckCtx *zck) {
                 return false;
         }
     }
-    free(zck->comp.dict);
-    zck->comp.dict = NULL;
-    zck->comp.dict_size = 0;
     zck->comp.started = true;
     return true;
 }
@@ -289,6 +286,11 @@ bool comp_close(zckCtx *zck) {
         zck->comp.data_loc = 0;
         zck->comp.data_idx = NULL;
     }
+    if(zck->comp.dict)
+        free(zck->comp.dict);
+    zck->comp.dict = NULL;
+    zck->comp.dict_size = 0;
+
     return comp_reset(zck);
 }
 

@@ -1,6 +1,6 @@
 project('zck', 'c',
         version : '0.9.5',
-        meson_version : '>=0.47.0',
+        meson_version : '>=0.44.0',
         default_options : ['c_std=gnu99'])
 
 so_version = '1'
@@ -11,16 +11,24 @@ common_cflags = [
 cc = meson.get_compiler('c')
 add_project_arguments(cc.get_supported_arguments(common_cflags), language : 'c')
 
-zstd_dep = dependency('libzstd', required : get_option('with-zstd'))
-if zstd_dep.found()
-    add_project_arguments('-DZCHUNK_ZSTD', language : 'c')
+if get_option('with-zstd') == 'disabled'
+    zstd_dep = dependency('', required : false)
+else
+    zstd_dep = dependency('libzstd', required : get_option('with-zstd') == 'enabled')
+    if zstd_dep.found()
+        add_project_arguments('-DZCHUNK_ZSTD', language : 'c')
+    endif
 endif
 
 curl_dep = dependency('libcurl')
 
-openssl_dep = dependency('openssl', required : get_option('with-openssl'))
-if openssl_dep.found()
-    add_project_arguments('-DZCHUNK_OPENSSL', language : 'c')
+if get_option('with-openssl') == 'disabled'
+    openssl_dep = dependency('', required : false)
+else
+    openssl_dep = dependency('openssl', required : get_option('with-openssl') == 'enabled')
+    if openssl_dep.found()
+        add_project_arguments('-DZCHUNK_OPENSSL', language : 'c')
+    endif
 endif
 
 inc = include_directories('include')

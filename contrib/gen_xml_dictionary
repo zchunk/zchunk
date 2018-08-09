@@ -1,0 +1,51 @@
+#!/usr/bin/python3
+
+import re
+import sys
+import os.path
+import os
+import subprocess
+import argparse
+import shutil
+import tempfile
+import shutil
+
+parser = argparse.ArgumentParser(description="Creates a zstd dictionary from a file that will be chunked")
+parser.add_argument("split_string", help="String to use to split the file(s)")
+parser.add_argument("file", nargs="+", help="File(s) to use to generate the dictionary")
+parser.add_argument("-s", "--size", action="store", type=int, default=112640, help="Dictionary size")
+args = parser.parse_args()
+
+temp_dir = tempfile.mkdtemp()
+
+# Match any series of hex numbers that are 32 bytes or longer
+checksum_regex = re.compile("[0-9a-f]{32,}")
+try:
+    dict_file = os.path.basename(args.file[0]).split(".")[0] + ".dict"
+except KeyError:
+    dict_file = os.path.basename(args.file[0]) + ".dict"
+for fn in args.file:
+    f = open(fn, 'r')
+    data = f.read()
+    f.close()
+    data = checksum_regex.sub("", data)
+    data_list = data.split(args.split_string)
+    count = 0
+    for data in data_list:
+        filename = "%s/%s.%06i" % (temp_dir, os.path.basename(fn), count)
+        f = open(filename, 'w')
+        f.write(args.split_string)
+        f.write(data)
+        f.close()
+        count += 1
+
+filelist = os.listdir(temp_dir)
+filelist = ["%s/%s" % (temp_dir, f) for f in filelist]
+run_cmd = ["zstd", "--train"] + filelist + ["-o", dict_file, "--maxdict=%i" % args.size]
+try:
+    subprocess.run(run_cmd)
+    shutil.rmtree(temp_dir)
+except subprocess.CalledProcessError:
+    shutil.rmtree(temp_dir)
+    sys.exit(1)
+

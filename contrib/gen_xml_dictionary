@@ -1,14 +1,8 @@
 #!/usr/bin/python3
 
 import re
-import sys
-import os.path
-import os
-import subprocess
-import argparse
-import shutil
-import tempfile
-import shutil
+import sys, os, os.path, subprocess
+import argparse, tempfile, shutil
 
 parser = argparse.ArgumentParser(description="Creates a zstd dictionary from a file that will be chunked")
 parser.add_argument("split_string", help="String to use to split the file(s)")
@@ -24,6 +18,8 @@ try:
     dict_file = os.path.basename(args.file[0]).split(".")[0] + ".dict"
 except KeyError:
     dict_file = os.path.basename(args.file[0]) + ".dict"
+
+# Split file into chunks and store them in a temporary directory
 for fn in args.file:
     f = open(fn, 'r')
     data = f.read()
@@ -39,6 +35,7 @@ for fn in args.file:
         f.close()
         count += 1
 
+# Create dictionary from chunks in the temporary directory
 filelist = os.listdir(temp_dir)
 filelist = ["%s/%s" % (temp_dir, f) for f in filelist]
 run_cmd = ["zstd", "--train"] + filelist + ["-o", dict_file, "--maxdict=%i" % args.size]
@@ -48,4 +45,3 @@ try:
 except subprocess.CalledProcessError:
     shutil.rmtree(temp_dir)
     sys.exit(1)
-

@@ -1,5 +1,5 @@
 project('zck', 'c',
-        version : '0.9.6',
+        version : '0.9.7',
         meson_version : '>=0.44.0',
         default_options : ['c_std=gnu99'])
 

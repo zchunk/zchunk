@@ -1,7 +1,7 @@
 #ifndef ZCK_H
 #define ZCK_H
 
-#define ZCK_VERSION "0.9.6"
+#define ZCK_VERSION "0.9.7"
 
 typedef enum zck_hash {
     ZCK_HASH_SHA1,

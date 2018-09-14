@@ -29,6 +29,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <errno.h>
@@ -130,7 +131,10 @@ int get_tmp_fd(zckCtx *zck) {
     strncpy(fname+strlen(tmpdir), "/", 2);
     strncpy(fname+strlen(tmpdir)+1, template, strlen(template));
 
+    mode_t old_mode_mask;
+    old_mode_mask = umask (S_IXUSR | S_IRWXG | S_IRWXO);
     temp_fd = mkstemp(fname);
+    umask(old_mode_mask);
     if(temp_fd < 0) {
         free(fname);
         set_error(zck, "Unable to create temporary file");

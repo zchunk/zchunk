@@ -39,7 +39,7 @@ bool index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
     size_t length = 0;
 
     /* Read and configure hash type */
-    int hash_type;
+    int hash_type = 0;
     if(!compint_to_int(zck, &hash_type, data + length, &length, max_length)) {
         set_fatal_error(zck, "Unable to read hash type");
         return false;

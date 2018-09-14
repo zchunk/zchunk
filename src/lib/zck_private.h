@@ -1,5 +1,6 @@
 #ifndef ZCK_PRIVATE_H
 #define ZCK_PRIVATE_H
+
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -18,8 +19,6 @@
 #define DEFAULT_BUZHASH_BITS 15
 #define CHUNK_DEFAULT_MIN 1
 #define CHUNK_DEFAULT_MAX 10485760 // 10MB
-
-#define zmalloc(x) calloc(1, x)
 
 #define PUBLIC __attribute__((visibility("default")))
 
@@ -87,6 +86,7 @@
                                         "zckCtx not opened for writing"); \
                                     return NULL; \
                                 }
+
 typedef struct zckComp zckComp;
 typedef zckCtx zckCtx;
 
@@ -292,6 +292,10 @@ typedef struct zckCtx {
 int get_tmp_fd()
     __attribute__ ((warn_unused_result));
 bool import_dict(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
+void *zmalloc(size_t size)
+    __attribute__ ((warn_unused_result));
+void *zrealloc(void *ptr, size_t size)
     __attribute__ ((warn_unused_result));
 
 

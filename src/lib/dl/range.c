@@ -42,11 +42,6 @@ static zckRangeItem *range_insert_new(zckCtx *zck, zckRangeItem *prev,
     VALIDATE_PTR(zck);
 
     zckRangeItem *new = zmalloc(sizeof(zckRangeItem));
-    if(!new) {
-        set_fatal_error(zck, "Unable to allocate %lu bytes",
-                        sizeof(zckRangeItem));
-        return NULL;
-    }
     new->start = start;
     new->end = end;
     if(prev) {
@@ -154,13 +149,8 @@ void PUBLIC zck_range_free(zckRange **info) {
 }
 
 char PUBLIC *zck_get_range_char(zckCtx *zck, zckRange *range) {
-    int buf_size=BUF_SIZE;
-    char *output=malloc(buf_size);
-    if(!output) {
-        set_fatal_error(zck, "Unable to allocate %lu bytes", buf_size);
-        return NULL;
-    }
-
+    int buf_size = BUF_SIZE;
+    char *output = zmalloc(buf_size);
     int loc = 0;
     int count = 0;
     zckRangeItem *ri = range->first;
@@ -175,11 +165,7 @@ char PUBLIC *zck_get_range_char(zckCtx *zck, zckRange *range) {
         }
         if(length > buf_size-loc) {
             buf_size = (int)(buf_size * 1.5);
-            output = realloc(output, buf_size);
-            if(output == NULL) {
-                set_fatal_error(zck, "Unable to allocate %lu bytes", buf_size);
-                return NULL;
-            }
+            output = zrealloc(output, buf_size);
             continue;
         }
         loc += length;
@@ -187,12 +173,7 @@ char PUBLIC *zck_get_range_char(zckCtx *zck, zckRange *range) {
         ri = ri->next;
     }
     output[loc-1]='\0'; // Remove final comma
-    output = realloc(output, loc);
-    if(output == NULL) {
-        set_fatal_error(zck, "Unable to shrink range to %lu bytes", loc);
-        free(output);
-        return NULL;
-    }
+    output = zrealloc(output, loc);
     return output;
 }
 
@@ -200,10 +181,6 @@ zckRange PUBLIC *zck_get_missing_range(zckCtx *zck, int max_ranges) {
     VALIDATE_PTR(zck);
 
     zckRange *range = zmalloc(sizeof(zckRange));
-    if(range == NULL) {
-        set_fatal_error(zck, "Unable to allocate %lu bytes", sizeof(zckRange));
-        return NULL;
-    }
     for(zckChunk *chk = zck->index.first; chk; chk = chk->next) {
         if(chk->valid)
             continue;

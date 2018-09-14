@@ -101,8 +101,6 @@ ssize_t tell_data(zckCtx *zck) {
 int chunks_from_temp(zckCtx *zck) {
     int read_count;
     char *data = zmalloc(BUF_SIZE);
-    if(data == NULL)
-        return false;
 
     if(lseek(zck->temp_fd, 0, SEEK_SET) == -1)
         return false;

@@ -24,7 +24,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <assert.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -42,7 +41,6 @@ static char *add_boundary_to_regex(zckCtx *zck, const char *regex,
     if(regex == NULL || boundary == NULL)
         return NULL;
     char *regex_b = zmalloc(strlen(regex) + strlen(boundary) + 1);
-    assert(regex_b);
     if(snprintf(regex_b, strlen(regex) + strlen(boundary), regex,
                 boundary) != strlen(regex) + strlen(boundary) - 2) {
         free(regex_b);
@@ -117,12 +115,7 @@ size_t multipart_extract(zckDL *dl, char *b, size_t l) {
 
     /* Add new data to stored buffer */
     if(mp->buffer) {
-        buf = realloc(mp->buffer, mp->buffer_len + l);
-        if(buf == NULL) {
-            set_fatal_error(dl->zck, "Unable to reallocate %lu bytes for zckDL",
-                            mp->buffer_len + l);
-            return 0;
-        }
+        buf = zrealloc(mp->buffer, mp->buffer_len + l);
         memcpy(buf + mp->buffer_len, b, l);
         l = mp->buffer_len + l;
         mp->buffer = NULL;  // No need to free, buf holds realloc'd buffer
@@ -163,7 +156,7 @@ size_t multipart_extract(zckDL *dl, char *b, size_t l) {
         if(i >= end) {
             size_t size = buf + l - header_start;
             if(size > 0) {
-                mp->buffer = malloc(size);
+                mp->buffer = zmalloc(size);
                 memcpy(mp->buffer, header_start, size);
                 mp->buffer_len = size;
             }
@@ -232,11 +225,6 @@ size_t multipart_get_boundary(zckDL *dl, char *b, size_t size) {
     /* Copy buffer to null-terminated string because POSIX regex requires null-
      * terminated string */
     char *buf = zmalloc(size+1);
-    if(buf == NULL) {
-        set_fatal_error(dl->zck, "Unable to allocate %lu bytes for header",
-                        size+1);
-        return 0;
-    }
     buf[size] = '\0';
     memcpy(buf, b, size);
 

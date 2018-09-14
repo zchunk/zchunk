@@ -37,11 +37,6 @@ static bool create_chunk(zckCtx *zck) {
 
     clear_work_index(zck);
     zck->work_index_item = zmalloc(sizeof(zckChunk));
-    if(zck->work_index_item == NULL) {
-        set_error(zck, "Unable to allocate %lu bytes",
-                  sizeof(zckChunk));
-        return false;
-    }
     if(!hash_init(zck, &(zck->work_index_hash), &(zck->chunk_hash_type)))
         return false;
     return true;
@@ -54,10 +49,6 @@ static bool finish_chunk(zckIndex *index, zckChunk *item, char *digest,
     ALLOCD_BOOL(zck, item);
 
     item->digest = zmalloc(index->digest_size);
-    if(item->digest == NULL) {
-        set_error(zck, "Unable to allocate %lu bytes", index->digest_size);
-        return false;
-    }
     if(digest) {
         memcpy(item->digest, digest, index->digest_size);
         item->digest_size = index->digest_size;
@@ -123,11 +114,7 @@ bool index_create(zckCtx *zck) {
         }
     }
     /* Shrink index to actual size */
-    index = realloc(index, index_size);
-    if(index == NULL) {
-        set_fatal_error(zck, "Unable to reallocate %lu bytes", index_size);
-        return false;
-    }
+    index = zrealloc(index, index_size);
     zck->index_string = index;
     zck->index_size = index_size;
     zck_log(ZCK_LOG_DEBUG, "Generated index: %lu bytes", zck->index_size);
@@ -147,10 +134,6 @@ bool index_new_chunk(zckCtx *zck, zckIndex *index, char *digest, int digest_size
         return false;
     }
     zckChunk *chk = zmalloc(sizeof(zckChunk));
-    if(chk == NULL) {
-        set_error(zck, "Unable to allocate %lu bytes", sizeof(zckChunk));
-        return false;
-    }
     index->digest_size = digest_size;
     chk->comp_length = comp_size;
     chk->length = orig_size;
@@ -195,11 +178,6 @@ bool index_finish_chunk(zckCtx *zck) {
         }
     } else {
         digest = zmalloc(zck->chunk_hash_type.digest_size);
-        if(digest == NULL) {
-            set_fatal_error(zck, "Unable to allocate %lu bytes",
-                            zck->chunk_hash_type.digest_size);
-            return false;
-        }
     }
     if(!finish_chunk(&(zck->index), zck->work_index_item, digest, true, zck))
         return false;

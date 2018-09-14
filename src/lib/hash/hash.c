@@ -214,16 +214,12 @@ bool hash_init(zckCtx *zck, zckHash *hash, zckHashType *hash_type) {
         zck_log(ZCK_LOG_DDEBUG, "Initializing SHA-1 hash");
         hash->ctx = zmalloc(sizeof(SHA_CTX));
         hash->type = hash_type;
-        if(hash->ctx == NULL)
-            return false;
         SHA1_Init((SHA_CTX *) hash->ctx);
         return true;
     } else if(hash_type->type == ZCK_HASH_SHA256) {
         zck_log(ZCK_LOG_DDEBUG, "Initializing SHA-256 hash");
         hash->ctx = zmalloc(sizeof(SHA256_CTX));
         hash->type = hash_type;
-        if(hash->ctx == NULL)
-            return false;
         SHA256_Init((SHA256_CTX *) hash->ctx);
         return true;
     } else if(hash_type->type >= ZCK_HASH_SHA512 &&
@@ -231,8 +227,6 @@ bool hash_init(zckCtx *zck, zckHash *hash, zckHashType *hash_type) {
         zck_log(ZCK_LOG_DDEBUG, "Initializing SHA-512 hash");
         hash->ctx = zmalloc(sizeof(SHA512_CTX));
         hash->type = hash_type;
-        if(hash->ctx == NULL)
-            return false;
         SHA512_Init((SHA512_CTX *) hash->ctx);
         return true;
     }

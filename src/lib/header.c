@@ -50,12 +50,7 @@ static bool check_flags(zckCtx *zck, size_t flags) {
 
 static bool read_header_from_file(zckCtx *zck) {
     /* Allocate header and store any extra bytes at beginning of header */
-    zck->header = realloc(zck->header, zck->lead_size + zck->header_length);
-    if(zck->header == NULL) {
-        set_fatal_error(zck, "Unable to reallocate %lu bytes",
-                        zck->lead_size + zck->header_length);
-        return false;
-    }
+    zck->header = zrealloc(zck->header, zck->lead_size + zck->header_length);
     zck->lead_string = zck->header;
     char *header = zck->header + zck->lead_size;
     size_t loaded = 0;
@@ -111,11 +106,6 @@ static bool read_preface(zckCtx *zck) {
         return false;
     }
     zck->full_hash_digest = zmalloc(zck->hash_type.digest_size);
-    if(!zck->full_hash_digest) {
-        set_fatal_error(zck, "Unable to allocate %lu bytes",
-                        zck->hash_type.digest_size);
-        return false;
-    }
     memcpy(zck->full_hash_digest, header+length, zck->hash_type.digest_size);
     length += zck->hash_type.digest_size;
 
@@ -214,10 +204,6 @@ static bool preface_create(zckCtx *zck) {
     int header_malloc = zck->hash_type.digest_size + 4 + 2*MAX_COMP_SIZE;
 
     char *header = zmalloc(header_malloc);
-    if(header == NULL) {
-        set_error(zck, "Unable to allocate %lu bytes", header_malloc);
-        return false;
-    }
     size_t length = 0;
 
     /* Write out the full data digest */
@@ -238,11 +224,7 @@ static bool preface_create(zckCtx *zck) {
     compint_from_size(header+length, zck->index_size, &length);
 
     /* Shrink header to actual size */
-    header = realloc(header, length);
-    if(header == NULL) {
-        set_fatal_error(zck, "Unable to reallocate %lu bytes", length);
-        return false;
-    }
+    header = zrealloc(header, length);
 
     zck->preface_string = header;
     zck->preface_size = length;
@@ -252,10 +234,6 @@ static bool preface_create(zckCtx *zck) {
 
 static bool sig_create(zckCtx *zck) {
     char *header = zmalloc(MAX_COMP_SIZE);
-    if(header == NULL) {
-        set_error(zck, "Unable to allocate %lu bytes", MAX_COMP_SIZE);
-        return false;
-    }
     size_t length = 0;
 
     zck_log(ZCK_LOG_DEBUG, "Calculating %i signatures", zck->sigs.count);
@@ -277,10 +255,6 @@ static bool sig_create(zckCtx *zck) {
 static bool lead_create(zckCtx *zck) {
     int phs = 5 + 2*MAX_COMP_SIZE + zck->hash_type.digest_size;
     char *header = zmalloc(phs);
-    if(header == NULL) {
-        set_error(zck, "Unable to allocate %lu bytes", phs);
-        return false;
-    }
     size_t length = 0;
     memcpy(header, "\0ZCK1", 5);
     length += 5;
@@ -294,11 +268,7 @@ static bool lead_create(zckCtx *zck) {
     zck->hdr_digest_loc = length;
     length += zck->hash_type.digest_size;
 
-    header = realloc(header, length);
-    if(header == NULL) {
-        set_fatal_error(zck, "Unable to reallocate %lu bytes", length);
-        return false;
-    }
+    header = zrealloc(header, length);
 
     zck->lead_string = header;
     zck->lead_size = length;
@@ -339,11 +309,6 @@ bool header_create(zckCtx *zck) {
     zck_log(ZCK_LOG_DEBUG, "Merging into header: %lu bytes",
             zck->data_offset);
     zck->header = zmalloc(zck->data_offset);
-    if(zck->header == NULL) {
-        set_fatal_error(zck, "Unable to allocate %lu bytes",
-                        zck->data_offset);
-        return false;
-    }
     size_t offs = 0;
     memcpy(zck->header + offs, zck->lead_string, zck->lead_size);
     free(zck->lead_string);
@@ -403,10 +368,6 @@ static bool read_lead(zckCtx *zck) {
     int lead = 5 + 2*MAX_COMP_SIZE;
 
     char *header = zmalloc(lead);
-    if(header == NULL) {
-        set_error(zck, "Unable to allocate %lu bytes", lead);
-        return false;
-    }
     size_t length = 0;
 
     if(read_data(zck, header, lead) < lead) {
@@ -455,15 +416,7 @@ static bool read_lead(zckCtx *zck) {
 
     /* Read header digest */
     zck_log(ZCK_LOG_DEBUG, "Reading header digest");
-    header = realloc(header, length + zck->hash_type.digest_size);
-    if(header == NULL) {
-        zck->header_length = 0;
-        zck->hdr_digest_loc = 0;
-        hash_reset(&(zck->hash_type));
-        set_fatal_error(zck, "Unable to re-allocate %lu bytes",
-                        length + zck->hash_type.digest_size);
-        return false;
-    }
+    header = zrealloc(header, length + zck->hash_type.digest_size);
     size_t to_read = 0;
     if(lead < length + zck->hash_type.digest_size)
         to_read = length + zck->hash_type.digest_size - lead;
@@ -492,15 +445,6 @@ static bool read_lead(zckCtx *zck) {
         return false;
     }
     zck->header_digest = zmalloc(zck->hash_type.digest_size);
-    if(zck->header_digest == NULL) {
-        free(header);
-        zck->header_length = 0;
-        zck->hdr_digest_loc = 0;
-        hash_reset(&(zck->hash_type));
-        set_error(zck, "Unable to allocate %lu bytes",
-                  zck->hash_type.digest_size);
-        return false;
-    }
     memcpy(zck->header_digest, header + length, zck->hash_type.digest_size);
     length += zck->hash_type.digest_size;
 

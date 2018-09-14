@@ -115,12 +115,7 @@ static bool comp_add_to_data(zckCtx *zck, zckComp *comp, const char *src,
     ALLOCD_BOOL(zck, comp);
     ALLOCD_BOOL(zck, src);
 
-    comp->data = realloc(comp->data, comp->data_size + src_size);
-    if(comp->data == NULL) {
-        set_fatal_error(zck, "Unable to reallocate %lu bytes",
-                        comp->data_size + src_size);
-        return false;
-    }
+    comp->data = zrealloc(comp->data, comp->data_size + src_size);
     zck_log(ZCK_LOG_DEBUG, "Adding %lu bytes to compressed buffer",
         src_size);
     memcpy(comp->data + comp->data_size, src, src_size);
@@ -390,11 +385,6 @@ bool comp_add_to_dc(zckCtx *zck, zckComp *comp, const char *src,
 
     /* Get rid of any already read data and allocate space for new data */
     char *temp = zmalloc(comp->dc_data_size - comp->dc_data_loc + src_size);
-    if(temp == NULL) {
-        set_fatal_error(zck, "Unable to allocate %lu bytes",
-                        comp->dc_data_size - comp->dc_data_loc + src_size);
-        return false;
-    }
     if(comp->dc_data_loc != 0)
         zck_log(ZCK_LOG_DEBUG, "Freeing %lu bytes from decompressed buffer",
                 comp->dc_data_loc);
@@ -431,10 +421,6 @@ ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, bool use_dict) {
 
     size_t dc = 0;
     char *src = zmalloc(dst_size - dc);
-    if(src == NULL) {
-        set_fatal_error(zck, "Unable to allocate %lu bytes", dst_size-dc);
-        return false;
-    }
     bool finished_rd = false;
     bool finished_dc = false;
     zck_log(ZCK_LOG_DEBUG, "Trying to read %lu bytes", dst_size);

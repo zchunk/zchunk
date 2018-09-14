@@ -24,6 +24,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -93,10 +94,6 @@ static int hex_to_int (char c) {
 static char *ascii_checksum_to_bin (zckCtx *zck, char *checksum) {
     int cl = strlen(checksum);
     char *raw_checksum = zmalloc(cl/2);
-    if(raw_checksum == NULL) {
-        set_error(zck, "Unable to allocate %lu bytes", cl/2);
-        return NULL;
-    }
     char *rp = raw_checksum;
     int buf = 0;
     for (int i=0; i<cl; i++) {
@@ -108,6 +105,18 @@ static char *ascii_checksum_to_bin (zckCtx *zck, char *checksum) {
         }
     }
     return raw_checksum;
+}
+
+void *zmalloc(size_t size) {
+    void *ret = calloc(1, size);
+    assert(ret);
+    return ret;
+}
+
+void *zrealloc(void *ptr, size_t size) {
+    void *ret = realloc(ptr, size);
+    assert(ret);
+    return ret;
 }
 
 int get_tmp_fd(zckCtx *zck) {
@@ -122,11 +131,6 @@ int get_tmp_fd(zckCtx *zck) {
         tmpdir = "/tmp/";
     }
     fname = zmalloc(strlen(template) + strlen(tmpdir) + 2);
-    if(fname == NULL) {
-        set_error(zck, "Unable to allocate %lu bytes",
-                  strlen(template) + strlen(tmpdir) + 2);
-        return -1;
-    }
     strncpy(fname, tmpdir, strlen(tmpdir));
     strncpy(fname+strlen(tmpdir), "/", 2);
     strncpy(fname+strlen(tmpdir)+1, template, strlen(template));
@@ -160,10 +164,6 @@ bool import_dict(zckCtx *zck) {
 
     zck_log(ZCK_LOG_DEBUG, "Reading compression dict");
     char *data = zmalloc(size);
-    if(data == NULL) {
-        set_error(zck, "Unable to allocate %lu bytes", size);
-        return false;
-    }
     if(comp_read(zck, data, size, 0) != size) {
         set_error(zck, "Error reading compressed dict");
         return false;
@@ -184,10 +184,6 @@ bool PUBLIC zck_set_soption(zckCtx *zck, zck_soption option, const char *value,
                             size_t length) {
     VALIDATE_BOOL(zck);
     char *data = zmalloc(length);
-    if(data == NULL) {
-        set_error(zck, "Unable to allocate %lu bytes", length);
-        return false;
-    }
     memcpy(data, value, length);
 
     /* Validation options */
@@ -325,10 +321,6 @@ void PUBLIC zck_free(zckCtx **zck) {
 
 zckCtx PUBLIC *zck_create() {
     zckCtx *zck = zmalloc(sizeof(zckCtx));
-    if(zck == NULL) {
-        set_error(NULL, "Unable to allocate %lu bytes", sizeof(zckCtx));
-        return NULL;
-    }
     zck_clear_error(NULL);
     zck->prep_hash_type = -1;
     zck->prep_hdr_size = -1;

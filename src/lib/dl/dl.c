@@ -283,18 +283,10 @@ ssize_t PUBLIC zck_dl_get_bytes_uploaded(zckDL *dl) {
 
 /* Initialize zckDL.  When finished, zckDL *must* be freed by zck_dl_free() */
 zckDL PUBLIC *zck_dl_init(zckCtx *zck) {
+    VALIDATE_PTR(zck);
+
     zckDL *dl = zmalloc(sizeof(zckDL));
-    if(!dl) {
-        set_fatal_error(zck, "Unable to allocate %lu bytes for zckDL",
-                        sizeof(zckDL));
-        return NULL;
-    }
     dl->mp = zmalloc(sizeof(zckMP));
-    if(!dl->mp) {
-        set_fatal_error(zck, "Unable to allocate %lu bytes for dl->mp",
-                        sizeof(zckMP));
-        return NULL;
-    }
     dl->zck = zck;
     return dl;
 }
@@ -303,6 +295,7 @@ zckDL PUBLIC *zck_dl_init(zckCtx *zck) {
 void PUBLIC zck_dl_reset(zckDL *dl) {
     if(!dl)
         return;
+
     reset_mp(dl->mp);
     dl->dl_chunk_data = 0;
     clear_dl_regex(dl);

@@ -24,7 +24,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <assert.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -68,12 +67,9 @@ bool index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
         }
 
         zckChunk *new = zmalloc(sizeof(zckChunk));
-        assert(new);
 
         /* Read index entry digest */
         new->digest = zmalloc(zck->index.digest_size);
-        assert(new->digest);
-
         memcpy(new->digest, data+length, zck->index.digest_size);
         new->digest_size = zck->index.digest_size;
         length += zck->index.digest_size;

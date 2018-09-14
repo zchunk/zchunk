@@ -24,7 +24,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <assert.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -50,7 +49,6 @@ static ssize_t compress(zckCtx *zck, zckComp *comp, const char *src,
     ALLOCD_INT(zck, comp);
 
     *dst = zmalloc(src_size);
-    assert(*dst);
 
     memcpy(*dst, src, src_size);
     *dst_size = src_size;

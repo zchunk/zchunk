@@ -141,7 +141,7 @@ int main (int argc, char *argv[]) {
 
     /* Set dictionary if available */
     char *dict = NULL;
-    size_t dict_size = 0;
+    off_t dict_size = 0;
     if(arguments.dict != NULL) {
         int dict_fd = open(arguments.dict, O_RDONLY);
         if(dict_fd < 0) {

@@ -107,8 +107,9 @@ size_t multipart_extract(zckDL *dl, char *b, size_t l) {
     ALLOCD_BOOL(NULL, dl);
     VALIDATE_BOOL(dl->zck);
 
-    if(dl == NULL || dl->mp == NULL)
+    if(dl->mp == NULL)
         return 0;
+
     zckMP *mp = dl->mp;
     char *buf = b;
     bool alloc_buf = false;
@@ -210,9 +211,6 @@ end:
 size_t multipart_get_boundary(zckDL *dl, char *b, size_t size) {
     ALLOCD_BOOL(NULL, dl);
     VALIDATE_BOOL(dl->zck);
-
-    if(dl == NULL)
-        return 0;
 
     /* Create regex to find boundary */
     if(dl->hdr_regex == NULL) {

@@ -24,6 +24,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <assert.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -43,13 +44,13 @@ static ssize_t compress(zckCtx *zck, zckComp *comp, const char *src,
                         const size_t src_size, char **dst, size_t *dst_size,
                         bool use_dict) {
     VALIDATE_INT(zck);
+    ALLOCD_INT(zck, dst);
+    ALLOCD_INT(zck, src);
+    ALLOCD_INT(zck, dst_size);
     ALLOCD_INT(zck, comp);
 
     *dst = zmalloc(src_size);
-    if(dst == NULL) {
-        set_fatal_error(zck, "Unable to allocate %lu bytes", src_size);
-        return -1;
-    }
+    assert(*dst);
 
     memcpy(*dst, src, src_size);
     *dst_size = src_size;
@@ -60,6 +61,8 @@ static ssize_t compress(zckCtx *zck, zckComp *comp, const char *src,
 static bool end_cchunk(zckCtx *zck, zckComp *comp, char **dst, size_t *dst_size,
                        bool use_dict) {
     VALIDATE_BOOL(zck);
+    ALLOCD_BOOL(zck, dst);
+    ALLOCD_BOOL(zck, dst_size);
     ALLOCD_BOOL(zck, comp);
 
     *dst = NULL;
@@ -86,10 +89,16 @@ static bool decompress(zckCtx *zck, zckComp *comp, const bool use_dict) {
 
 static bool end_dchunk(zckCtx *zck, zckComp *comp, const bool use_dict,
                        const size_t fd_size) {
+    VALIDATE_BOOL(zck);
+    ALLOCD_BOOL(zck, comp);
+
     return true;
 }
 
 static bool close(zckCtx *zck, zckComp *comp) {
+    VALIDATE_BOOL(zck);
+    ALLOCD_BOOL(zck, comp);
+
     return true;
 }
 
@@ -97,12 +106,18 @@ static bool close(zckCtx *zck, zckComp *comp) {
  * was attempted */
 static bool set_parameter(zckCtx *zck, zckComp *comp, int option,
                           const void *value) {
+    VALIDATE_BOOL(zck);
+    ALLOCD_BOOL(zck, comp);
+
     set_error(zck, "Invalid compression parameter for ZCK_COMP_NONE");
     return false;
 }
 
 /* No default parameters to set when there's no compression */
 static bool set_default_parameters(zckCtx *zck, zckComp *comp) {
+    VALIDATE_BOOL(zck);
+    ALLOCD_BOOL(zck, comp);
+
     return true;
 }
 

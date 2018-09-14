@@ -87,6 +87,9 @@ static ssize_t compress(zckCtx *zck, zckComp *comp, const char *src,
                         const size_t src_size, char **dst, size_t *dst_size,
                         bool use_dict) {
     VALIDATE_INT(zck);
+    ALLOCD_INT(zck, dst);
+    ALLOCD_INT(zck, src);
+    ALLOCD_INT(zck, dst_size);
     ALLOCD_INT(zck, comp);
 
     comp->dc_data = realloc(comp->dc_data, comp->dc_data_size + src_size);
@@ -104,6 +107,8 @@ static ssize_t compress(zckCtx *zck, zckComp *comp, const char *src,
 static bool end_cchunk(zckCtx *zck, zckComp *comp, char **dst, size_t *dst_size,
                        bool use_dict) {
     VALIDATE_BOOL(zck);
+    ALLOCD_BOOL(zck, dst);
+    ALLOCD_BOOL(zck, dst_size);
     ALLOCD_BOOL(zck, comp);
 
     size_t max_size = ZSTD_compressBound(comp->dc_data_size);
@@ -199,6 +204,9 @@ decomp_error_1:
 
 static bool set_parameter(zckCtx *zck, zckComp *comp, int option,
                           const void *value) {
+    VALIDATE_BOOL(zck);
+    ALLOCD_BOOL(zck, comp);
+
     if(option == ZCK_ZSTD_COMP_LEVEL) {
         if(*(int*)value >= 0 && *(int*)value <= ZSTD_maxCLevel()) {
             comp->level = *(int*)value;
@@ -210,6 +218,9 @@ static bool set_parameter(zckCtx *zck, zckComp *comp, int option,
 }
 
 static bool set_default_parameters(zckCtx *zck, zckComp *comp) {
+    VALIDATE_BOOL(zck);
+    ALLOCD_BOOL(zck, comp);
+
     /* Set default compression level to 16 */
     int level=16;
     return set_parameter(zck, comp, ZCK_ZSTD_COMP_LEVEL, &level);

@@ -24,6 +24,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <assert.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -41,12 +42,7 @@ static char *add_boundary_to_regex(zckCtx *zck, const char *regex,
     if(regex == NULL || boundary == NULL)
         return NULL;
     char *regex_b = zmalloc(strlen(regex) + strlen(boundary) + 1);
-    if(regex_b == NULL) {
-        set_fatal_error(zck,
-                        "Unable to reallocate %lu bytes for regular expression",
-                        strlen(regex) + strlen(boundary) - 2);
-        return NULL;
-    }
+    assert(regex_b);
     if(snprintf(regex_b, strlen(regex) + strlen(boundary), regex,
                 boundary) != strlen(regex) + strlen(boundary) - 2) {
         free(regex_b);
@@ -81,10 +77,13 @@ static bool gen_regex(zckDL *dl) {
     if(regex_n == NULL)
         return false;
     char *regex_e = add_boundary_to_regex(dl->zck, end, dl->boundary);
-    if(regex_n == NULL)
+    if(regex_e == NULL) {
+        free(regex_n);
         return false;
+    }
     dl->dl_regex = zmalloc(sizeof(regex_t));
     if(!create_regex(dl->zck, dl->dl_regex, regex_n)) {
+        free(regex_e);
         free(regex_n);
         return false;
     }

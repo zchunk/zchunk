@@ -129,7 +129,11 @@ int get_tmp_fd(zckCtx *zck) {
 
     if(tmpdir == NULL) {
         tmpdir = "/tmp/";
+    } else if(strlen(tmpdir) > 1024) {
+        set_error(zck, "TMPDIR environmental variable is > 1024 bytes");
+        return -1;
     }
+
     fname = zmalloc(strlen(template) + strlen(tmpdir) + 2);
     strncpy(fname, tmpdir, strlen(tmpdir));
     strncpy(fname+strlen(tmpdir), "/", 2);

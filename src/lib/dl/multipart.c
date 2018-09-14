@@ -122,8 +122,11 @@ size_t multipart_extract(zckDL *dl, char *b, size_t l) {
     }
 
     /* If regex hasn't been created, create it */
-    if(dl->dl_regex == NULL && !gen_regex(dl))
+    if(dl->dl_regex == NULL && !gen_regex(dl)) {
+        if(alloc_buf)
+            free(buf);
         return 0;
+    }
 
     char *header_start = buf;
     char *i = buf;

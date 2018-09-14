@@ -431,7 +431,6 @@ static bool read_lead(zckCtx *zck) {
 
     if(zck->prep_digest &&
        memcmp(zck->prep_digest, header + length, zck->hash_type.digest_size) != 0) {
-        free(header);
         zck->header_length = 0;
         zck->hdr_digest_loc = 0;
         hash_reset(&(zck->hash_type));
@@ -442,6 +441,7 @@ static bool read_lead(zckCtx *zck) {
                                     zck->hash_type.digest_size),
                   get_digest_string(header + length,
                                     zck->hash_type.digest_size));
+        free(header);
         return false;
     }
     zck->header_digest = zmalloc(zck->hash_type.digest_size);

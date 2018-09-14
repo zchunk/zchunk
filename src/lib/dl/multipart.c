@@ -235,7 +235,6 @@ size_t multipart_get_boundary(zckDL *dl, char *b, size_t size) {
         zck_log(ZCK_LOG_DEBUG, "Multipart boundary: %s", boundary);
         dl->boundary = boundary;
     }
-    if(buf)
-        free(buf);
+    free(buf);
     return size;
 }

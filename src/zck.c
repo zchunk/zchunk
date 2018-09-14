@@ -240,37 +240,11 @@ int main (int argc, char *argv[]) {
         if(arguments.split_string) {
             char *found = data;
             char *search = found;
-            char *prev_srpm = memmem(search, in_size - (search-data), "<rpm:sourcerpm", 14);
             while(search) {
                 char *next = memmem(search, in_size - (search-data),
                                     arguments.split_string,
                                     strlen(arguments.split_string));
                 if(next) {
-                    char *next_srpm = memmem(next, in_size - (next-data), "<rpm:sourcerpm", 14);
-
-                    if(prev_srpm > next)
-                        prev_srpm = NULL;
-                    if(prev_srpm) {
-                        int matched=0;
-                        char prev = '\0';
-                        for(int i=0;;i++) {
-                            if(next_srpm[i] != prev_srpm[i])
-                                break;
-                            if(next_srpm[i] == '/' && prev == '<') {
-                                matched = 1;
-                                break;
-                            }
-                            prev = next_srpm[i];
-                        }
-                        if(matched) {
-                            search = next + 1;
-                            if(search > data + in_size)
-                                search = data + in_size;
-                            continue;
-                        }
-
-                    }
-                    prev_srpm = next_srpm;
                     if(zck_write(zck, found, next-found) < 0)
                         exit(1);
                     if(zck_end_chunk(zck) < 0)

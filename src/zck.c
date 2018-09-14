@@ -26,6 +26,7 @@
 
 #define _GNU_SOURCE
 
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -132,10 +133,12 @@ int main (int argc, char *argv[]) {
     if(arguments.output == NULL) {
         base_name = basename(arguments.args[0]);
         out_name = malloc(strlen(base_name) + 5);
+        assert(out_name);
         snprintf(out_name, strlen(base_name) + 5, "%s.zck", base_name);
     } else {
         base_name = arguments.output;
         out_name = malloc(strlen(base_name) + 1);
+        assert(out_name);
         snprintf(out_name, strlen(base_name) + 1, "%s", base_name);
     }
 
@@ -160,6 +163,7 @@ int main (int argc, char *argv[]) {
             exit(1);
         }
         dict = malloc(dict_size);
+        assert(dict);
         if(read(dict_fd, dict, dict_size) < dict_size) {
             free(dict);
             perror("Error reading dict:");
@@ -231,6 +235,7 @@ int main (int argc, char *argv[]) {
     }
     if(in_size > 0) {
         data = malloc(in_size);
+        assert(data);
         if(read(in_fd, data, in_size) < in_size) {
             dprintf(STDERR_FILENO, "Unable to read from input file\n");
             exit(1);

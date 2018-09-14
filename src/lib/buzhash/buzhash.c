@@ -23,6 +23,7 @@
 
 #include "buzhash.h"
 
+#include <assert.h>
 #include <string.h>
 
 static uint32_t rol32(uint32_t v, uint32_t s) {
@@ -104,6 +105,7 @@ uint32_t buzhash_update (buzHash *b, const char *s, size_t window) {
         if(b->window)
             free(b->window);
         b->window = calloc(1, window);
+        assert(b->window);
         b->window_loc = 0;
         b->window_fill = 0;
         b->window_size = window;

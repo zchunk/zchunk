@@ -26,6 +26,7 @@
 
 #define _GNU_SOURCE
 
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -116,6 +117,7 @@ int main (int argc, char *argv[]) {
     }
     char *base_name = basename(arguments.args[0]);
     char *out_name = malloc(strlen(base_name) - 3);
+    assert(out_name);
     snprintf(out_name, strlen(base_name) - 3, "%s", base_name);
 
     int dst_fd = STDOUT_FILENO;
@@ -132,13 +134,8 @@ int main (int argc, char *argv[]) {
     bool good_exit = false;
 
     zckCtx *zck = zck_create();
-    if(zck == NULL) {
-        dprintf(STDERR_FILENO, "%s", zck_get_error(NULL));
-        zck_clear_error(NULL);
-        goto error1;
-    }
-
     char *data = malloc(BUF_SIZE);
+    assert(data);
     if(!zck_init_read(zck, src_fd))
         goto error2;
 
@@ -172,7 +169,6 @@ error2:
     if(!good_exit)
         dprintf(STDERR_FILENO, "%s", zck_get_error(zck));
     zck_free(&zck);
-error1:
     if(!good_exit)
         unlink(out_name);
     free(out_name);

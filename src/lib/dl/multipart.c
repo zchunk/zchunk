@@ -74,18 +74,15 @@ static bool gen_regex(zckDL *dl) {
     char *regex_n = add_boundary_to_regex(dl->zck, next, dl->boundary);
     if(regex_n == NULL)
         return false;
-    char *regex_e = add_boundary_to_regex(dl->zck, end, dl->boundary);
-    if(regex_e == NULL) {
-        free(regex_n);
-        return false;
-    }
     dl->dl_regex = zmalloc(sizeof(regex_t));
     if(!create_regex(dl->zck, dl->dl_regex, regex_n)) {
-        free(regex_e);
         free(regex_n);
         return false;
     }
     free(regex_n);
+    char *regex_e = add_boundary_to_regex(dl->zck, end, dl->boundary);
+    if(regex_e == NULL)
+        return false;
     dl->end_regex = zmalloc(sizeof(regex_t));
     if(!create_regex(dl->zck, dl->end_regex, regex_e)) {
         free(regex_e);

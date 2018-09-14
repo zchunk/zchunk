@@ -1,3 +1,4 @@
+cov-int
 build
 test/abi/new
 test/abi/stable/ABI.dump

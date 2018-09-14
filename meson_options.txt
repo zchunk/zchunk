@@ -1,2 +1,3 @@
 option('with-zstd', type : 'combo', choices : ['enabled', 'disabled', 'auto'], value : 'auto')
 option('with-openssl', type : 'combo', choices : ['enabled', 'disabled', 'auto'], value : 'auto')
+option('coverity', type : 'boolean', value : false)

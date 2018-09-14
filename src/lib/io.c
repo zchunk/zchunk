@@ -100,10 +100,11 @@ ssize_t tell_data(zckCtx *zck) {
 
 int chunks_from_temp(zckCtx *zck) {
     int read_count;
-    char *data = zmalloc(BUF_SIZE);
 
     if(lseek(zck->temp_fd, 0, SEEK_SET) == -1)
         return false;
+
+    char *data = zmalloc(BUF_SIZE);
 
     while((read_count = read(zck->temp_fd, data, BUF_SIZE)) > 0) {
         if(read_count == -1 || !write_data(zck, zck->fd, data, read_count)) {

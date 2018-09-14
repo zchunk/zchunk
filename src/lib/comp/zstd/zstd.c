@@ -24,6 +24,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <assert.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -93,11 +94,8 @@ static ssize_t compress(zckCtx *zck, zckComp *comp, const char *src,
     ALLOCD_INT(zck, comp);
 
     comp->dc_data = realloc(comp->dc_data, comp->dc_data_size + src_size);
-    if(comp->dc_data == NULL) {
-        set_fatal_error(zck, "Unable to allocate %lu bytes",
-                        comp->dc_data_size + src_size);
-        return -1;
-    }
+    assert(comp->dc_data);
+
     memcpy(comp->dc_data + comp->dc_data_size, src, src_size);
     *dst = NULL;
     *dst_size = 0;
@@ -119,10 +117,7 @@ static bool end_cchunk(zckCtx *zck, zckComp *comp, char **dst, size_t *dst_size,
     }
 
     *dst = zmalloc(max_size);
-    if(dst == NULL) {
-        set_fatal_error(zck, "Unable to allocate %lu bytes", max_size);
-        return false;
-    }
+    assert(*dst);
 
     /* Currently, compression isn't deterministic when using contexts in
      * zstd 1.3.5, so this works around it */
@@ -168,10 +163,7 @@ static bool end_dchunk(zckCtx *zck, zckComp *comp, const bool use_dict,
     comp->data_size = 0;
 
     char *dst = zmalloc(fd_size);
-    if(dst == NULL) {
-        set_fatal_error(zck, "Unable to allocate %lu bytes", fd_size);
-        goto decomp_error_1;
-    }
+    assert(dst);
 
     size_t retval;
     zck_log(ZCK_LOG_DEBUG, "Decompressing %lu bytes to %lu bytes", src_size,
@@ -197,7 +189,6 @@ static bool end_dchunk(zckCtx *zck, zckComp *comp, const bool use_dict,
     return true;
 decomp_error_2:
     free(dst);
-decomp_error_1:
     free(src);
     return false;
 }

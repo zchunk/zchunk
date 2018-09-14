@@ -24,6 +24,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <assert.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -67,19 +68,12 @@ bool index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
         }
 
         zckChunk *new = zmalloc(sizeof(zckChunk));
-        if(!new) {
-            set_fatal_error(zck, "Unable to allocate %lu bytes",
-                            sizeof(zckChunk));
-            return false;
-        }
+        assert(new);
 
         /* Read index entry digest */
         new->digest = zmalloc(zck->index.digest_size);
-        if(!new->digest) {
-            set_fatal_error(zck, "Unable to allocate %lu bytes",
-                                 zck->index.digest_size);
-            return false;
-        }
+        assert(new->digest);
+
         memcpy(new->digest, data+length, zck->index.digest_size);
         new->digest_size = zck->index.digest_size;
         length += zck->index.digest_size;

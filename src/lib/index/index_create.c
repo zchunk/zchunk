@@ -179,8 +179,10 @@ bool index_finish_chunk(zckCtx *zck) {
     } else {
         digest = zmalloc(zck->chunk_hash_type.digest_size);
     }
-    if(!finish_chunk(&(zck->index), zck->work_index_item, digest, true, zck))
+    if(!finish_chunk(&(zck->index), zck->work_index_item, digest, true, zck)) {
+        free(digest);
         return false;
+    }
 
     free(digest);
     zck->work_index_item = NULL;

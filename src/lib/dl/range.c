@@ -61,12 +61,12 @@ static zckRangeItem *range_insert_new(zckCtx *zck, zckRangeItem *prev,
     return new;
 }
 
-static void range_remove(zckCtx *zck, zckRangeItem *range) {
-    if(range->prev)
-        range->prev->next = range->next;
+static zckRangeItem *range_remove(zckCtx *zck, zckRangeItem *range) {
+    zckRangeItem *next = range->next;
     if(range->next)
         range->next->prev = range->prev;
     free(range);
+    return next;
 }
 
 static void range_merge_combined(zckCtx *zck, zckRange *info) {
@@ -78,7 +78,7 @@ static void range_merge_combined(zckCtx *zck, zckRange *info) {
         if(ptr->next && ptr->end >= ptr->next->start-1) {
             if(ptr->end < ptr->next->end)
                 ptr->end = ptr->next->end;
-            range_remove(zck, ptr->next);
+            ptr->next = range_remove(zck, ptr->next);
             info->count -= 1;
         } else {
             ptr = ptr->next;

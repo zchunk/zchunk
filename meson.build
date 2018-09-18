@@ -1,5 +1,5 @@
 project('zck', 'c',
-        version : '0.9.9',
+        version : '0.9.10',
         meson_version : '>=0.44.0',
         default_options : ['c_std=gnu99'])
 
@@ -13,7 +13,7 @@ add_project_arguments(cc.get_supported_arguments(common_cflags), language : 'c')
 
 # Fix coverity bug, shamelessly stolen from libinput
 if get_option('coverity')
-	add_project_arguments('-D_Float128=__uint128_t', language : 'c')
+    add_project_arguments('-D_Float128=__uint128_t', language : 'c')
     add_project_arguments('-D_Float32x=int', language : 'c')
     add_project_arguments('-D_Float32=int', language : 'c')
     add_project_arguments('-D_Float64x=long', language : 'c')

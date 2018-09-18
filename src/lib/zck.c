@@ -135,9 +135,17 @@ int get_tmp_fd(zckCtx *zck) {
     }
 
     fname = zmalloc(strlen(template) + strlen(tmpdir) + 2);
-    strncpy(fname, tmpdir, strlen(tmpdir));
-    strncpy(fname+strlen(tmpdir), "/", 2);
-    strncpy(fname+strlen(tmpdir)+1, template, strlen(template));
+    int i=0;
+    for(i=0; i<strlen(tmpdir); i++)
+        fname[i] = tmpdir[i];
+    int offset = i;
+    fname[offset] = '/';
+    offset++;
+    for(i=0; i<strlen(template); i++)
+        fname[offset + i] = template[i];
+    offset += i;
+    fname[offset] = '\0';
+    printf("File name: %s", fname);
 
     mode_t old_mode_mask;
     old_mode_mask = umask (S_IXUSR | S_IRWXG | S_IRWXO);

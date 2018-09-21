@@ -145,7 +145,6 @@ int get_tmp_fd(zckCtx *zck) {
         fname[offset + i] = template[i];
     offset += i;
     fname[offset] = '\0';
-    printf("File name: %s", fname);
 
     mode_t old_mode_mask;
     old_mode_mask = umask (S_IXUSR | S_IRWXG | S_IRWXO);

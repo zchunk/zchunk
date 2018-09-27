@@ -283,8 +283,6 @@ ssize_t PUBLIC zck_dl_get_bytes_uploaded(zckDL *dl) {
 
 /* Initialize zckDL.  When finished, zckDL *must* be freed by zck_dl_free() */
 zckDL PUBLIC *zck_dl_init(zckCtx *zck) {
-    VALIDATE_PTR(zck);
-
     zckDL *dl = zmalloc(sizeof(zckDL));
     dl->mp = zmalloc(sizeof(zckMP));
     dl->zck = zck;

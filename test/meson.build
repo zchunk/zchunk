@@ -150,10 +150,14 @@ test(
     ]
 )
 
-check_sha = '0418aaca75b6b64c3ac9bc50fc0974e48c76691869977907fad25eea834f3c85'
+check_sha = '430c1963f71efe663272d39f7a7941d4a4e78d43c20caba8876a12f6a18eaeb1'
+if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.5')
+    check_sha = '0418aaca75b6b64c3ac9bc50fc0974e48c76691869977907fad25eea834f3c85'
+endif
 if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.4')
     check_sha = '08c9ce94470ad4ab7f8a64e67872e138964eb562d13686d9c941baa3a09d2835'
 endif
+
 test(
     'compress auto-chunked file - no dict',
     shacheck,
@@ -183,7 +187,10 @@ test(
     ]
 )
 
-check_sha = 'cba69c5fc88fda4352470f3eb0fe5df04e9f1f08c88e0af5a96e53ed3f84526c'
+check_sha = '1e8d64ec058d815a7f841aeeeb74ba4c028340f1275ce993fba175fec04fde1e'
+if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.5')
+    check_sha = 'cba69c5fc88fda4352470f3eb0fe5df04e9f1f08c88e0af5a96e53ed3f84526c'
+endif
 if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.4')
     check_sha = '53205d490819bbb681224e21acf0b85ec44c62c5c1f46e59bd084ac471ed534c'
 endif

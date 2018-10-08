@@ -34,5 +34,4 @@
 void version() {
     printf(ZCK_NAME " " ZCK_VERSION "\nCopyright (c) " ZCK_COPYRIGHT_YEAR
            " Jonathan Dieter\n");
-    exit(0);
 }

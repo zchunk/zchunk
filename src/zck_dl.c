@@ -70,10 +70,14 @@ struct arguments {
   zck_log_type log_level;
   char *source;
   int fail_no_ranges;
+  bool exit;
 };
 
 static error_t parse_opt (int key, char *arg, struct argp_state *state) {
     struct arguments *arguments = state->input;
+
+    if(arguments->exit)
+        return 0;
 
     switch (key) {
         case 'v':
@@ -95,6 +99,7 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
             break;
         case 'V':
             version();
+            arguments->exit = true;
             break;
         case 1000:
             arguments->fail_no_ranges = 1;
@@ -272,7 +277,9 @@ int main (int argc, char *argv[]) {
     /* Defaults */
     arguments.log_level = ZCK_LOG_INFO;
 
-    argp_parse (&argp, argc, argv, 0, 0, &arguments);
+    int retval = argp_parse (&argp, argc, argv, 0, 0, &arguments);
+    if(retval || arguments.exit)
+        exit(retval);
 
     curl_global_init(CURL_GLOBAL_ALL);
 
@@ -333,8 +340,8 @@ int main (int argc, char *argv[]) {
 
     int exit_val = 0;
 
-    int retval = dl_header(curl_ctx, dl, arguments.args[0],
-                           arguments.fail_no_ranges, arguments.log_level);
+    retval = dl_header(curl_ctx, dl, arguments.args[0],
+                       arguments.fail_no_ranges, arguments.log_level);
     if(!retval) {
         exit_val = 10;
         goto out;

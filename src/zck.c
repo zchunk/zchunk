@@ -67,10 +67,14 @@ struct arguments {
   bool manual_chunk;
   char *output;
   char *dict;
+  bool exit;
 };
 
 static error_t parse_opt (int key, char *arg, struct argp_state *state) {
     struct arguments *arguments = state->input;
+
+    if(arguments->exit)
+        return 0;
 
     switch (key) {
         case 'v':
@@ -92,6 +96,7 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
             break;
         case 'V':
             version();
+            arguments->exit = true;
             break;
 
         case ARGP_KEY_ARG:
@@ -124,7 +129,9 @@ int main (int argc, char *argv[]) {
     /* Defaults */
     arguments.log_level = ZCK_LOG_ERROR;
 
-    argp_parse (&argp, argc, argv, 0, 0, &arguments);
+    int retval = argp_parse(&argp, argc, argv, 0, 0, &arguments);
+    if(retval || arguments.exit)
+        exit(retval);
 
     zck_set_log_level(arguments.log_level);
 

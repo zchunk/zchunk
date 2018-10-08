@@ -38,9 +38,13 @@ Header checksum
 
 
 The preface:
-+===============+============+========================+
-| Data checksum | Flags (ci) | Compression type (ci ) |
-+===============+============+========================+
++===============+============+========================+=====================+
+| Data checksum | Flags (ci) | Compression type (ci ) | Optional flags (ci) |
++===============+============+========================+=====================+
+
++==============================+====================+
+| Optional flag data size (ci) | Optional flag data |
++==============================+====================+
 
 Data checksum
  This is the checksum of everything after the header, including the compressed
@@ -54,6 +58,7 @@ Flags
 
  Current flags are:
   bit 0: File has data streams
+  bit 1: File has optional flags
 
 Compression type
  This is an integer containing the type of compression used to compress dict and
@@ -63,6 +68,22 @@ Compression type
    0 - Uncompressed
    2 - zstd
 
+Optional flags
+ This is a compressed integer containing a bitmask of optional flags, and will
+ only be set if flag bit 1 is set.  All unused flags MUST be set to 0.  If a
+ decoder sees a flag set that it doesn't recognize, it MUST ignore the flag and
+ continue as normal.
+
+ Current optional flags are:
+  - none
+
+Optional flag data size
+ This is an integer containing the optional flag data size, and will only be set
+ if flag bit 1 is set.
+
+Optional flag data
+ This contains any data required for optional flags, and will only be set if
+ flag bit 1 is set.
 
 The index:
 +=================+==========================+==================+

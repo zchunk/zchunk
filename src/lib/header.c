@@ -238,7 +238,7 @@ static bool preface_create(zckCtx *zck) {
     length += zck->hash_type.digest_size;
 
     /* Write out flags */
-    size_t flags = 2;
+    size_t flags = 0;
     if(zck->has_streams)
         flags &= 1;
     compint_from_size(header+length, flags, &length);
@@ -248,11 +248,6 @@ static bool preface_create(zckCtx *zck) {
         free(header);
         return false;
     }
-
-    compint_from_size(header+length, 15, &length);
-    header = zrealloc(header, length + 100);
-    memcpy(header+length, "This is a test\0", 15);
-    length += 15;
     compint_from_size(header+length, zck->index_size, &length);
 
     /* Shrink header to actual size */

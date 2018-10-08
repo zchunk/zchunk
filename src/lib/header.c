@@ -36,15 +36,26 @@
 static bool check_flags(zckCtx *zck, size_t flags) {
     zck->has_streams = flags & 1;
     if(zck->has_streams) {
+        flags -= 1;
         set_fatal_error(zck,
                         "This version of zchunk doesn't support streams");
         return false;
     }
+    zck->has_optional_flags = flags & 2;
+    if(zck->has_optional_flags)
+        flags -= 2;
     flags = flags & (SIZE_MAX - 1);
     if(flags != 0) {
         set_fatal_error(zck, "Unknown flags(s) set");
         return false;
     }
+    return true;
+}
+
+static bool check_optional_flags(zckCtx *zck, size_t flags) {
+    flags = flags & (SIZE_MAX - 1);
+    if(flags != 0)
+        zck_log(ZCK_LOG_WARNING, "Unknown optional flags %i set", flags);
     return true;
 }
 
@@ -127,6 +138,22 @@ static bool read_preface(zckCtx *zck) {
         return false;
     if(!comp_init(zck))
         return false;
+
+    /* Read optional flags */
+    if(zck->has_optional_flags) {
+        size_t opt_flags = 0;
+        if(!compint_to_size(zck, &opt_flags, header+length, &length,
+                            max_length))
+            return false;
+        if(!check_optional_flags(zck, opt_flags))
+            return false;
+        size_t opt_flag_data_size = 0;
+        if(!compint_to_size(zck, &opt_flag_data_size, header+length, &length,
+                            max_length))
+            return false;
+        if(opt_flag_data_size > 0)
+            length += opt_flag_data_size;
+    }
 
     /* Read and initialize index size */
     if(!compint_to_int(zck, &tmp, header+length, &length, max_length))

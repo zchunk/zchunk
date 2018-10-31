@@ -38,6 +38,15 @@
 #include "zck_private.h"
 #include "util.h"
 
+char *untaint(const char *input) {
+    char *output = zmalloc(strlen(input)+1);
+    int i=0;
+    for(i=0; i<strlen(input); i++)
+        output[i] = input[i];
+    output[i] = '\0';
+    return output;
+}
+
 int main (int argc, char *argv[]) {
     if(argc < 4) {
         printf("Usage: %s <command> <outputfile> <expected checksum> [args]\n",
@@ -45,15 +54,15 @@ int main (int argc, char *argv[]) {
         exit(1);
     }
 
-    char *cmd = argv[1];
+    char *cmd = untaint(argv[1]);
     char *outf = argv[2];
     char *echecksum = argv[3];
 
     char **args = calloc(argc-2, sizeof(void*));
 
-    args[0] = argv[1];
+    args[0] = cmd;
     for(int i=1; i<argc-3; i++)
-        args[i] = argv[i+3];
+        args[i] = untaint(argv[i+3]);
 
     int status;
     pid_t child_pid;
@@ -98,6 +107,8 @@ int main (int argc, char *argv[]) {
         exit(1);
     }
     free(cksum);
+    for(int i=0; i<argc-3; i++)
+        free(args[i]);
     free(args);
     return 0;
 }

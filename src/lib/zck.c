@@ -88,6 +88,8 @@ static int hex_to_int (char c) {
     int result = (c / 16 - 3) * 10 + (c % 16);
     if (result > 9)
         result--;
+    if (result < 0 || result > 15)
+        return -1;
     return result;
 }
 
@@ -97,10 +99,17 @@ static char *ascii_checksum_to_bin (zckCtx *zck, char *checksum) {
     char *rp = raw_checksum;
     int buf = 0;
     for (int i=0; i<cl; i++) {
+        // Get integer value of hex checksum character.  If -1 is returned, then
+        // the character wasn't actually hex, so return NULL
+        int cksum = hex_to_int(checksum[i]);
+        if (cksum < 0) {
+            free(raw_checksum);
+            return NULL;
+        }
         if (i % 2 == 0)
-            buf = hex_to_int(checksum[i]);
+            buf = cksum;
         else {
-            rp[0] = buf*16 + hex_to_int(checksum[i]);
+            rp[0] = buf*16 + cksum;
             rp++;
         }
     }
@@ -223,6 +232,10 @@ bool PUBLIC zck_set_soption(zckCtx *zck, zck_soption option, const char *value,
                 zck_hash_name_from_type(zck->prep_hash_type), data);
         zck->prep_digest = ascii_checksum_to_bin(zck, data);
         free(data);
+        if(zck->prep_digest == NULL) {
+            set_fatal_error(zck, "Non-hex character found in supplied digest");
+            return false;
+        }
 
     /* Compression options */
     } else if(option < 2000) {

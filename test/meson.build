@@ -1,8 +1,16 @@
 util_sources = []
 subdir('lib')
 incdir = include_directories(['lib', '../src/lib', '../include'])
-empty = executable('empty', ['empty.c'] + util_sources, include_directories: incdir, dependencies: [zstd_dep, openssl_dep])
-optflag = executable('optflag', ['optflag.c'] + util_sources, include_directories: incdir, dependencies: [zstd_dep, openssl_dep])
+empty = executable('empty', ['empty.c'] + util_sources,
+                   include_directories: incdir,
+                   dependencies: [zstd_dep, openssl_dep])
+optflag = executable('optflag', ['optflag.c'] + util_sources,
+                     include_directories: incdir,
+                     dependencies: [zstd_dep, openssl_dep])
+invalid_input_checksum = executable('invalid_input_checksum',
+                                    ['invalid_input_checksum.c'] + util_sources,
+                                    include_directories: incdir,
+                                    dependencies: [zstd_dep, openssl_dep])
 shacheck = executable('shacheck', ['shacheck.c'] + util_sources, include_directories: incdir, dependencies: [zstd_dep, openssl_dep])
 file_path = join_paths(meson.source_root(), 'test/files')
 
@@ -50,6 +58,14 @@ test(
 test(
     'check opening file with optional flags',
     optflag,
+    args: [
+        join_paths(file_path, 'empty.optflags.zck')
+    ]
+)
+
+test(
+    'checksum with non-hex character',
+    invalid_input_checksum,
     args: [
         join_paths(file_path, 'empty.optflags.zck')
     ]

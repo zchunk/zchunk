@@ -6,7 +6,7 @@ subdir('hash')
 subdir('index')
 subdir('dl')
 lib_sources += files('zck.c', 'header.c', 'io.c', 'log.c', 'compint.c', 'error.c')
-zcklib = shared_library('zck',
+zcklib = library('zck',
                         lib_sources,
                         include_directories: inc,
                         dependencies: [zstd_dep, openssl_dep],

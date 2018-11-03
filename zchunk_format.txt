@@ -38,13 +38,22 @@ Header checksum
 
 
 The preface:
-+===============+============+========================+=====================+
-| Data checksum | Flags (ci) | Compression type (ci ) | Optional flags (ci) |
-+===============+============+========================+=====================+
++===============+============+========================+
+| Data checksum | Flags (ci) | Compression type (ci ) |
++===============+============+========================+
 
-+==============================+====================+
-| Optional flag data size (ci) | Optional flag data |
-+==============================+====================+
+(Optional elements will only be set if flag 1 is set to 1)
++=============================+
+| Optional element count (ci) |
++=============================+
+
+[+==========================+=================================+
+[| Optional element id (ci) | Optional element data size (ci) |
+[+==========================+=================================+
+
++=======================+]
+| Optional element data |] ...
++=======================+]
 
 Data checksum
  This is the checksum of everything after the header, including the compressed
@@ -58,7 +67,7 @@ Flags
 
  Current flags are:
   bit 0: File has data streams
-  bit 1: File has optional flags
+  bit 1: File has optional elements
 
 Compression type
  This is an integer containing the type of compression used to compress dict and
@@ -68,28 +77,36 @@ Compression type
    0 - Uncompressed
    2 - zstd
 
-Optional flags
- This is a compressed integer containing a bitmask of optional flags, and will
- only be set if flag bit 1 is set.  All unused flags MUST be set to 0.  If a
- decoder sees a flag set that it doesn't recognize, it MUST ignore the flag and
- continue as normal.
+NOTE: The following optional element fields will only be set if flag 1 is set
+      to 1
 
- Current optional flags are:
+Optional element count
+ This is a compressed integer containing the count of optional elements.  If
+ there are no optional elements, then flag 1 MUST be set to 0, and this field
+ and the following fields MUST NOT exist.
+
+Optional element id
+ This is a compressed integer containing the ID of the current optional element.
+
+ Available optional elements are:
   - none
 
-Optional flag data size
- This is an integer containing the optional flag data size, and will only be set
- if flag bit 1 is set.
+Optional element data size
+ This is a compressed integer containing the current optional element's data
+ size.
 
-Optional flag data
- This contains any data required for optional flags, and will only be set if
- flag bit 1 is set.
+Optional element data
+ This contains the current optional element's data.  This data MUST NOT be vital
+ for decompressing the zchunk file.  Zchunk versions that don't recognize the
+ current optional element ID, will ignore this data.
+
 
 The index:
 +=================+==========================+==================+
 | Index size (ci) | Chunk checksum type (ci) | Chunk count (ci) |
 +=================+==========================+==================+
 
+(Dict stream will only exist if flag 0 is set to 1)
 +==================+===============+==================+
 | Dict stream (ci) | Dict checksum | Dict length (ci) |
 +==================+===============+==================+
@@ -98,6 +115,7 @@ The index:
 | Uncompressed dict length (ci) |
 +===============================+
 
+(Chunk stream will only exist if flag 0 is set to 1)
 [+===================+================+===================+
 [| Chunk stream (ci) | Chunk checksum | Chunk length (ci) |
 [+===================+================+===================+
@@ -121,6 +139,7 @@ Chunk count
  This is a count of the number of chunks in the zchunk file including the
  dictionary chunk.
 
+NOTE: Dict stream will only be set if flag 0 is set to 1
 Dict stream
  If the data streams flag is set, this must always be 0, otherwise don't include
  this integer
@@ -137,6 +156,7 @@ Uncompressed dict length
  This is an integer containing the length of the dict after it has been
  decompressed.  If there is no dict, this must be a zero.
 
+NOTE: Chunk stream will only be set if flag 0 is set to 1
 Chunk stream
  If the data streams flag is set, this indicates which stream this chunk belongs
  to.  1 is the default, so decoders SHOULD decode stream 1 by default.  If the

@@ -4,7 +4,7 @@ incdir = include_directories(['lib', '../src/lib', '../include'])
 empty = executable('empty', ['empty.c'] + util_sources,
                    include_directories: incdir,
                    dependencies: [zstd_dep, openssl_dep])
-optflag = executable('optflag', ['optflag.c'] + util_sources,
+optelems = executable('optelems', ['optelems.c'] + util_sources,
                      include_directories: incdir,
                      dependencies: [zstd_dep, openssl_dep])
 invalid_input_checksum = executable('invalid_input_checksum',
@@ -57,9 +57,9 @@ test(
 
 test(
     'check opening file with optional flags',
-    optflag,
+    optelems,
     args: [
-        join_paths(file_path, 'empty.optflags.zck')
+        join_paths(file_path, 'empty.optelems.zck')
     ]
 )
 
@@ -67,7 +67,7 @@ test(
     'checksum with non-hex character',
     invalid_input_checksum,
     args: [
-        join_paths(file_path, 'empty.optflags.zck')
+        join_paths(file_path, 'empty.optelems.zck')
     ]
 )
 

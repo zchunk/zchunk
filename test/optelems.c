@@ -41,10 +41,10 @@ int main (int argc, char *argv[]) {
     zck_set_log_level(ZCK_LOG_DEBUG);
     char data[1000] = {0};
 
-    /* Open zchunk file and verify that zck->has_optional_flags is set */
+    /* Open zchunk file and verify that zck->has_optional_elems is set */
     int in = open(argv[1], O_RDONLY);
     if(in < 0) {
-        perror("Unable to open empty.zck for reading");
+        perror("Unable to open empty.optelems.zck for reading");
         exit(1);
     }
 
@@ -55,8 +55,8 @@ int main (int argc, char *argv[]) {
         printf("%s", zck_get_error(zck));
         exit(1);
     }
-    if(!zck->has_optional_flags) {
-        printf("zck->has_optional_flags should be set, but isn't");
+    if(!zck->has_optional_elems) {
+        printf("zck->has_optional_elems should be set, but isn't");
         exit(1);
     }
     memset(data, 0, 1000);

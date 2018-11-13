@@ -260,7 +260,7 @@ typedef struct zckCtx {
     zckHash work_index_hash;
     size_t stream;
     int has_streams;
-    int has_optional_flags;
+    int has_optional_elems;
 
     char *read_buf;
     size_t read_buf_size;

@@ -44,7 +44,9 @@ inc = include_directories('include')
 
 subdir('include')
 subdir('src')
-subdir('test')
+if not get_option('coverity')
+    subdir('test')
+endif
 
 pkg_mod = import('pkgconfig')
 pkg_mod.generate(libraries : zcklib,

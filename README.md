@@ -21,6 +21,7 @@ To build and install zchunk, first install meson and run
 meson build
 cd build
 ninja
+ninja test
 sudo ninja install
 ```
 

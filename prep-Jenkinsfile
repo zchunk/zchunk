@@ -1,0 +1,10 @@
+node {
+    checkout scm
+    stage('Prep') {
+        sh "./autotest/fedora-latest/prep.sh"
+        sh "./autotest/centos-latest/prep.sh"
+        sh "./autotest/opensuse-leap/prep.sh"
+        sh "./autotest/debian-latest/prep.sh"
+        sh "./autotest/ubuntu-rolling/prep.sh"
+    }
+}

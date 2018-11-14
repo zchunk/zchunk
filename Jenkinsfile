@@ -1,7 +1,5 @@
 node {
-    stage('Prep') {
-        git "https://github.com/zchunk/zchunk.git"
-    }
+    checkout scm
     stage('Build') {
         parallel fedora: {
             

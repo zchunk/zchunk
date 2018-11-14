@@ -7,4 +7,4 @@ Dockerfiles are available to test the latest build on different platforms:
  * debian:latest - autotest/debian-latest
 
 To test, in the project root directory, run:<br>
-```docker-compose --file autotest/<platform directory>/docker-compose.yml build```
+```./autotest/<platform directory>/test.sh```

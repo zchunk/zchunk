@@ -134,6 +134,8 @@ Chunk checksum type
  Current values:
    0 = SHA-1
    1 = SHA-256
+   2 = SHA-512
+   3 = SHA-512/128 (first 128 bits of SHA-512 checksum)
 
 Chunk count
  This is a count of the number of chunks in the zchunk file including the
@@ -205,6 +207,7 @@ Signature size
 Signature
  The actual signature.  The signature MUST only apply to the header, excluding
  the header size, the header checksum, the signature count and the signatures.
+ The excluded data MUST be omitted when calculating the signature.
 
 Signatures are designed so that anyone can add a new signature to a file
 without changing the validity of other signatures, but the header size and

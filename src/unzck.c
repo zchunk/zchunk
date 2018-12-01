@@ -49,6 +49,7 @@ static struct argp_option options[] = {
     {"verbose", 'v', 0,        0,
      "Increase verbosity (can be specified more than once for debugging)"},
     {"stdout",  'c', 0,        0, "Direct output to stdout"},
+    {"dict",   1000, 0,        0, "Only extract the dictionary"},
     {"version", 'V', 0,        0, "Show program version"},
     { 0 }
 };
@@ -56,6 +57,7 @@ static struct argp_option options[] = {
 struct arguments {
   char *args[1];
   zck_log_type log_level;
+  bool dict;
   bool stdout;
   bool exit;
 };
@@ -79,7 +81,9 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
             version();
             arguments->exit = true;
             break;
-
+        case 1000:
+            arguments->dict = true;
+            break;
         case ARGP_KEY_ARG:
             if (state->arg_num >= 1) {
                 argp_usage (state);
@@ -123,9 +127,15 @@ int main (int argc, char *argv[]) {
         exit(1);
     }
     char *base_name = basename(arguments.args[0]);
-    char *out_name = malloc(strlen(base_name) - 3);
+    char *out_name = NULL;
+    if(arguments.dict)
+        out_name = calloc(strlen(base_name) + 2, 1); // len .zck -> .zdict = +2
+    else
+        out_name = calloc(strlen(base_name) - 3, 1);
     assert(out_name);
-    snprintf(out_name, strlen(base_name) - 3, "%s", base_name);
+    snprintf(out_name, strlen(base_name) - 3, "%s", base_name); //Strip off .zck
+    if(arguments.dict)
+        snprintf(out_name + strlen(base_name) - 4, 7, ".zdict");
 
     int dst_fd = STDOUT_FILENO;
     if(!arguments.stdout) {
@@ -140,12 +150,50 @@ int main (int argc, char *argv[]) {
 
     bool good_exit = false;
 
+    char *data = NULL;
     zckCtx *zck = zck_create();
-    char *data = malloc(BUF_SIZE);
-    assert(data);
-    if(!zck_init_read(zck, src_fd))
+    if(!zck_init_read(zck, src_fd)) {
+        dprintf(STDERR_FILENO, "%s", zck_get_error(zck));
         goto error2;
+    }
 
+    /* Only write dictionary */
+    if(arguments.dict) {
+        zckChunk *dict = zck_get_first_chunk(zck);
+        ssize_t dict_size = zck_get_chunk_size(dict);
+        if(dict_size < 0) {
+            dprintf(STDERR_FILENO, "%s", zck_get_error(zck));
+            goto error2;
+        }
+        data = calloc(dict_size, 1);
+        assert(data);
+        ssize_t read_size = zck_get_chunk_data(dict, data, dict_size);
+        if(read_size != dict_size) {
+            if(read_size < 0)
+                dprintf(STDERR_FILENO, "%s", zck_get_error(zck));
+            else
+                dprintf(STDERR_FILENO,
+                        "Dict size doesn't match expected size: %li != %li\n",
+                        read_size, dict_size);
+            goto error2;
+        }
+        if(write(dst_fd, data, dict_size) != dict_size) {
+            dprintf(STDERR_FILENO, "Error writing to %s\n", out_name);
+            goto error2;
+        }
+        if(dict_size > 0) {
+            int ret = zck_get_chunk_valid(dict);
+            if(ret < 1) {
+                if(ret == -1)
+                    dprintf(STDERR_FILENO, "Data checksum failed verification\n");
+                else
+                    dprintf(STDERR_FILENO, "%s", zck_get_error(zck));
+                goto error2;
+            }
+        }
+        good_exit = true;
+        goto error2;
+    }
     int ret = zck_validate_data_checksum(zck);
     if(ret < 1) {
         if(ret == -1)
@@ -153,11 +201,15 @@ int main (int argc, char *argv[]) {
         goto error2;
     }
 
+    data = calloc(BUF_SIZE, 1);
+    assert(data);
     size_t total = 0;
     while(true) {
         ssize_t read = zck_read(zck, data, BUF_SIZE);
-        if(read < 0)
+        if(read < 0) {
+            dprintf(STDERR_FILENO, "%s", zck_get_error(zck));
             goto error2;
+        }
         if(read == 0)
             break;
         if(write(dst_fd, data, read) != read) {
@@ -166,15 +218,15 @@ int main (int argc, char *argv[]) {
         }
         total += read;
     }
-    if(!zck_close(zck))
+    if(!zck_close(zck)) {
+        dprintf(STDERR_FILENO, "%s", zck_get_error(zck));
         goto error2;
+    }
     if(arguments.log_level <= ZCK_LOG_INFO)
         dprintf(STDERR_FILENO, "Decompressed %lu bytes\n", (unsigned long)total);
     good_exit = true;
 error2:
     free(data);
-    if(!good_exit)
-        dprintf(STDERR_FILENO, "%s", zck_get_error(zck));
     zck_free(&zck);
     if(!good_exit)
         unlink(out_name);

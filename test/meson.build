@@ -189,6 +189,17 @@ test(
         join_paths(file_path, 'LICENSE.manual.dict.fodt.zck')
     ]
 )
+test(
+    'decompress dict from auto-chunked file',
+    shacheck,
+    args: [
+        unzck,
+        'LICENSE.dict.fodt.zdict',
+        'b20064d89c3beb8605d99c994ff45304f308abd840c0981475dd2faca6ec854b',
+        '--dict',
+        join_paths(file_path, 'LICENSE.dict.fodt.zck')
+    ]
+)
 
 
 check_sha = '430c1963f71efe663272d39f7a7941d4a4e78d43c20caba8876a12f6a18eaeb1'

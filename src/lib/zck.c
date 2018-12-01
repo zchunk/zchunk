@@ -93,12 +93,12 @@ static int hex_to_int (char c) {
     return result;
 }
 
-static char *ascii_checksum_to_bin (zckCtx *zck, char *checksum) {
-    int cl = strlen(checksum);
-    char *raw_checksum = zmalloc(cl/2);
+static char *ascii_checksum_to_bin (zckCtx *zck, char *checksum,
+                                    int checksum_length) {
+    char *raw_checksum = zmalloc(checksum_length/2);
     char *rp = raw_checksum;
     int buf = 0;
-    for (int i=0; i<cl; i++) {
+    for (int i=0; i<checksum_length; i++) {
         // Get integer value of hex checksum character.  If -1 is returned, then
         // the character wasn't actually hex, so return NULL
         int cksum = hex_to_int(checksum[i]);
@@ -230,7 +230,7 @@ bool PUBLIC zck_set_soption(zckCtx *zck, zck_soption option, const char *value,
         }
         zck_log(ZCK_LOG_DEBUG, "Setting expected hash to (%s)%s",
                 zck_hash_name_from_type(zck->prep_hash_type), data);
-        zck->prep_digest = ascii_checksum_to_bin(zck, data);
+        zck->prep_digest = ascii_checksum_to_bin(zck, data, length);
         free(data);
         if(zck->prep_digest == NULL) {
             set_fatal_error(zck, "Non-hex character found in supplied digest");

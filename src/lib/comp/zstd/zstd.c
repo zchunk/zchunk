@@ -58,7 +58,7 @@ static bool init(zckCtx *zck, zckComp *comp) {
 }
 
 static bool close(zckCtx *zck, zckComp *comp) {
-    VALIDATE_BOOL(zck);
+    ALLOCD_BOOL(zck, zck);
     ALLOCD_BOOL(zck, comp);
 
     if(comp->cdict_ctx) {

@@ -60,7 +60,9 @@ int main (int argc, char *argv[]) {
             "gbcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
             64)) {
         printf("ERROR: setting invalid checksum *worked*\n");
+        zck_free(&zck);
         exit(1);
     }
+    zck_free(&zck);
     printf("%s", zck_get_error(zck));
 }

@@ -94,7 +94,7 @@ static bool end_dchunk(zckCtx *zck, zckComp *comp, const bool use_dict,
 }
 
 static bool close(zckCtx *zck, zckComp *comp) {
-    VALIDATE_BOOL(zck);
+    ALLOCD_BOOL(zck, zck);
     ALLOCD_BOOL(zck, comp);
 
     return true;

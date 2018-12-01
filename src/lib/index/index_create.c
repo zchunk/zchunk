@@ -56,6 +56,7 @@ static bool finish_chunk(zckIndex *index, zckChunk *item, char *digest,
     item->start = index->length;
     item->valid = valid;
     item->zck = zck;
+    item->number = index->count;
     if(index->first == NULL) {
         index->first = item;
     } else {

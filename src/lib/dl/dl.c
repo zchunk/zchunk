@@ -80,8 +80,7 @@ static bool set_chunk_valid(zckDL *dl) {
     ALLOCD_BOOL(NULL, dl);
     VALIDATE_BOOL(dl->zck);
 
-    int retval = validate_chunk(dl->zck, dl->tgt_check, ZCK_LOG_WARNING,
-                                dl->tgt_number);
+    int retval = validate_chunk(dl->tgt_check, ZCK_LOG_WARNING);
     if(retval < 1) {
         if(!zero_chunk(dl->zck, dl->tgt_check))
             return false;

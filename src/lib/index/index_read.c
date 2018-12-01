@@ -96,6 +96,7 @@ bool index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
         new->length = chunk_length;
         new->zck = zck;
         new->valid = 0;
+        new->number = count;
         idx_loc += new->comp_length;
         count++;
         zck->index.length = idx_loc;

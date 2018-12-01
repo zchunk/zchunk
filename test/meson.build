@@ -11,6 +11,14 @@ invalid_input_checksum = executable('invalid_input_checksum',
                                     ['invalid_input_checksum.c'] + util_sources,
                                     include_directories: incdir,
                                     dependencies: [zstd_dep, openssl_dep])
+read_single_chunk = executable('read_single_chunk',
+                               ['read_single_chunk.c'] + util_sources,
+                               include_directories: incdir,
+                               dependencies: [zstd_dep, openssl_dep])
+read_single_comp_chunk = executable('read_single_comp_chunk',
+                                    ['read_single_comp_chunk.c'] + util_sources,
+                                    include_directories: incdir,
+                                    dependencies: [zstd_dep, openssl_dep])
 shacheck = executable('shacheck', ['shacheck.c'] + util_sources, include_directories: incdir, dependencies: [zstd_dep, openssl_dep])
 file_path = join_paths(meson.source_root(), 'test/files')
 
@@ -68,6 +76,22 @@ test(
     invalid_input_checksum,
     args: [
         join_paths(file_path, 'empty.optelems.zck')
+    ]
+)
+
+test(
+    'read single chunk',
+    read_single_chunk,
+    args: [
+        join_paths(file_path, 'LICENSE.dict.fodt.zck')
+    ]
+)
+
+test(
+    'read single compressed chunk',
+    read_single_comp_chunk,
+    args: [
+        join_paths(file_path, 'LICENSE.dict.fodt.zck')
     ]
 )
 
@@ -165,6 +189,7 @@ test(
         join_paths(file_path, 'LICENSE.manual.dict.fodt.zck')
     ]
 )
+
 
 check_sha = '430c1963f71efe663272d39f7a7941d4a4e78d43c20caba8876a12f6a18eaeb1'
 if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.5')

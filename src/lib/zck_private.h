@@ -153,6 +153,7 @@ typedef struct zckChunk {
     char *digest;
     int digest_size;
     int valid;
+    size_t number;
     size_t start;
     size_t comp_length;
     size_t length;
@@ -312,8 +313,7 @@ char *hash_finalize(zckCtx *zck, zckHash *hash)
     __attribute__ ((warn_unused_result));
 void hash_close(zckHash *hash);
 void hash_reset(zckHashType *ht);
-int validate_chunk(zckCtx *zck, zckChunk *idx, zck_log_type bad_checksum,
-                   int chunk_number)
+int validate_chunk(zckChunk *idx, zck_log_type bad_checksum)
     __attribute__ ((warn_unused_result));
 int validate_file(zckCtx *zck, zck_log_type bad_checksums)
     __attribute__ ((warn_unused_result));

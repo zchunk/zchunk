@@ -270,10 +270,9 @@ bool comp_reset(zckCtx *zck) {
     return zck->comp.close(zck, &(zck->comp));
 }
 
-bool comp_close(zckCtx *zck) {
+bool comp_reset_comp_data(zckCtx *zck) {
     ALLOCD_BOOL(zck, zck);
 
-    zck_log(ZCK_LOG_DEBUG, "Closing compression");
     if(zck->comp.data) {
         free(zck->comp.data);
         zck->comp.data = NULL;
@@ -281,6 +280,14 @@ bool comp_close(zckCtx *zck) {
         zck->comp.data_loc = 0;
         zck->comp.data_idx = NULL;
     }
+    return true;
+}
+
+bool comp_close(zckCtx *zck) {
+    ALLOCD_BOOL(zck, zck);
+
+    zck_log(ZCK_LOG_DEBUG, "Closing compression");
+    comp_reset_comp_data(zck);
     if(zck->comp.dict)
         free(zck->comp.dict);
     zck->comp.dict = NULL;
@@ -415,8 +422,8 @@ ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, bool use_dict) {
         return 0;
 
     /* Read dictionary if it exists and hasn't been read yet */
-    if(use_dict && !zck->comp.data_eof && zck->comp.data_idx == NULL &&
-       zck->index.first->length > 0 && !import_dict(zck))
+    if(use_dict && zck->index.first->length > 0 && zck->comp.dict == NULL &&
+       !import_dict(zck))
         return -1;
 
     size_t dc = 0;
@@ -630,6 +637,78 @@ ssize_t PUBLIC zck_end_chunk(zckCtx *zck) {
 
 ssize_t PUBLIC zck_read(zckCtx *zck, char *dst, size_t dst_size) {
     VALIDATE_READ_INT(zck);
+    ALLOCD_INT(zck, dst);
+
+    return comp_read(zck, dst, dst_size, 1);
+}
+
+ssize_t PUBLIC zck_get_chunk_comp_data(zckChunk *idx, char *dst,
+                                       size_t dst_size) {
+    zckCtx *zck = NULL;
+    if(idx && idx->zck) {
+        VALIDATE_INT(idx->zck);
+        zck = idx->zck;
+    }
+    ALLOCD_INT(zck, idx);
+    ALLOCD_INT(zck, dst);
+
+    /* Make sure chunk size is valid */
+    if(zck_get_chunk_size(idx) < 0)
+        return -1;
+    /* If the chunk is empty, we're done */
+    if(zck_get_chunk_size(idx) == 0)
+        return 0;
+
+    /* Seek to beginning of requested chunk */
+    if(!seek_data(zck, zck_get_chunk_start(idx), SEEK_SET))
+        return -1;
+
+    /* Return read chunk */
+    return read_data(zck, dst, dst_size);
+}
+
+ssize_t PUBLIC zck_get_chunk_data(zckChunk *idx, char *dst,
+                                  size_t dst_size) {
+    zckCtx *zck = NULL;
+    if(idx && idx->zck) {
+        VALIDATE_INT(idx->zck);
+        zck = idx->zck;
+    }
+    ALLOCD_INT(zck, idx);
+    ALLOCD_INT(zck, dst);
+
+    /* Make sure chunk size is valid */
+    if(zck_get_chunk_size(idx) < 0)
+        return -1;
+    /* If the chunk is empty, we're done */
+    if(zck_get_chunk_size(idx) == 0)
+        return 0;
+
+    /* Read dictionary if needed */
+    zckChunk *dict = zck_get_first_chunk(zck);
+    if(dict == NULL)
+        return -1;
+    if(zck_get_chunk_size(dict) > 0 && zck->comp.dict == NULL) {
+        if(!seek_data(zck, zck_get_chunk_start(dict), SEEK_SET))
+            return -1;
+        if(!comp_reset(zck))
+            return -1;
+        if(!comp_init(zck))
+            return -1;
+        if(!import_dict(zck))
+            return -1;
+    }
+
+    /* Seek to beginning of requested chunk */
+    if(!comp_reset_comp_data(zck))
+        return -1;
+    if(!comp_reset(zck))
+        return -1;
+    if(!comp_init(zck))
+        return -1;
+    if(!seek_data(zck, zck_get_chunk_start(idx), SEEK_SET))
+        return -1;
+    zck->comp.data_idx = idx;
 
     return comp_read(zck, dst, dst_size, 1);
 }

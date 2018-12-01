@@ -90,8 +90,7 @@ static int validate_checksums(zckCtx *zck, zck_log_type bad_checksums) {
 
     /* Check each chunk checksum */
     bool all_good = true;
-    int count = 0;
-    for(zckChunk *idx = zck->index.first; idx; idx = idx->next, count++) {
+    for(zckChunk *idx = zck->index.first; idx; idx = idx->next) {
         if(idx == zck->index.first && idx->length == 0) {
             idx->valid = 1;
             continue;
@@ -113,7 +112,7 @@ static int validate_checksums(zckCtx *zck, zck_log_type bad_checksums) {
                 return 0;
             rlen += rsize;
         }
-        int valid_chunk = validate_chunk(zck, idx, bad_checksums, count);
+        int valid_chunk = validate_chunk(idx, bad_checksums);
         if(!valid_chunk)
             return 0;
         idx->valid = valid_chunk;
@@ -333,17 +332,18 @@ bool set_chunk_hash_type(zckCtx *zck, int hash_type) {
 }
 
 /* Validate chunk, returning -1 if checksum fails, 1 if good, 0 if error */
-int validate_chunk(zckCtx *zck, zckChunk *idx,
-                       zck_log_type bad_checksum, int chunk_number) {
-    VALIDATE_BOOL(zck);
-    if(idx == NULL) {
-        set_error(zck, "Index not initialized");
-        return 0;
+int validate_chunk(zckChunk *idx, zck_log_type bad_checksum) {
+    zckCtx *zck = NULL;
+    if(idx && idx->zck) {
+        VALIDATE_INT(idx->zck);
+        zck = idx->zck;
     }
+    ALLOCD_INT(zck, idx);
 
     char *digest = hash_finalize(zck, &(zck->check_chunk_hash));
     if(digest == NULL) {
         set_error(zck, "Unable to calculate chunk checksum");
+        idx->valid = 0;
         return 0;
     }
     if(idx->comp_length == 0)
@@ -356,25 +356,27 @@ int validate_chunk(zckCtx *zck, zckChunk *idx,
     free(pdigest);
     if(memcmp(digest, idx->digest, idx->digest_size) != 0) {
         free(digest);
-        if(chunk_number == -1)
+        if(idx->number == -1)
             zck_log(bad_checksum, "Chunk checksum: FAILED!");
         else
             zck_log(bad_checksum, "Chunk %i's checksum: FAILED",
-                    chunk_number);
+                    idx->number);
+        idx->valid = -1;
         return -1;
     }
-    if(chunk_number == -1)
+    if(idx->number == -1)
         zck_log(ZCK_LOG_DEBUG, "Chunk checksum: valid");
     else
-        zck_log(ZCK_LOG_DEBUG, "Chunk %i's checksum: valid", chunk_number);
+        zck_log(ZCK_LOG_DEBUG, "Chunk %i's checksum: valid", idx->number);
     free(digest);
+    idx->valid = 1;
     return 1;
 }
 
 int validate_current_chunk(zckCtx *zck) {
     VALIDATE_BOOL(zck);
 
-    return validate_chunk(zck, zck->comp.data_idx, ZCK_LOG_ERROR, -1);
+    return validate_chunk(zck->comp.data_idx, ZCK_LOG_ERROR);
 }
 
 int validate_file(zckCtx *zck, zck_log_type bad_checksums) {

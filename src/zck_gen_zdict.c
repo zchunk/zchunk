@@ -50,7 +50,7 @@ static char args_doc[] = "<file>";
 static struct argp_option options[] = {
     {"verbose", 'v', 0,        0,
      "Increase verbosity (can be specified more than once for debugging)"},
-    {"stdout",  'c', 0,        0, "Direct output to stdout"},
+    /*{"stdout",  'c', 0,        0, "Direct output to stdout"},*/
     {"dir",     'd', "DIRECTORY", 0,
      "Write individual chunks to DIRECTORY (defaults to temporary directory)"},
     {"version", 'V', 0,        0, "Show program version"},
@@ -77,9 +77,9 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
             if(arguments->log_level < ZCK_LOG_DDEBUG)
                 arguments->log_level = ZCK_LOG_DDEBUG;
             break;
-        case 'c':
+        /*case 'c':
             arguments->stdout = true;
-            break;
+            break;*/
         case 'd':
             arguments->dir = arg;
             break;

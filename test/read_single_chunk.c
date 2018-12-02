@@ -68,6 +68,17 @@ int main (int argc, char *argv[]) {
         zck_free(&zck);
         exit(1);
     }
+    zckChunk *chunk1 = zck_get_chunk(zck, 1);
+    if(chunk == NULL) {
+        printf("%s", zck_get_error(zck));
+        zck_free(&zck);
+        exit(1);
+    }
+    if(chunk != chunk1) {
+        printf("Chunk first->next != chunk 1\n");
+        zck_free(&zck);
+        exit(1);
+    }
     ssize_t chunk_size = zck_get_chunk_size(chunk);
     if(chunk_size < 0) {
         printf("%s", zck_get_error(zck));

@@ -169,15 +169,16 @@ int main (int argc, char *argv[]) {
     if(arguments.show_chunks) {
         printf("       Chunk Checksum %*c        Start    Comp size         Size\n",
                (((int)zck_get_chunk_digest_size(zck)*2)-9), ' ');
-        ssize_t count=0;
-        for(zckChunk *chk = zck_get_first_chunk(zck); chk;
-            chk=zck_get_next_chunk(chk), count++) {
+        for(zckChunk *chk=zck_get_first_chunk(zck); chk;
+            chk=zck_get_next_chunk(chk)) {
             char *digest = zck_get_chunk_digest(chk);
             if(digest == NULL) {
                 dprintf(STDERR_FILENO, "%s", zck_get_error(zck));
                 exit(1);
             }
-            printf("%12lu %s %12lu %12lu %12lu", count, digest,
+            printf("%12lu %s %12lu %12lu %12lu",
+                   (long unsigned)zck_get_chunk_number(chk),
+                   digest,
                    (long unsigned)zck_get_chunk_start(chk),
                    (long unsigned)zck_get_chunk_comp_size(chk),
                    (long unsigned)zck_get_chunk_size(chk));

@@ -118,6 +118,17 @@ ssize_t PUBLIC zck_get_chunk_count(zckCtx *zck) {
     return zck->index.count;
 }
 
+zckChunk PUBLIC *zck_get_chunk(zckCtx *zck, size_t number) {
+    VALIDATE_PTR(zck);
+
+    for(zckChunk *idx=zck->index.first; idx!=NULL; idx=idx->next) {
+        if(idx->number == number)
+            return idx;
+    }
+    zck_log(ZCK_LOG_WARNING, "Chunk %lu not found", number);
+    return NULL;
+}
+
 zckChunk PUBLIC *zck_get_first_chunk(zckCtx *zck) {
     VALIDATE_PTR(zck);
 
@@ -169,6 +180,17 @@ ssize_t PUBLIC zck_get_chunk_comp_size(zckChunk *idx) {
     }
 
     return idx->comp_length;
+}
+
+ssize_t PUBLIC zck_get_chunk_number(zckChunk *idx) {
+    if(idx && idx->zck) {
+        VALIDATE_INT(idx->zck);
+        ALLOCD_INT(idx->zck, idx);
+    } else {
+        ALLOCD_INT(NULL, idx);
+    }
+
+    return idx->number;
 }
 
 int PUBLIC zck_get_chunk_valid(zckChunk *idx) {

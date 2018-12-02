@@ -232,6 +232,9 @@ bool zck_validate_lead(zckCtx *zck)
 /* Get chunk count */
 ssize_t zck_get_chunk_count(zckCtx *zck)
     __attribute__ ((warn_unused_result));
+/* Get chunk by number */
+zckChunk *zck_get_chunk(zckCtx *zck, size_t number)
+    __attribute__ ((warn_unused_result));
 /* Get first chunk */
 zckChunk *zck_get_first_chunk(zckCtx *zck)
     __attribute__ ((warn_unused_result));
@@ -246,6 +249,9 @@ ssize_t zck_get_chunk_size(zckChunk *idx)
     __attribute__ ((warn_unused_result));
 /* Get compressed chunk size */
 ssize_t zck_get_chunk_comp_size(zckChunk *idx)
+    __attribute__ ((warn_unused_result));
+/* Get chunk number */
+ssize_t zck_get_chunk_number(zckChunk *idx)
     __attribute__ ((warn_unused_result));
 /* Get validity of current chunk - 1 = valid, 0 = missing, -1 = invalid */
 int zck_get_chunk_valid(zckChunk *idx)

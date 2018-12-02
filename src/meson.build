@@ -21,6 +21,13 @@ zckdl = executable(
     link_with: zcklib,
     install: true
 )
+zck_gen_zdict = executable(
+    'zck_gen_zdict',
+    ['zck_gen_zdict.c', 'util_common.c'],
+    include_directories: inc,
+    link_with: zcklib,
+    install: true
+)
 zck_read_header = executable(
     'zck_read_header',
     ['zck_read_header.c', 'util_common.c'],

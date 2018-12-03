@@ -507,7 +507,7 @@ ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, bool use_dict) {
             zck_log(ZCK_LOG_DDEBUG, "EOF");
             finished_rd = true;
         }
-        if(&(zck->check_chunk_hash) == NULL)
+        if(zck->check_chunk_hash.ctx == NULL)
             if(!hash_init(zck, &(zck->check_chunk_hash),
                           &(zck->chunk_hash_type)))
                 goto hash_error;

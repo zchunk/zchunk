@@ -207,8 +207,8 @@ static bool set_default_parameters(zckCtx *zck, zckComp *comp) {
     VALIDATE_BOOL(zck);
     ALLOCD_BOOL(zck, comp);
 
-    /* Set default compression level to 16 */
-    int level=16;
+    /* Set default compression level to 9 */
+    int level=9;
     return set_parameter(zck, comp, ZCK_ZSTD_COMP_LEVEL, &level);
 }
 

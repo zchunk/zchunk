@@ -202,12 +202,12 @@ test(
 )
 
 
-check_sha = '430c1963f71efe663272d39f7a7941d4a4e78d43c20caba8876a12f6a18eaeb1'
+check_sha = '45e48c11fea129d2c434ffcec7d8fbc1720f30f33d438654cd117616121c218e'
 if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.5')
-    check_sha = '0418aaca75b6b64c3ac9bc50fc0974e48c76691869977907fad25eea834f3c85'
+    check_sha = '45e48c11fea129d2c434ffcec7d8fbc1720f30f33d438654cd117616121c218e'
 endif
 if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.4')
-    check_sha = '08c9ce94470ad4ab7f8a64e67872e138964eb562d13686d9c941baa3a09d2835'
+    check_sha = '1749c2551ef26f26a2c61919dac7a4c8801154cdfc0524ef21187cf0c263f8fe'
 endif
 
 test(
@@ -222,9 +222,9 @@ test(
     ]
 )
 
-check_sha = 'fedf75caa19cc03383b2a2abac75a490360f9bab6419c9f9241bae584fe64f04'
+check_sha = 'b4805798547be62421944a87db3a90de455b4772c6013e685720b49336b8b17e'
 if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.4')
-    check_sha = '0512327cc771a73c23377dd3804fffcaa557dd03cfd980dae22100f7b2193255'
+    check_sha = '0fb0f2262c62714063e409117fcbd4c114b35e3abbfc90b042a41246b62ff789'
 endif
 test(
     'compress auto-chunked file - dict',
@@ -239,12 +239,12 @@ test(
     ]
 )
 
-check_sha = '1e8d64ec058d815a7f841aeeeb74ba4c028340f1275ce993fba175fec04fde1e'
+check_sha = '9472ddc74dbd96291077bbb8d793e605824be8dba45e3e94bbc54b7de21a37a1'
 if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.5')
-    check_sha = 'cba69c5fc88fda4352470f3eb0fe5df04e9f1f08c88e0af5a96e53ed3f84526c'
+    check_sha = '6911b50cad5b6ed3ee89322338c559afdd0e72f614d3817b47ce370df52fd6b4'
 endif
 if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.4')
-    check_sha = '53205d490819bbb681224e21acf0b85ec44c62c5c1f46e59bd084ac471ed534c'
+    check_sha = '437a0ec28def0c7f361402f6bb337cb963e6a3682bc742dd9e56171f6ece9881'
 endif
 test(
     'compress manual file - no dict',
@@ -260,9 +260,12 @@ test(
     ]
 )
 
-check_sha = '1c30587c95a7be32e282272e713f72dd944b446dc7a9250adf8d90e2d524ed13'
+check_sha = '4e86b47410a3a5090c7d60040d24d8d390c31f16f96ea112c8f153888eaf8c6e'
+if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.5')
+    check_sha = '62ee66fbf41a1f18617f400383eb38905050050f0f435a6e56df4a30d1bb694d'
+endif
 if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.4')
-    check_sha = 'a02d64a7cdbfe07af674b4aa94707d2dd072f8ff1abd0bd9801d313019e69cba'
+    check_sha = '71e6e770545df9bae2560d683d876d25df5e7f697ad20f9535b907d76db09876'
 endif
 test(
     'compress manual file - dict',

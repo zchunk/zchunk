@@ -244,6 +244,9 @@ if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.5')
     check_sha = '6911b50cad5b6ed3ee89322338c559afdd0e72f614d3817b47ce370df52fd6b4'
 endif
 if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.4')
+    check_sha = 'ded0d04884b13ba23d00f9b11b2b5950f8b9670d742f67d4195707ed85e73048'
+endif
+if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.3')
     check_sha = '437a0ec28def0c7f361402f6bb337cb963e6a3682bc742dd9e56171f6ece9881'
 endif
 test(
@@ -265,6 +268,9 @@ if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.5')
     check_sha = '62ee66fbf41a1f18617f400383eb38905050050f0f435a6e56df4a30d1bb694d'
 endif
 if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.4')
+    check_sha = 'd5670c6ab81bdfa9b21eb21486a1cfa691a211fd83018914ea99ed9bdf509266'
+endif
+if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.3')
     check_sha = '71e6e770545df9bae2560d683d876d25df5e7f697ad20f9535b907d76db09876'
 endif
 test(

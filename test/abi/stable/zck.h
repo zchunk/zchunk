@@ -1,7 +1,7 @@
 #ifndef ZCK_H
 #define ZCK_H
 
-#define ZCK_VERSION "0.9.15"
+#define ZCK_VERSION "0.9.16"
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -169,6 +169,7 @@ int zck_failed_chunks(zckCtx *zck)
 /* Reset failed chunks to become missing */
 void zck_reset_failed_chunks(zckCtx *zck);
 
+
 /*******************************************************************
  * The functions should be all you need to read and write a zchunk
  * file.  After this point are advanced functions with an unstable
@@ -231,6 +232,9 @@ bool zck_validate_lead(zckCtx *zck)
 /* Get chunk count */
 ssize_t zck_get_chunk_count(zckCtx *zck)
     __attribute__ ((warn_unused_result));
+/* Get chunk by number */
+zckChunk *zck_get_chunk(zckCtx *zck, size_t number)
+    __attribute__ ((warn_unused_result));
 /* Get first chunk */
 zckChunk *zck_get_first_chunk(zckCtx *zck)
     __attribute__ ((warn_unused_result));
@@ -246,15 +250,28 @@ ssize_t zck_get_chunk_size(zckChunk *idx)
 /* Get compressed chunk size */
 ssize_t zck_get_chunk_comp_size(zckChunk *idx)
     __attribute__ ((warn_unused_result));
+/* Get chunk number */
+ssize_t zck_get_chunk_number(zckChunk *idx)
+    __attribute__ ((warn_unused_result));
 /* Get validity of current chunk - 1 = valid, 0 = missing, -1 = invalid */
 int zck_get_chunk_valid(zckChunk *idx)
     __attribute__ ((warn_unused_result));
 /* Get chunk digest */
 char *zck_get_chunk_digest(zckChunk *item)
     __attribute__ ((warn_unused_result));
+/* Get digest size of chunk hash type */
+ssize_t zck_get_chunk_digest_size(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
+/* Get chunk data */
+ssize_t zck_get_chunk_data(zckChunk *idx, char *dst, size_t dst_size)
+    __attribute__ ((warn_unused_result));
+/* Get compressed chunk data */
+ssize_t zck_get_chunk_comp_data(zckChunk *idx, char *dst, size_t dst_size)
+    __attribute__ ((warn_unused_result));
 /* Find out if two chunk digests are the same */
 bool zck_compare_chunk_digest(zckChunk *a, zckChunk *b)
     __attribute__ ((warn_unused_result));
+
 
 /*******************************************************************
  * Advanced hash functions
@@ -267,9 +284,6 @@ ssize_t zck_get_full_digest_size(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 /* Get chunk hash type */
 int zck_get_chunk_hash_type(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
-/* Get digest size of chunk hash type */
-ssize_t zck_get_chunk_digest_size(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 /* Get name of hash type */
 const char *zck_hash_name_from_type(int hash_type)

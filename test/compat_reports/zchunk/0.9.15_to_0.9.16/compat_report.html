@@ -1,14 +1,13 @@
-<!-- kind:binary;verdict:compatible;affected:0;added:0;removed:0;type_problems_high:0;type_problems_medium:0;type_problems_low:0;interface_problems_high:0;interface_problems_medium:0;interface_problems_low:0;changed_constants:0;tool_version:2.3 -->
-<!-- kind:source;verdict:compatible;affected:0;added:0;removed:0;type_problems_high:0;type_problems_medium:0;type_problems_low:0;interface_problems_high:0;interface_problems_medium:0;interface_problems_low:0;changed_constants:0;tool_version:2.3 -->
+<!-- kind:binary;verdict:compatible;affected:0;added:4;removed:0;type_problems_high:0;type_problems_medium:0;type_problems_low:0;interface_problems_high:0;interface_problems_medium:0;interface_problems_low:0;changed_constants:0;tool_version:2.3 -->
+<!-- kind:source;verdict:compatible;affected:0;added:4;removed:0;type_problems_high:0;type_problems_medium:0;type_problems_low:0;interface_problems_high:0;interface_problems_medium:0;interface_problems_low:0;changed_constants:0;tool_version:2.3 -->
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <meta name="keywords" content="zchunk, compatibility, API, ABI, report" />
-<meta name="description" content="API/ABI compatibility report for the zchunk object between 0.9.14 and 0.9.15 versions" />
-<meta name="robots" content="noindex" />
-<title>zchunk: 0.9.14 to 0.9.15 compatibility report</title>
+<meta name="description" content="API/ABI compatibility report for the zchunk object between 0.9.15 and 0.9.16 versions" />
+<title>zchunk: 0.9.15 to 0.9.16 compatibility report</title>
 <style type="text/css">
 body {
     font-family:Arial, sans-serif;
@@ -382,7 +381,7 @@ else if (window.attachEvent) window.attachEvent('onload', initTabs);
 -->
 </script>
 </head>
-<body><a name='Source'></a><a name='Binary'></a><a name='Top'></a><h1>API compatibility report for the <span style='color:Blue;'>libzck.so</span> object between <span style='color:Red;'>0.9.14</span> and <span style='color:Red;'>0.9.15</span> versions on <span style='color:Blue;'>x86_64</span></h1>
+<body><a name='Source'></a><a name='Binary'></a><a name='Top'></a><h1>API compatibility report for the <span style='color:Blue;'>libzck.so</span> object between <span style='color:Red;'>0.9.15</span> and <span style='color:Red;'>0.9.16</span> versions on <span style='color:Blue;'>x86_64</span></h1>
 
             <br/>
             <div class='tabset'>
@@ -392,8 +391,8 @@ else if (window.attachEvent) window.attachEvent('onload', initTabs);
 <h2>Test Info</h2><hr/>
 <table class='summary'>
 <tr><th>Module Name</th><td>zchunk</td></tr>
-<tr><th>Version #1</th><td>0.9.14</td></tr>
-<tr><th>Version #2</th><td>0.9.15</td></tr>
+<tr><th>Version #1</th><td>0.9.15</td></tr>
+<tr><th>Version #2</th><td>0.9.16</td></tr>
 <tr><th>Arch</th><td>x86_64</td></tr>
 <tr><th>GCC Version</th><td>8.2.1</td></tr>
 <tr><th>Subject</th><td width='150px'>Binary Compatibility</td></tr>
@@ -407,7 +406,7 @@ else if (window.attachEvent) window.attachEvent('onload', initTabs);
 </tr>
 </table>
 <h2>Problem Summary</h2><hr/>
-<table class='summary'><tr><th></th><th style='text-align:center;'>Severity</th><th style='text-align:center;'>Count</th></tr><tr><th>Added Symbols</th><td>-</td><td>0</td></tr>
+<table class='summary'><tr><th></th><th style='text-align:center;'>Severity</th><th style='text-align:center;'>Count</th></tr><tr><th>Added Symbols</th><td>-</td><td class='new'><a href='#Binary_Added' style='color:Blue;'>4</a></td></tr>
 <tr><th>Removed Symbols</th><td>High</td><td>0</td></tr>
 <tr><th rowspan='3'>Problems with<br/>Data Types</th><td>High</td><td>0</td></tr>
 <tr><td>Medium</td><td>0</td></tr>
@@ -418,6 +417,14 @@ else if (window.attachEvent) window.attachEvent('onload', initTabs);
 <tr><th>Problems with<br/>Constants</th><td>Low</td><td>0</td></tr>
 </table>
 
+<a name='Binary_Added'></a><h2>Added Symbols <span class='new'>&nbsp;4&nbsp;</span></h2><hr/>
+<span class='h_name'>zck.h</span>, <span class='lib_name'>libzck.so.0.9.16</span><br/>
+<span class="iname">zck_get_chunk&#160;<span class='sym_p'><span>(&#160;zckCtx* <span class='color_p'>zck</span></span>, <span>size_t <span class='color_p'>number</span></span>&#160;)</span></span><br/>
+<span class="iname">zck_get_chunk_comp_data&#160;<span class='sym_p'><span>(&#160;zckChunk* <span class='color_p'>idx</span></span>, <span>char* <span class='color_p'>dst</span></span>, <span>size_t <span class='color_p'>dst_size</span></span>&#160;)</span></span><br/>
+<span class="iname">zck_get_chunk_data&#160;<span class='sym_p'><span>(&#160;zckChunk* <span class='color_p'>idx</span></span>, <span>char* <span class='color_p'>dst</span></span>, <span>size_t <span class='color_p'>dst_size</span></span>&#160;)</span></span><br/>
+<span class="iname">zck_get_chunk_number&#160;<span class='sym_p'><span>(&#160;zckChunk* <span class='color_p'>idx</span></span>&#160;)</span></span><br/>
+<br/>
+<a class='top_ref' href='#Top'>to the top</a><br/>
 <a name='Headers'></a><h2>Header Files <span class='gray'>&nbsp;1&nbsp;</span></h2><hr/>
 <div class='h_list'>
 zck.h<br/>
@@ -425,15 +432,15 @@ zck.h<br/>
 <br/><a class='top_ref' href='#Top'>to the top</a><br/>
 <a name='Libs'></a><h2>Objects <span class='gray'>&nbsp;1&nbsp;</span></h2><hr/>
 <div class='lib_list'>
-libzck.so.0.9.14<br/>
+libzck.so.0.9.15<br/>
 </div>
 <br/><a class='top_ref' href='#Top'>to the top</a><br/>
 <br/><br/><br/></div><div id='SourceTab' class='tab'>
 <h2>Test Info</h2><hr/>
 <table class='summary'>
 <tr><th>Module Name</th><td>zchunk</td></tr>
-<tr><th>Version #1</th><td>0.9.14</td></tr>
-<tr><th>Version #2</th><td>0.9.15</td></tr>
+<tr><th>Version #1</th><td>0.9.15</td></tr>
+<tr><th>Version #2</th><td>0.9.16</td></tr>
 <tr><th>Arch</th><td>x86_64</td></tr>
 <tr><th>Subject</th><td width='150px'>Source Compatibility</td></tr>
 </table>
@@ -446,7 +453,7 @@ libzck.so.0.9.14<br/>
 </tr>
 </table>
 <h2>Problem Summary</h2><hr/>
-<table class='summary'><tr><th></th><th style='text-align:center;'>Severity</th><th style='text-align:center;'>Count</th></tr><tr><th>Added Symbols</th><td>-</td><td>0</td></tr>
+<table class='summary'><tr><th></th><th style='text-align:center;'>Severity</th><th style='text-align:center;'>Count</th></tr><tr><th>Added Symbols</th><td>-</td><td class='new'><a href='#Source_Added' style='color:Blue;'>4</a></td></tr>
 <tr><th>Removed Symbols</th><td>High</td><td>0</td></tr>
 <tr><th rowspan='3'>Problems with<br/>Data Types</th><td>High</td><td>0</td></tr>
 <tr><td>Medium</td><td>0</td></tr>
@@ -457,6 +464,14 @@ libzck.so.0.9.14<br/>
 <tr><th>Problems with<br/>Constants</th><td>Low</td><td>0</td></tr>
 </table>
 
+<a name='Source_Added'></a><h2>Added Symbols <span class='new'>&nbsp;4&nbsp;</span></h2><hr/>
+<span class='h_name'>zck.h</span><br/>
+<span class="iname">zck_get_chunk&#160;<span class='sym_p'><span>(&#160;zckCtx* <span class='color_p'>zck</span></span>, <span>size_t <span class='color_p'>number</span></span>&#160;)</span></span><br/>
+<span class="iname">zck_get_chunk_comp_data&#160;<span class='sym_p'><span>(&#160;zckChunk* <span class='color_p'>idx</span></span>, <span>char* <span class='color_p'>dst</span></span>, <span>size_t <span class='color_p'>dst_size</span></span>&#160;)</span></span><br/>
+<span class="iname">zck_get_chunk_data&#160;<span class='sym_p'><span>(&#160;zckChunk* <span class='color_p'>idx</span></span>, <span>char* <span class='color_p'>dst</span></span>, <span>size_t <span class='color_p'>dst_size</span></span>&#160;)</span></span><br/>
+<span class="iname">zck_get_chunk_number&#160;<span class='sym_p'><span>(&#160;zckChunk* <span class='color_p'>idx</span></span>&#160;)</span></span><br/>
+<br/>
+<a class='top_ref' href='#Top'>to the top</a><br/>
 <a name='Headers'></a><h2>Header Files <span class='gray'>&nbsp;1&nbsp;</span></h2><hr/>
 <div class='h_list'>
 zck.h<br/>
@@ -464,7 +479,7 @@ zck.h<br/>
 <br/><a class='top_ref' href='#Top'>to the top</a><br/>
 <a name='Libs'></a><h2>Objects <span class='gray'>&nbsp;1&nbsp;</span></h2><hr/>
 <div class='lib_list'>
-libzck.so.0.9.14<br/>
+libzck.so.0.9.15<br/>
 </div>
 <br/><a class='top_ref' href='#Top'>to the top</a><br/>
 <br/><br/><br/></div><hr/>

@@ -201,43 +201,44 @@ test(
     ]
 )
 
-
-check_sha = '45e48c11fea129d2c434ffcec7d8fbc1720f30f33d438654cd117616121c218e'
-if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.5')
+if build_machine.endian() != 'big'
     check_sha = '45e48c11fea129d2c434ffcec7d8fbc1720f30f33d438654cd117616121c218e'
-endif
-if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.4')
-    check_sha = '1749c2551ef26f26a2c61919dac7a4c8801154cdfc0524ef21187cf0c263f8fe'
-endif
+    if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.5')
+        check_sha = '45e48c11fea129d2c434ffcec7d8fbc1720f30f33d438654cd117616121c218e'
+    endif
+    if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.4')
+        check_sha = '1749c2551ef26f26a2c61919dac7a4c8801154cdfc0524ef21187cf0c263f8fe'
+    endif
 
-test(
-    'compress auto-chunked file - no dict',
-    shacheck,
-    args: [
-        zck,
-        'LICENSE.nodict.fodt.zck',
-        check_sha,
-        '-o', 'LICENSE.nodict.fodt.zck',
-        join_paths(file_path, 'LICENSE.fodt')
-    ]
-)
+    test(
+        'compress auto-chunked file - no dict',
+        shacheck,
+        args: [
+            zck,
+            'LICENSE.nodict.fodt.zck',
+            check_sha,
+            '-o', 'LICENSE.nodict.fodt.zck',
+            join_paths(file_path, 'LICENSE.fodt')
+        ]
+    )
 
-check_sha = 'b4805798547be62421944a87db3a90de455b4772c6013e685720b49336b8b17e'
-if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.4')
-    check_sha = '0fb0f2262c62714063e409117fcbd4c114b35e3abbfc90b042a41246b62ff789'
+    check_sha = 'b4805798547be62421944a87db3a90de455b4772c6013e685720b49336b8b17e'
+    if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.4')
+        check_sha = '0fb0f2262c62714063e409117fcbd4c114b35e3abbfc90b042a41246b62ff789'
+    endif
+    test(
+        'compress auto-chunked file - dict',
+        shacheck,
+        args: [
+            zck,
+            'LICENSE.dict.fodt.zck',
+            check_sha,
+            '-D', join_paths(file_path, 'LICENSE.dict'),
+            '-o', 'LICENSE.dict.fodt.zck',
+            join_paths(file_path, 'LICENSE.fodt')
+        ]
+    )
 endif
-test(
-    'compress auto-chunked file - dict',
-    shacheck,
-    args: [
-        zck,
-        'LICENSE.dict.fodt.zck',
-        check_sha,
-        '-D', join_paths(file_path, 'LICENSE.dict'),
-        '-o', 'LICENSE.dict.fodt.zck',
-        join_paths(file_path, 'LICENSE.fodt')
-    ]
-)
 
 check_sha = '9472ddc74dbd96291077bbb8d793e605824be8dba45e3e94bbc54b7de21a37a1'
 if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.5')

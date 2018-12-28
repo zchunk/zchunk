@@ -66,12 +66,17 @@ bool index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
             return false;
         }
 
+        zckChunk *tmp = NULL;
         zckChunk *new = zmalloc(sizeof(zckChunk));
 
         /* Read index entry digest */
         new->digest = zmalloc(zck->index.digest_size);
         memcpy(new->digest, data+length, zck->index.digest_size);
         new->digest_size = zck->index.digest_size;
+        HASH_FIND(hh, zck->index.ht, new->digest, new->digest_size, tmp);
+        if(!tmp)
+            HASH_ADD_KEYPTR(hh, zck->index.ht, new->digest, new->digest_size,
+                            new);
         length += zck->index.digest_size;
 
         /* Read and store entry length */

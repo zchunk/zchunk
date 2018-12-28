@@ -245,23 +245,11 @@ bool PUBLIC zck_copy_chunks(zckCtx *src, zckCtx *tgt) {
             tgt_idx = tgt_idx->next;
             continue;
         }
+        zckChunk *f = NULL;
 
-        bool found = false;
-        src_idx = src_info->first;
-
-        while(src_idx) {
-            if(tgt_idx->comp_length == src_idx->comp_length &&
-               tgt_idx->length == src_idx->length &&
-               tgt_idx->digest_size == src_idx->digest_size &&
-               memcmp(tgt_idx->digest, src_idx->digest,
-                      tgt_idx->digest_size) == 0) {
-                found = true;
-                break;
-            }
-            src_idx = src_idx->next;
-        }
-        /* Write out found chunk, then verify that it's valid */
-        if(found)
+        HASH_FIND(hh, src_info->ht, src_idx->digest, src_idx->digest_size, f);
+        if(f && f->length == tgt_idx->length &&
+           f->comp_length == tgt_idx->comp_length)
             write_and_verify_chunk(src, tgt, src_idx, tgt_idx);
         tgt_idx = tgt_idx->next;
     }

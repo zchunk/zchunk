@@ -7,6 +7,7 @@
 #include <stddef.h>
 #include <regex.h>
 #include "buzhash/buzhash.h"
+#include "uthash.h"
 
 #define BUF_SIZE 32768
 /* Maximum string length for a compressed size_t */
@@ -159,6 +160,7 @@ typedef struct zckChunk {
     size_t length;
     struct zckChunk *next;
     zckCtx *zck;
+    UT_hash_handle hh;
 } zckChunk;
 
 /* Contains everything about an index and a pointer to the first index item */
@@ -168,6 +170,7 @@ typedef struct zckIndex {
     int hash_type;
     size_t digest_size;
     zckChunk *first;
+    zckChunk *ht;
 } zckIndex;
 
 /* Contains a single range */

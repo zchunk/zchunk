@@ -47,6 +47,7 @@ void index_clean(zckIndex *index) {
     if(index == NULL)
         return;
 
+    HASH_CLEAR(hh, index->ht);
     if(index->first) {
         zckChunk *next;
         zckChunk *tmp=index->first;

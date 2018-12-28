@@ -7,6 +7,10 @@ empty = executable('empty', ['empty.c'] + util_sources,
 optelems = executable('optelems', ['optelems.c'] + util_sources,
                      include_directories: incdir,
                      dependencies: [zstd_dep, openssl_dep])
+copy_chunks = executable('copy_chunks', ['copy_chunks.c'] + util_sources,
+                     include_directories: incdir,
+                     dependencies: [zstd_dep, openssl_dep])
+
 invalid_input_checksum = executable('invalid_input_checksum',
                                     ['invalid_input_checksum.c'] + util_sources,
                                     include_directories: incdir,
@@ -137,6 +141,14 @@ test(
         '-vvvvv',
         'empty.zck',
         'empty.zck'
+    ]
+)
+test(
+    'copy chunks from source',
+    copy_chunks,
+    args: [
+        join_paths(file_path, 'LICENSE.header.new.nodict.fodt.zck'),
+        join_paths(file_path, 'LICENSE.nodict.fodt.zck')
     ]
 )
 test(

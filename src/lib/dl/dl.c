@@ -238,7 +238,6 @@ bool PUBLIC zck_copy_chunks(zckCtx *src, zckCtx *tgt) {
     zckIndex *tgt_info = &(tgt->index);
     zckIndex *src_info = &(src->index);
     zckChunk *tgt_idx = tgt_info->first;
-    zckChunk *src_idx = src_info->first;
     while(tgt_idx) {
         /* No need to copy already valid chunk */
         if(tgt_idx->valid == 1) {
@@ -247,10 +246,10 @@ bool PUBLIC zck_copy_chunks(zckCtx *src, zckCtx *tgt) {
         }
         zckChunk *f = NULL;
 
-        HASH_FIND(hh, src_info->ht, src_idx->digest, src_idx->digest_size, f);
+        HASH_FIND(hh, src_info->ht, tgt_idx->digest, tgt_idx->digest_size, f);
         if(f && f->length == tgt_idx->length &&
            f->comp_length == tgt_idx->comp_length)
-            write_and_verify_chunk(src, tgt, src_idx, tgt_idx);
+            write_and_verify_chunk(src, tgt, f, tgt_idx);
         tgt_idx = tgt_idx->next;
     }
     return true;

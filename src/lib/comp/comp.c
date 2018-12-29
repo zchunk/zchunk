@@ -479,8 +479,10 @@ ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, bool use_dict) {
             }
         }
         if(zck->comp.data_loc == zck->comp.data_idx->comp_length) {
-            if(!comp_end_dchunk(zck, use_dict, zck->comp.data_idx->length))
+            if(!comp_end_dchunk(zck, use_dict, zck->comp.data_idx->length)) {
+                free(src);
                 return -1;
+            }
             if(zck->comp.data_idx == NULL)
                 zck->comp.data_eof = true;
             continue;
@@ -659,9 +661,14 @@ ssize_t PUBLIC zck_get_chunk_comp_data(zckChunk *idx, char *dst,
     /* Make sure chunk size is valid */
     if(zck_get_chunk_size(idx) < 0)
         return -1;
+
     /* If the chunk is empty, we're done */
     if(zck_get_chunk_size(idx) == 0)
         return 0;
+
+    /* Make sure requested chunk has a beginning */
+    if(zck_get_chunk_start(idx) < 0)
+        return -1;
 
     /* Seek to beginning of requested chunk */
     if(!seek_data(zck, zck_get_chunk_start(idx), SEEK_SET))
@@ -687,12 +694,17 @@ ssize_t PUBLIC zck_get_chunk_data(zckChunk *idx, char *dst,
     /* If the chunk is empty, we're done */
     if(zck_get_chunk_size(idx) == 0)
         return 0;
+    /* Make sure requested chunk has a beginning */
+    if(zck_get_chunk_start(idx) < 0)
+        return -1;
 
     /* Read dictionary if needed */
     zckChunk *dict = zck_get_first_chunk(zck);
     if(dict == NULL)
         return -1;
     if(zck_get_chunk_size(dict) > 0 && zck->comp.dict == NULL) {
+        if(zck_get_chunk_start(dict) < 0)
+            return -1;
         if(!seek_data(zck, zck_get_chunk_start(dict), SEEK_SET))
             return -1;
         if(!comp_reset(zck))

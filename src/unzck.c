@@ -129,9 +129,9 @@ int main (int argc, char *argv[]) {
     char *base_name = basename(arguments.args[0]);
     char *out_name = NULL;
     if(arguments.dict)
-        out_name = calloc(strlen(base_name) + 2, 1); // len .zck -> .zdict = +2
+        out_name = calloc(strlen(base_name) + 3, 1); // len .zck -> .zdict = +2
     else
-        out_name = calloc(strlen(base_name) - 3, 1);
+        out_name = calloc(strlen(base_name) - 2, 1);
     assert(out_name);
     snprintf(out_name, strlen(base_name) - 3, "%s", base_name); //Strip off .zck
     if(arguments.dict)

@@ -40,7 +40,7 @@
 
 int main (int argc, char *argv[]) {
     zck_set_log_level(ZCK_LOG_DEBUG);
-    char *path = zmalloc(strlen(argv[1]));
+    char *path = zmalloc(strlen(argv[1])+1);
     strcpy(path, argv[1]);
 
     char *base_name = basename(path);
@@ -117,5 +117,6 @@ int main (int argc, char *argv[]) {
 
     zck_free(&tgt_zck);
     zck_free(&src_zck);
+    free(path);
     return 0;
 }

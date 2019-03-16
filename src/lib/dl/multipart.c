@@ -68,8 +68,11 @@ static bool gen_regex(zckDL *dl) {
     ALLOCD_BOOL(NULL, dl);
     VALIDATE_BOOL(dl->zck);
 
-    char *next = "\r\n--%s\r\ncontent-type:.*\r\n" \
-                 "content-range: *bytes *([0-9]+) *- *([0-9]+) */.*\r\n\r";
+    char *next = "\r\n--%s\r\n" \
+                 "(content-type:.*\r\n" \
+                  "content-range: *bytes *([0-9]+) *- *([0-9]+) */[0-9]+ *\r\n\r|" \
+                  "content-range: *bytes *([0-9]+) *- *([0-9]+) */[0-9]+ *\r\n" \
+                  "content-type:.*\r\n\r)";
     char *end =  "\r\n--%s--\r\n\r";
     char *regex_n = add_boundary_to_regex(dl->zck, next, dl->boundary);
     if(regex_n == NULL)
@@ -180,24 +183,29 @@ size_t multipart_extract(zckDL *dl, char *b, size_t l) {
             continue;
 
         /* Run regex against download range string */
-        regmatch_t match[4] = {{0}};
-        if(regexec(dl->dl_regex, i, 3, match, 0) != 0) {
-            if(regexec(dl->end_regex, i, 3, match, 0) != 0)
+        regmatch_t match[7] = {{0}};
+        if(regexec(dl->dl_regex, i, 6, match, 0) != 0) {
+            if(regexec(dl->end_regex, i, 6, match, 0) != 0)
                 set_error(dl->zck, "Unable to find multipart download range");
             goto end;
         }
 
+        /* Set match offset to 2 if content-type and content-range is reversed */
+        int m = 0;
+        if(match[2].rm_so < 0)
+            m = 2;
+
         /* Get range start from regex */
         size_t rstart = 0;
-        for(char *c=i + match[1].rm_so; c < i + match[1].rm_eo; c++)
+        for(char *c=i + match[2 + m].rm_so; c < i + match[2 + m].rm_eo; c++)
             rstart = rstart*10 + (size_t)(c[0] - 48);
 
         /* Get range end from regex */
         size_t rend = 0;
-        for(char *c=i + match[2].rm_so; c < i + match[2].rm_eo; c++)
+        for(char *c=i + match[3 + m].rm_so; c < i + match[3 + m].rm_eo; c++)
             rend = rend*10 + (size_t)(c[0] - 48);
 
-        i += match[0].rm_eo + 1;
+        i += match[1].rm_eo + 1;
         zck_log(ZCK_LOG_DEBUG, "Download range: %lu-%lu", rstart, rend);
         mp->length = rend-rstart+1;
         mp->state = 1;
@@ -214,7 +222,7 @@ size_t multipart_get_boundary(zckDL *dl, char *b, size_t size) {
 
     /* Create regex to find boundary */
     if(dl->hdr_regex == NULL) {
-        char *regex = "boundary *= *([0-9a-fA-F]+)";
+        char *regex = "boundary *= *(.*?) *\r";
         dl->hdr_regex = zmalloc(sizeof(regex_t));
         if(!create_regex(dl->zck, dl->hdr_regex, regex))
             return 0;

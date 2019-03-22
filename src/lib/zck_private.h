@@ -159,6 +159,7 @@ typedef struct zckChunk {
     size_t comp_length;
     size_t length;
     struct zckChunk *next;
+    struct zckChunk *src;
     zckCtx *zck;
     UT_hash_handle hh;
 } zckChunk;
@@ -170,6 +171,8 @@ typedef struct zckIndex {
     int hash_type;
     size_t digest_size;
     zckChunk *first;
+    zckChunk *last;
+    zckChunk *current;
     zckChunk *ht;
 } zckIndex;
 
@@ -340,7 +343,7 @@ bool index_read(zckCtx *zck, char *data, size_t size, size_t max_length)
 bool index_create(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 bool index_new_chunk(zckCtx *zck, zckIndex *index, char *digest, int digest_size,
-                     size_t comp_size, size_t orig_size, bool valid)
+                     size_t comp_size, size_t orig_size, zckChunk *src, bool valid)
     __attribute__ ((warn_unused_result));
 bool index_add_to_chunk(zckCtx *zck, char *data, size_t comp_size,
                         size_t orig_size)

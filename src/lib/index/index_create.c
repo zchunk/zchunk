@@ -60,11 +60,9 @@ static bool finish_chunk(zckIndex *index, zckChunk *item, char *digest,
     if(index->first == NULL) {
         index->first = item;
     } else {
-        zckChunk *tmp = index->first;
-        while(tmp->next)
-            tmp = tmp->next;
-        tmp->next = item;
+        index->last->next = item;
     }
+    index->last = item;
     index->count += 1;
     index->length += item->comp_length;
     return true;
@@ -122,8 +120,9 @@ bool index_create(zckCtx *zck) {
     return true;
 }
 
-bool index_new_chunk(zckCtx *zck, zckIndex *index, char *digest, int digest_size,
-                    size_t comp_size, size_t orig_size, bool finished) {
+bool index_new_chunk(zckCtx *zck, zckIndex *index, char *digest,
+                     int digest_size, size_t comp_size, size_t orig_size,
+                     zckChunk *src, bool finished) {
     VALIDATE_BOOL(zck);
 
     if(index == NULL) {
@@ -138,6 +137,7 @@ bool index_new_chunk(zckCtx *zck, zckIndex *index, char *digest, int digest_size
     index->digest_size = digest_size;
     chk->comp_length = comp_size;
     chk->length = orig_size;
+    chk->src = src;
     return finish_chunk(index, chk, digest, finished, zck);
 }
 

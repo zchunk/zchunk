@@ -191,34 +191,34 @@ int dl_write_range(zckDL *dl, const char *at, size_t length) {
         if(dl->tgt_check && !set_chunk_valid(dl))
             return false;
 
-        for(zckChunk *chk = dl->range->index.first; chk; chk = chk->next) {
-            if(dl->dl_chunk_data == chk->start) {
-                int count = 0;
-                for(zckChunk *tgt_chk = dl->zck->index.first; tgt_chk;
-                    tgt_chk = tgt_chk->next, count++) {
-                    if(tgt_chk->valid == 1)
-                        continue;
-                    if(chk->comp_length == tgt_chk->comp_length &&
-                       memcmp(chk->digest, tgt_chk->digest,
-                              chk->digest_size) == 0) {
-                        dl->tgt_check = tgt_chk;
-                        dl->tgt_number = count;
-                        if(!hash_init(dl->zck, &(dl->zck->check_chunk_hash),
-                                      &(dl->zck->chunk_hash_type)))
-                            return 0;
-                        dl->write_in_chunk = chk->comp_length;
-                        if(!seek_data(dl->zck,
-                                      dl->zck->data_offset + tgt_chk->start,
-                                      SEEK_SET))
-                            return 0;
-                        chk = NULL;
-                        tgt_chk = NULL;
-                        break;
-                    }
-                }
-            }
-            if(!chk)
+        if(dl->range->index.current == NULL)
+            dl->range->index.current = dl->range->index.first;
+        for(zckChunk *chk = dl->range->index.current; chk; chk = chk->next) {
+            if(dl->dl_chunk_data != chk->start)
+                continue;
+
+            int count = 0;
+            zckChunk *tgt_chk = chk->src;
+            if(tgt_chk->valid == 1)
+                continue;
+            if(chk->comp_length == tgt_chk->comp_length &&
+               memcmp(chk->digest, tgt_chk->digest,
+                      chk->digest_size) == 0) {
+                dl->tgt_check = tgt_chk;
+                dl->tgt_number = count;
+                if(!hash_init(dl->zck, &(dl->zck->check_chunk_hash),
+                              &(dl->zck->chunk_hash_type)))
+                    return 0;
+                dl->write_in_chunk = chk->comp_length;
+                if(!seek_data(dl->zck,
+                              dl->zck->data_offset + tgt_chk->start,
+                              SEEK_SET))
+                    return 0;
+                dl->range->index.current = chk->next;
+                chk = NULL;
+                tgt_chk = NULL;
                 break;
+            }
         }
     }
     int wb2 = 0;

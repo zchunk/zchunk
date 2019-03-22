@@ -54,7 +54,7 @@ static zckRangeItem *range_insert_new(zckCtx *zck, zckRangeItem *prev,
     }
     if(add_index)
         if(!index_new_chunk(zck, &(info->index), idx->digest, idx->digest_size,
-                                end-start+1, end-start+1, false)) {
+                            end-start+1, end-start+1, idx, false)) {
             free(new);
             return NULL;
         }

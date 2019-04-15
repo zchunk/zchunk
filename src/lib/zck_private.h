@@ -8,6 +8,7 @@
 #include <regex.h>
 #include "buzhash/buzhash.h"
 #include "uthash.h"
+#include "zck.h"
 
 #define BUF_SIZE 32768
 /* Maximum string length for a compressed size_t */
@@ -89,7 +90,6 @@
                                 }
 
 typedef struct zckComp zckComp;
-typedef zckCtx zckCtx;
 
 typedef bool (*finit)(zckCtx *zck, zckComp *comp);
 typedef bool (*fparam)(zckCtx *zck,zckComp *comp, int option, const void *value);
@@ -103,18 +103,15 @@ typedef bool (*fdcompend)(zckCtx *zck, zckComp *comp, const bool use_dict,
                           const size_t fd_size);
 typedef bool (*fcclose)(zckCtx *zck, zckComp *comp);
 
-typedef enum zck_log_type zck_log_type;
-
-
 typedef struct zckHashType {
     int type;
     int digest_size;
 } zckHashType;
 
-typedef struct zckHash {
+struct zckHash {
     zckHashType *type;
     void *ctx;
-} zckHash;
+};
 
 typedef void CURL;
 
@@ -125,7 +122,7 @@ typedef struct zckMP {
     size_t buffer_len;
 } zckMP;
 
-typedef struct zckDL {
+struct zckDL {
     struct zckCtx *zck;
     size_t dl;
     size_t ul;
@@ -147,10 +144,10 @@ typedef struct zckDL {
     void *write_data;
     zck_wcb header_cb;
     void *header_data;
-} zckDL;
+};
 
 /* Contains an index item pointing to a chunk */
-typedef struct zckChunk {
+struct zckChunk {
     char *digest;
     int digest_size;
     int valid;
@@ -162,10 +159,10 @@ typedef struct zckChunk {
     struct zckChunk *src;
     zckCtx *zck;
     UT_hash_handle hh;
-} zckChunk;
+};
 
 /* Contains everything about an index and a pointer to the first index item */
-typedef struct zckIndex {
+struct zckIndex {
     size_t count;
     size_t length;
     int hash_type;
@@ -174,7 +171,7 @@ typedef struct zckIndex {
     zckChunk *last;
     zckChunk *current;
     zckChunk *ht;
-} zckIndex;
+};
 
 /* Contains a single range */
 typedef struct zckRangeItem {
@@ -186,13 +183,13 @@ typedef struct zckRangeItem {
 
 /* Contains a series of ranges, information about them, a link to the first
  * range item, and an index describing what information is in the ranges */
-typedef struct zckRange {
+struct zckRange {
     unsigned int count;
     zckRangeItem *first;
     zckIndex index;
-} zckRange;
+};
 
-typedef struct zckComp {
+struct zckComp {
     int started;
 
     uint8_t type;
@@ -221,7 +218,7 @@ typedef struct zckComp {
     fdecomp decompress;
     fdcompend end_dchunk;
     fcclose close;
-} zckComp;
+};
 
 typedef struct zckSig {
     zckHashType hash_type;
@@ -235,7 +232,7 @@ typedef struct zckSigCollection {
     zckSig *sig;
 } zckSigCollection;
 
-typedef struct zckCtx {
+struct zckCtx {
     int temp_fd;
     int fd;
     int mode;
@@ -295,7 +292,7 @@ typedef struct zckCtx {
 
     char *msg;
     int error_state;
-} zckCtx;
+};
 
 int get_tmp_fd()
     __attribute__ ((warn_unused_result));

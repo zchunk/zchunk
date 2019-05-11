@@ -10,10 +10,8 @@ of the file, and also makes zchunk files efficient over rsync.
 zchunk files are protected with strong checksums to verify that the file you
 downloaded is, in fact, the file you wanted.
 
-**zchunk-0.9.0 has been released with the proposed final ABI.  Once zchunk-1.0
-has been released, the ABI will be marked as stable, and the only allowed
-API/ABI and file format changes will be additions**
-
+**As of zchunk-1.0, the ABI and API have been marked stable, and the only changes
+allowed are backwards-compatible additions**
 
 ## Installation
 To build and install zchunk, first install meson and run
@@ -46,5 +44,7 @@ To read a zchunk header, run:
 zck_read_header <file>
 ```
 
-## C API
-\#TODO
+## Documentation
+- [Format definition](zchunk_format.txt)
+- [Initial announcement](https://www.jdieter.net/posts/2018/04/30/introducing-zchunk)
+- [How zchunk works (with pretty pictures)](https://www.jdieter.net/posts/2018/05/31/what-is-zchunk)

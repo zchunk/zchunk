@@ -49,7 +49,7 @@ int main (int argc, char *argv[]) {
         perror("Unable to open LICENSE.header.new.nodict.fodt.zck for reading");
         exit(1);
     }
-    int tgt = open(base_name, O_RDWR | O_CREAT, 0644);
+    int tgt = open(base_name, O_RDWR | O_CREAT, 0666);
     if(tgt < 0) {
         perror("Unable to open LICENSE.header.new.nodict.fodt.zck for writing");
         exit(1);

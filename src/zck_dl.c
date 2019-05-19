@@ -314,7 +314,7 @@ int main (int argc, char *argv[]) {
     }
 
     char *outname = basename(arguments.args[0]);
-    int dst_fd = open(outname, O_RDWR | O_CREAT, 0644);
+    int dst_fd = open(outname, O_RDWR | O_CREAT, 0666);
     if(dst_fd < 0) {
         dprintf(STDERR_FILENO, "Unable to open %s: %s\n", outname,
                 strerror(errno));

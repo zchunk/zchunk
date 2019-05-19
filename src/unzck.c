@@ -139,7 +139,7 @@ int main (int argc, char *argv[]) {
 
     int dst_fd = STDOUT_FILENO;
     if(!arguments.stdout) {
-        dst_fd = open(out_name, O_TRUNC | O_WRONLY | O_CREAT, 0644);
+        dst_fd = open(out_name, O_TRUNC | O_WRONLY | O_CREAT, 0666);
         if(dst_fd < 0) {
             dprintf(STDERR_FILENO, "Unable to open %s", out_name);
             perror("");

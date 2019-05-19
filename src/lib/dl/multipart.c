@@ -238,8 +238,16 @@ size_t multipart_get_boundary(zckDL *dl, char *b, size_t size) {
     regmatch_t match[2] = {{0}};
     if(regexec(dl->hdr_regex, buf, 2, match, 0) == 0) {
         reset_mp(dl->mp);
-        char *boundary = zmalloc(match[1].rm_eo - match[1].rm_so + 1);
-        memcpy(boundary, buf + match[1].rm_so, match[1].rm_eo - match[1].rm_so);
+	size_t boundary_length = match[1].rm_eo - match[1].rm_so;
+	char *boundary_start = buf + match[1].rm_so;
+	if ( boundary_start[0] == '\"' && boundary_length > 2
+	     && boundary_start[boundary_length-1] == '\"') {
+	    /* Remove optional quotes */
+	    boundary_start  += 1;
+	    boundary_length -= 2;
+	}
+        char *boundary = zmalloc(boundary_length + 1);
+        memcpy(boundary, boundary_start, boundary_length);
         zck_log(ZCK_LOG_DEBUG, "Multipart boundary: %s", boundary);
         dl->boundary = boundary;
     }

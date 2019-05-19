@@ -179,7 +179,7 @@ int main (int argc, char *argv[]) {
         close(dict_fd);
     }
 
-    int dst_fd = open(out_name, O_TRUNC | O_WRONLY | O_CREAT, 0644);
+    int dst_fd = open(out_name, O_TRUNC | O_WRONLY | O_CREAT, 0666);
     if(dst_fd < 0) {
         dprintf(STDERR_FILENO, "Unable to open %s", out_name);
         perror("");

@@ -224,7 +224,7 @@ int main (int argc, char *argv[]) {
         assert(dict_block);
         snprintf(dict_block, strlen(dir) + strlen(out_name) + 12, "%s/%s.%li",
                  dir, out_name, zck_get_chunk_number(idx));
-        int dst_fd = open(dict_block, O_TRUNC | O_WRONLY | O_CREAT, 0644);
+        int dst_fd = open(dict_block, O_TRUNC | O_WRONLY | O_CREAT, 0666);
         if(dst_fd < 0) {
             dprintf(STDERR_FILENO, "Unable to open %s", dict_block);
             perror("");

@@ -224,7 +224,7 @@ bool PUBLIC zck_set_soption(zckCtx *zck, zck_soption option, const char *value,
             free(data);
             set_fatal_error(zck, "Hash digest size mismatch for header "
                                  "validation\n"
-                                 "Expected: %lu\nProvided: %lu",
+                                 "Expected: %i\nProvided: %lu",
                                  chk_type.digest_size*2, length);
             return false;
         }

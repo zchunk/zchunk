@@ -11,15 +11,6 @@ common_cflags = [
 cc = meson.get_compiler('c')
 add_project_arguments(cc.get_supported_arguments(common_cflags), language : 'c')
 
-# Fix coverity bug, shamelessly stolen from libinput
-if get_option('coverity')
-    add_project_arguments('-D_Float128=__uint128_t', language : 'c')
-    add_project_arguments('-D_Float32x=int', language : 'c')
-    add_project_arguments('-D_Float32=int', language : 'c')
-    add_project_arguments('-D_Float64x=long', language : 'c')
-    add_project_arguments('-D_Float64=long', language : 'c')
-endif
-
 if get_option('with-zstd') == 'disabled'
     zstd_dep = dependency('', required : false)
 else

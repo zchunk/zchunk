@@ -68,12 +68,11 @@ static bool gen_regex(zckDL *dl) {
     ALLOCD_BOOL(NULL, dl);
     VALIDATE_BOOL(dl->zck);
 
-    char *next = "\r\n--%s\r\n" \
-                 "(content-type:.*\r\n" \
-                  "content-range: *bytes *([0-9]+) *- *([0-9]+) */[0-9]+ *\r\n\r|" \
-                  "content-range: *bytes *([0-9]+) *- *([0-9]+) */[0-9]+ *\r\n" \
-                  "content-type:.*\r\n\r)";
-    char *end =  "\r\n--%s--\r\n\r";
+    /* Response should include content-type, but we only need the range, so
+     * wildcard out the content-type */
+    char *next = "\r\n--%s\r\n.*" \
+                 "content-range: *bytes *([0-9]+) *- *([0-9]+) */[0-9]+";
+    char *end =  "\r\n--%s--";
     char *regex_n = add_boundary_to_regex(dl->zck, next, dl->boundary);
     if(regex_n == NULL)
         return false;
@@ -168,14 +167,18 @@ size_t multipart_extract(zckDL *dl, char *b, size_t l) {
         }
 
         /* Find double newline and replace final \n with \0, so it's a zero-
-         * terminated string */
-        for(char *j=i; j<end; j++) {
+         * terminated string.  This is the part header.  After finding the end
+         * of the part header (and beginning of the actual data), set j to that
+         * so we can set i to it when we finish getting the part header info */
+        char *j = i;
+        for(; j<end; j++) {
             if(j + 4 >= end) {
                 i = j+4;
                 break;
             }
             if(memcmp(j, "\r\n\r\n", 4) == 0) {
                 j[3] = '\0';
+                j += 4;
                 break;
             }
         }
@@ -183,29 +186,24 @@ size_t multipart_extract(zckDL *dl, char *b, size_t l) {
             continue;
 
         /* Run regex against download range string */
-        regmatch_t match[7] = {{0}};
-        if(regexec(dl->dl_regex, i, 6, match, 0) != 0) {
-            if(regexec(dl->end_regex, i, 6, match, 0) != 0)
+        regmatch_t match[4] = {{0}};
+        if(regexec(dl->dl_regex, i, 3, match, 0) != 0) {
+            if(regexec(dl->end_regex, i, 3, match, 0) != 0)
                 set_error(dl->zck, "Unable to find multipart download range");
             goto end;
         }
 
-        /* Set match offset to 2 if content-type and content-range is reversed */
-        int m = 0;
-        if(match[2].rm_so < 0)
-            m = 2;
-
         /* Get range start from regex */
         size_t rstart = 0;
-        for(char *c=i + match[2 + m].rm_so; c < i + match[2 + m].rm_eo; c++)
+        for(char *c=i + match[1].rm_so; c < i + match[1].rm_eo; c++)
             rstart = rstart*10 + (size_t)(c[0] - 48);
 
         /* Get range end from regex */
         size_t rend = 0;
-        for(char *c=i + match[3 + m].rm_so; c < i + match[3 + m].rm_eo; c++)
+        for(char *c=i + match[2].rm_so; c < i + match[2].rm_eo; c++)
             rend = rend*10 + (size_t)(c[0] - 48);
 
-        i += match[1].rm_eo + 1;
+        i = j;
         zck_log(ZCK_LOG_DEBUG, "Download range: %lu-%lu", rstart, rend);
         mp->length = rend-rstart+1;
         mp->state = 1;

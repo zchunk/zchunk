@@ -6,7 +6,7 @@ node {
             sh "./autotest/fedora-latest/build.sh"
         },
         centos: {
-            sh "./autotest/centos-latest/build.sh"
+            sh "./autotest/centos-7/build.sh"
         },
         opensuse: {
             sh "./autotest/opensuse-leap/build.sh"
@@ -24,7 +24,7 @@ node {
             sh "./autotest/fedora-latest/test.sh"
         },
         centos: {
-            sh "./autotest/centos-latest/test.sh"
+            sh "./autotest/centos-7/test.sh"
         },
         opensuse: {
             sh "./autotest/opensuse-leap/test.sh"

@@ -1,8 +1,8 @@
 #!/bin/sh
-# Build zchunk-centos:latest if it doesn't exist
+# Build zchunk-centos:7 if it doesn't exist
 HAVE_IMAGE=$(docker image ls -q zchunk-centos:test)
 if [ "$HAVE_IMAGE" == "" ]; then
-	autotest/centos-latest/build.sh
+	autotest/centos-7/build.sh
 	if [ "$?" -ne 0 ]; then
 		exit 1
 	fi

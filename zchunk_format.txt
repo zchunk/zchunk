@@ -1,3 +1,7 @@
+NOTE: Any flags marked EXPERIMENTAL are still in development and the format, as
+      it applies to those flags, is still in flux.  It is strongly recommended
+      that no public zchunk files be created using EXPERIMENTAL flags
+
 A zchunk file contains two parts, the header and the body.  The header consists
 of four parts:
  * The lead: Everything necessary to validate the header
@@ -68,6 +72,7 @@ Flags
  Current flags are:
   bit 0: File has data streams
   bit 1: File has optional elements
+  bit 2: EXPERIMENTAL: File may be applied against an uncompressed source
 
 Compression type
  This is an integer containing the type of compression used to compress dict and
@@ -116,13 +121,14 @@ The index:
 +===============================+
 
 (Chunk stream will only exist if flag 0 is set to 1)
-[+===================+================+===================+
-[| Chunk stream (ci) | Chunk checksum | Chunk length (ci) |
-[+===================+================+===================+
+EXPERIMENTAL: (Uncompressed chunk checksum will only exist if flag 2 is set to 1)
+[+===================+================+=============================+
+[| Chunk stream (ci) | Chunk checksum | Uncompressed chunk checksum |
+[+===================+================+=============================+
 
-+==========================+]
-| Uncompressed length (ci) |] ...
-+==========================+]
++===================+==========================+]
+| Chunk length (ci) | Uncompressed length (ci) |] ...
++===================+==========================+]
 
 Index size
  This is an integer containing the size of the index.
@@ -167,6 +173,12 @@ Chunk stream
 Chunk checksum
  This is the checksum of the compressed chunk, used to detect whether any two
  chunks are identical.
+
+EXPERIMENTAL: NOTE: Uncompressed chunk checksum will only exist if flag 2 is set
+                    to 1
+Uncompressed chunk checksum
+ This is the checksum of the uncompressed chunk, used to detect whether a chunk
+ from an uncompressed source is identical to the compressed chunk
 
 Chunk length
  This is an integer containing the length of the chunk.

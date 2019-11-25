@@ -9,13 +9,16 @@ of four parts:
  * The index: Details about each chunk
  * The signatures: Signatures used to sign the zchunk file
 
-Definitions:
+Definitions and document conventions:
 (ci)
  Compressed (unsigned) integer - An variable length little endian integer where
  the first seven bits of the number are stored in the first byte, followed by
  the next seven bits in the next byte, and so on.  The top bit of all bytes
  except the final byte must be zero, and the top bit of the final byte must be
  one, indicating the end of the number.
+
+[#]
+ Section is only used if flag # is set.
 
 The lead:
 +-+-+-+-+-+====================+==================+=================+
@@ -46,18 +49,17 @@ The preface:
 | Data checksum | Flags (ci) | Compression type (ci ) |
 +===============+============+========================+
 
-(Optional elements will only be set if flag 1 is set to 1)
-+=============================+
-| Optional element count (ci) |
-+=============================+
++=================================+
+| Optional element count (ci) [1] |
++=================================+
 
-[+==========================+=================================+
-[| Optional element id (ci) | Optional element data size (ci) |
-[+==========================+=================================+
+[+==============================+=====================================+
+[| Optional element id (ci) [1] | Optional element data size (ci) [1] |
+[+==============================+=====================================+
 
-+=======================+]
-| Optional element data |] ...
-+=======================+]
++===========================+]
+| Optional element data [1] |] ...
++===========================+]
 
 Data checksum
  This is the checksum of everything after the header, including the compressed
@@ -112,19 +114,17 @@ The index:
 +=================+==========================+==================+
 
 (Dict stream will only exist if flag 0 is set to 1)
-+==================+===============+==================+
-| Dict stream (ci) | Dict checksum | Dict length (ci) |
-+==================+===============+==================+
++======================+===============+==================+
+| Dict stream (ci) [0] | Dict checksum | Dict length (ci) |
++======================+===============+==================+
 
 +===============================+
 | Uncompressed dict length (ci) |
 +===============================+
 
-(Chunk stream will only exist if flag 0 is set to 1)
-EXPERIMENTAL: (Uncompressed chunk checksum will only exist if flag 2 is set to 1)
-[+===================+================+=============================+
-[| Chunk stream (ci) | Chunk checksum | Uncompressed chunk checksum |
-[+===================+================+=============================+
+[+=======================+================+=================================+
+[| Chunk stream (ci) [0] | Chunk checksum | Uncompressed chunk checksum [2] |
+[+=======================+================+=================================+
 
 +===================+==========================+]
 | Chunk length (ci) | Uncompressed length (ci) |] ...

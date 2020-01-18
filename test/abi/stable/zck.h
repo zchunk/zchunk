@@ -1,7 +1,7 @@
 #ifndef ZCK_H
 #define ZCK_H
 
-#define ZCK_VERSION "1.1.4"
+#define ZCK_VERSION "1.1.5"
 
 #include <stdlib.h>
 #include <stdbool.h>

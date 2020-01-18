@@ -62,11 +62,19 @@ int write_data(zckCtx *zck, int fd, const char *data, size_t length) {
     }
     ssize_t write_bytes = write(fd, data, length);
     if(write_bytes == -1) {
-        set_error(zck, "Error write data: %s", strerror(errno));
+        set_fatal_error(zck, "Error writing data: %s", strerror(errno));
         return false;
-    } else if(write_bytes != length) {
-        set_fatal_error(zck, "Short write");
-        return false;
+    } else if(write_bytes < length) {
+        // According to man page, if write is less than full amount, we should try again
+        length -= write_bytes;
+        write_bytes = write(fd, data+write_bytes, length);
+        if(write_bytes == -1) {
+            set_fatal_error(zck, "Error writing data: %s", strerror(errno));
+            return false;
+        } else if(write_bytes < length) {
+            set_fatal_error(zck, "Short write (after two attempts)");
+            return false;
+        }
     }
     return true;
 }

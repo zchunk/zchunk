@@ -5,6 +5,7 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
+#include <sys/types.h>
 
 typedef enum zck_hash {
     ZCK_HASH_SHA1,

@@ -12,7 +12,7 @@ node {
         },
         alpine: {
             sh "./autotest/alpine-edge/build.sh"
-        }
+        },
         debian: {
             sh "./autotest/debian-latest/build.sh"
         },
@@ -32,7 +32,7 @@ node {
         },
         alpine: {
             sh "./autotest/alpine-edge/test.sh"
-        }
+        },
         debian: {
             sh "./autotest/debian-latest/test.sh"
         },

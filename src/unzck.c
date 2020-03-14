@@ -58,7 +58,7 @@ struct arguments {
   char *args[1];
   zck_log_type log_level;
   bool dict;
-  bool stdout;
+  bool std_out;
   bool exit;
 };
 
@@ -75,7 +75,7 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
                 arguments->log_level = ZCK_LOG_DDEBUG;
             break;
         case 'c':
-            arguments->stdout = true;
+            arguments->std_out = true;
             break;
         case 'V':
             version();
@@ -138,7 +138,7 @@ int main (int argc, char *argv[]) {
         snprintf(out_name + strlen(base_name) - 4, 7, ".zdict");
 
     int dst_fd = STDOUT_FILENO;
-    if(!arguments.stdout) {
+    if(!arguments.std_out) {
         dst_fd = open(out_name, O_TRUNC | O_WRONLY | O_CREAT, 0666);
         if(dst_fd < 0) {
             dprintf(STDERR_FILENO, "Unable to open %s", out_name);

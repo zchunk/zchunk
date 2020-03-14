@@ -1,10 +1,11 @@
 #ifndef ZCK_H
 #define ZCK_H
 
-#define ZCK_VERSION "1.1.5"
+#define ZCK_VERSION "1.1.6"
 
 #include <stdlib.h>
 #include <stdbool.h>
+#include <sys/types.h>
 
 typedef enum zck_hash {
     ZCK_HASH_SHA1,

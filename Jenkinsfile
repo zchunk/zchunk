@@ -1,43 +1,19 @@
 node {
     checkout scm
     stage('Build') {
-        fedora: {
-            sh "./autotest/fedora-latest/build.sh"
-        },
-        centos: {
-            sh "./autotest/centos-7/build.sh"
-        },
-        opensuse: {
-            sh "./autotest/opensuse-leap/build.sh"
-        },
-        alpine: {
-            sh "./autotest/alpine-edge/build.sh"
-        },
-        debian: {
-            sh "./autotest/debian-latest/build.sh"
-        },
-        ubuntu: {
-            sh "./autotest/ubuntu-rolling/build.sh"
-        }
+        sh "./autotest/fedora-latest/build.sh"
+        sh "./autotest/centos-7/build.sh"
+        sh "./autotest/opensuse-leap/build.sh"
+        sh "./autotest/alpine-edge/build.sh"
+        sh "./autotest/debian-latest/build.sh"
+        sh "./autotest/ubuntu-rolling/build.sh"
     }
     stage('Test') {
-        fedora: {
-            sh "./autotest/fedora-latest/test.sh"
-        },
-        centos: {
-            sh "./autotest/centos-7/test.sh"
-        },
-        opensuse: {
-            sh "./autotest/opensuse-leap/test.sh"
-        },
-        alpine: {
-            sh "./autotest/alpine-edge/test.sh"
-        },
-        debian: {
-            sh "./autotest/debian-latest/test.sh"
-        },
-        ubuntu: {
-            sh "./autotest/ubuntu-rolling/test.sh"
-        }
+        sh "./autotest/fedora-latest/test.sh"
+        sh "./autotest/centos-7/test.sh"
+        sh "./autotest/opensuse-leap/test.sh"
+        sh "./autotest/alpine-edge/test.sh"
+        sh "./autotest/debian-latest/test.sh"
+        sh "./autotest/ubuntu-rolling/test.sh"
     }
 }

@@ -22,6 +22,12 @@ endif
 
 curl_dep = dependency('libcurl')
 
+if not cc.links('#include <argp.h>\nstatic error_t parse_opt (int key, char *arg, struct argp_state *state) { argp_usage(state); }; void main() {}')
+    argplib = cc.find_library('argp')
+else
+    argplib = dependency('', required : false)
+endif
+
 if get_option('with-openssl') == 'disabled'
     openssl_dep = dependency('', required : false)
 else

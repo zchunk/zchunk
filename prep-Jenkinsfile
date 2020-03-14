@@ -4,6 +4,7 @@ node {
         sh "./autotest/fedora-latest/prep.sh"
         sh "./autotest/centos-7/prep.sh"
         sh "./autotest/opensuse-leap/prep.sh"
+        sh "./autotest/alpine-edge/prep.sh"
         sh "./autotest/debian-latest/prep.sh"
         sh "./autotest/ubuntu-rolling/prep.sh"
     }

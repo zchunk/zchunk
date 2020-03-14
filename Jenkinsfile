@@ -1,8 +1,7 @@
 node {
     checkout scm
     stage('Build') {
-        parallel fedora: {
-            
+        fedora: {
             sh "./autotest/fedora-latest/build.sh"
         },
         centos: {
@@ -11,6 +10,9 @@ node {
         opensuse: {
             sh "./autotest/opensuse-leap/build.sh"
         },
+        alpine: {
+            sh "./autotest/alpine-edge/build.sh"
+        }
         debian: {
             sh "./autotest/debian-latest/build.sh"
         },
@@ -19,8 +21,7 @@ node {
         }
     }
     stage('Test') {
-        parallel fedora: {
-            
+        fedora: {
             sh "./autotest/fedora-latest/test.sh"
         },
         centos: {
@@ -29,6 +30,9 @@ node {
         opensuse: {
             sh "./autotest/opensuse-leap/test.sh"
         },
+        alpine: {
+            sh "./autotest/alpine-edge/test.sh"
+        }
         debian: {
             sh "./autotest/debian-latest/test.sh"
         },

@@ -120,6 +120,13 @@ int main (int argc, char *argv[]) {
 
     zck_set_log_level(arguments.log_level);
 
+    if(!arguments.std_out) {
+        if(strlen(arguments.args[0]) < 5 ||
+           strcmp(arguments.args[0] + strlen(arguments.args[0]) - 4, ".zck") != 0) {
+            dprintf(STDERR_FILENO, "Not a *.zck file: %s\n", arguments.args[0]);
+            exit(1);
+        }
+    }
     int src_fd = open(arguments.args[0], O_RDONLY);
     if(src_fd < 0) {
         dprintf(STDERR_FILENO, "Unable to open %s\n", arguments.args[0]);

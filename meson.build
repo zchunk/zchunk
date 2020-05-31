@@ -51,3 +51,12 @@ pkg_mod.generate(libraries : zcklib,
                  name : 'libzck',
                  filebase : 'zck',
                  description : 'A library for generating easy-to-delta files.')
+
+install_man([
+  'doc/unzck.1',
+  'doc/zck.1',
+  'doc/zck_delta_size.1',
+  'doc/zck_gen_zdict.1',
+  'doc/zck_read_header.1',
+  'doc/zckdl.1',
+])

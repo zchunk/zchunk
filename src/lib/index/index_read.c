@@ -28,7 +28,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#ifdef FREEBSD
+#include <sys/endian.h>
+#else
 #include <endian.h>
+#endif
 #include <zck.h>
 
 #include "zck_private.h"

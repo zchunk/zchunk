@@ -1,15 +1,21 @@
-project('zck', 'c',
-        version : '1.1.6',
-        meson_version : '>=0.44.0',
-        default_options : ['c_std=gnu99'])
+project(
+    'zck', 'c',
+    version : '1.1.6',
+    meson_version : '>=0.44.0',
+    default_options : ['c_std=gnu99']
+)
 
 so_version = '1'
 
 common_cflags = [
-  '-Wunused-result',
+    '-Wunused-result',
 ]
 cc = meson.get_compiler('c')
 add_project_arguments(cc.get_supported_arguments(common_cflags), language : 'c')
+
+if build_machine.system() == 'freebsd'
+    add_project_arguments('-DFREEBSD', language : 'c')
+endif
 
 if get_option('with-zstd') == 'disabled'
     zstd_dep = dependency('', required : false)
@@ -22,7 +28,7 @@ endif
 
 curl_dep = dependency('libcurl')
 
-if not cc.links('#include <argp.h>\nstatic error_t parse_opt (int key, char *arg, struct argp_state *state) { argp_usage(state); }; void main() {}')
+if build_machine.system() == 'freebsd' or not cc.links('#include <argp.h>\nstatic error_t parse_opt (int key, char *arg, struct argp_state *state) { argp_usage(state); }; void main() {}')
     argplib = cc.find_library('argp')
 else
     argplib = dependency('', required : false)
@@ -46,17 +52,19 @@ if not get_option('coverity')
 endif
 
 pkg_mod = import('pkgconfig')
-pkg_mod.generate(libraries : zcklib,
-                 version : meson.project_version(),
-                 name : 'libzck',
-                 filebase : 'zck',
-                 description : 'A library for generating easy-to-delta files.')
+pkg_mod.generate(
+    libraries : zcklib,
+    version : meson.project_version(),
+    name : 'libzck',
+    filebase : 'zck',
+    description : 'A library for generating easy-to-delta files.'
+)
 
 install_man([
-  'doc/unzck.1',
-  'doc/zck.1',
-  'doc/zck_delta_size.1',
-  'doc/zck_gen_zdict.1',
-  'doc/zck_read_header.1',
-  'doc/zckdl.1',
+    'doc/unzck.1',
+    'doc/zck.1',
+    'doc/zck_delta_size.1',
+    'doc/zck_gen_zdict.1',
+    'doc/zck_read_header.1',
+    'doc/zckdl.1',
 ])

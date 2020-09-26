@@ -23,6 +23,12 @@ ninja test
 sudo ninja install
 ```
 
+If you're building on an operating system where some libraries are stored in
+/usr/local, you'll need to replace `meson build` above as follows:
+```
+CFLAGS=-I/usr/local/include CXXFLAGS=-I/usr/local/include LDFLAGS=-L/usr/local/lib meson build
+```
+
 ## Using the utilities
 To decompress a zchunk file, simply run:
 ```

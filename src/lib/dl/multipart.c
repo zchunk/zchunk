@@ -57,7 +57,11 @@ static bool create_regex(zckCtx *zck, regex_t *reg, const char *regex) {
         set_error(zck, "Regular expression not initialized");
         return false;
     }
-    if(regcomp(reg, regex, REG_ICASE | REG_EXTENDED) != 0) {
+    int cflags = REG_ICASE | REG_EXTENDED;
+#if __APPLE__
+    cflags |= REG_ENHANCED;
+#endif
+    if(regcomp(reg, regex, cflags) != 0) {
         set_error(zck, "Unable to compile regular expression");
         return false;
     }

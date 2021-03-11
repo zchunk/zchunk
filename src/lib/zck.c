@@ -70,6 +70,10 @@ static void zck_clear(zckCtx *zck) {
         free(zck->header_digest);
         zck->header_digest = NULL;
     }
+    if(zck->prep_digest) {
+        free(zck->prep_digest);
+        zck->prep_digest = NULL;
+    }
     if(zck->temp_fd) {
         close(zck->temp_fd);
         zck->temp_fd = 0;

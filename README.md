@@ -53,10 +53,12 @@ zck_read_header <file>
 
 ## Zchunk dictionaries
 
-If you're creating a zchunk file that has any repetitive data, you may be
-able to reduce the file size by using a [zstd dictionary](https://facebook.github.io/zstd/#small-data).
-The dictionary is stored as extra data in chunk 0, but is used as a starting
-point for compressing each chunk, which can give a significant overall savings.
+By default, each chunk in a zchunk file is compressed independently.  However,
+if you're creating a zchunk file that has any repetitive data, you may
+be able to reduce the overall file size by using a [zstd dictionary](https://facebook.github.io/zstd/#small-data).
+The dictionary takes up extra space at the beginning of the zchunk file, but is
+used as an identical initial dictionary for compressing each chunk, which can
+give a significant overall savings.
 
 It is important that all further revisions of the zchunk file use the same
 dictionary.  If the dictionary changes, none of the chunks will match from the

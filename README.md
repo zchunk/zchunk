@@ -50,6 +50,39 @@ To read a zchunk header, run:
 zck_read_header <file>
 ```
 
+
+## Zchunk dictionaries
+
+By default, each chunk in a zchunk file is compressed independently.  However,
+if you're creating a zchunk file that has any repetitive data, you may
+be able to reduce the overall file size by using a [zstd dictionary](https://facebook.github.io/zstd/#small-data).
+The dictionary takes up extra space at the beginning of the zchunk file, but is
+used as an identical initial dictionary for compressing each chunk, which can
+give a significant overall savings.
+
+It is important that all further revisions of the zchunk file use the same
+dictionary.  If the dictionary changes, none of the chunks will match from the
+old file, and the full new file will be downloaded.
+
+Zchunk can use any zstd dictionary, but also includes a utility to generate the
+ideal zstd dictionary for a zchunk file.
+
+To create an ideal dictionary for a zchunk file, run:
+```
+zck_gen_zdict <file.zck>
+```
+
+The dictionary will be saved as `<file.zdict>`.
+
+You will then need to recompress the file with the dictionary:
+```
+zck -D <uncompressed file>
+```
+
+Note that `zck_gen_zdict` does require that the `zstd` binary be installed on
+your system.
+
+
 ## Documentation
 - [Format definition](zchunk_format.txt)
 - [Initial announcement](https://www.jdieter.net/posts/2018/04/30/introducing-zchunk)

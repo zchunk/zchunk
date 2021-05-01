@@ -28,7 +28,7 @@ endif
 
 curl_dep = dependency('libcurl')
 
-if build_machine.system() == 'darwin' or build_machine.system() == 'freebsd' or not cc.links('#include <argp.h>\nstatic error_t parse_opt (int key, char *arg, struct argp_state *state) { argp_usage(state); }; void main() {}')
+if build_machine.system() == 'darwin' or build_machine.system() == 'freebsd' or not cc.links('#include <argp.h>\nstatic error_t parse_opt (int key, char *arg, struct argp_state *state) { argp_usage(state); return 0; }; void main() {}')
     argplib = cc.find_library('argp')
 else
     argplib = dependency('', required : false)

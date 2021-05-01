@@ -148,10 +148,11 @@ static bool write_and_verify_chunk(zckCtx *src, zckCtx *tgt,
     /* If chunk is invalid, overwrite with zeros and add to download range */
     if(memcmp(digest, src_idx->digest, src_idx->digest_size) != 0) {
         char *pdigest = zck_get_chunk_digest(src_idx);
-        zck_log(ZCK_LOG_WARNING, "Source hash: %s", pdigest);
+        zck_log(ZCK_LOG_INFO, "Corrupted chunk found in file, will redownload");
+        zck_log(ZCK_LOG_INFO, "Source hash: %s", pdigest);
         free(pdigest);
         pdigest = get_digest_string(digest, src_idx->digest_size);
-        zck_log(ZCK_LOG_WARNING, "Target hash: %s", pdigest);
+        zck_log(ZCK_LOG_INFO, "Target hash: %s", pdigest);
         free(pdigest);
         if(!zero_chunk(tgt, tgt_idx))
             return false;

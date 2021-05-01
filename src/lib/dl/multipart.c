@@ -74,7 +74,7 @@ static bool gen_regex(zckDL *dl) {
 
     /* Response should include content-type, but we only need the range, so
      * wildcard out the content-type */
-    char *next = "\r\n--%s\r\n.*" \
+    char *next = "\r?\n?--%s\r\n.*" \
                  "content-range: *bytes *([0-9]+) *- *([0-9]+) */[0-9]+";
     char *end =  "\r\n--%s--";
     char *regex_n = add_boundary_to_regex(dl->zck, next, dl->boundary);

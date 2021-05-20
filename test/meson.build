@@ -227,7 +227,6 @@ if build_machine.endian() != 'big'
     if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.4')
         check_sha = '1749c2551ef26f26a2c61919dac7a4c8801154cdfc0524ef21187cf0c263f8fe'
     endif
-
     test(
         'compress auto-chunked file - no dict',
         shacheck,
@@ -262,68 +261,69 @@ if build_machine.endian() != 'big'
             join_paths(file_path, 'LICENSE.fodt')
         ]
     )
+
+    check_sha = 'db42e903a2cf3b859835298272ff45bff6d2435d32fe7fda2bfe2815ab161994'
+    if zstd_dep.found() and zstd_dep.version().version_compare('<=1.4.9')
+        check_sha = 'c46929367cd3d05daaca3b44657726791b428fb2198f5e7e5367b5cc781307aa'
+    endif
+    if zstd_dep.found() and zstd_dep.version().version_compare('<=1.4.6')
+        check_sha = '9472ddc74dbd96291077bbb8d793e605824be8dba45e3e94bbc54b7de21a37a1'
+    endif
+    if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.5')
+        check_sha = '6911b50cad5b6ed3ee89322338c559afdd0e72f614d3817b47ce370df52fd6b4'
+    endif
+    if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.4')
+        check_sha = 'ded0d04884b13ba23d00f9b11b2b5950f8b9670d742f67d4195707ed85e73048'
+    endif
+    if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.3')
+        check_sha = '437a0ec28def0c7f361402f6bb337cb963e6a3682bc742dd9e56171f6ece9881'
+    endif
+    test(
+        'compress manual file - no dict',
+        shacheck,
+        args: [
+            zck,
+            'LICENSE.manual.nodict.fodt.zck',
+            check_sha,
+            '-m',
+            '-s', '<text:',
+            '-o', 'LICENSE.manual.nodict.fodt.zck',
+            join_paths(file_path, 'LICENSE.fodt')
+        ]
+    )
+
+    check_sha = '4d165a1412013ca38ab2195166e0b91d989137b08065ea23cd49779b7ef6fd09'
+    if zstd_dep.found() and zstd_dep.version().version_compare('<=1.4.9')
+        check_sha = '5fc2449aeb51f6a898529fa4d53b04de6df6a352826f819dc2b39b153ddaa788'
+    endif
+    if zstd_dep.found() and zstd_dep.version().version_compare('<=1.4.6')
+        check_sha = '4e86b47410a3a5090c7d60040d24d8d390c31f16f96ea112c8f153888eaf8c6e'
+    endif
+    if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.5')
+        check_sha = '62ee66fbf41a1f18617f400383eb38905050050f0f435a6e56df4a30d1bb694d'
+    endif
+    if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.4')
+        check_sha = 'd5670c6ab81bdfa9b21eb21486a1cfa691a211fd83018914ea99ed9bdf509266'
+    endif
+    if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.3')
+        check_sha = '71e6e770545df9bae2560d683d876d25df5e7f697ad20f9535b907d76db09876'
+    endif
+    test(
+        'compress manual file - dict',
+        shacheck,
+        args: [
+            zck,
+            'LICENSE.manual.dict.fodt.zck',
+            check_sha,
+            '-D', join_paths(file_path, 'LICENSE.dict'),
+            '-m',
+            '-s', '<text:',
+            '-o', 'LICENSE.manual.dict.fodt.zck',
+            join_paths(file_path, 'LICENSE.fodt')
+        ]
+    )
 endif
 
-check_sha = 'db42e903a2cf3b859835298272ff45bff6d2435d32fe7fda2bfe2815ab161994'
-if zstd_dep.found() and zstd_dep.version().version_compare('<=1.4.9')
-    check_sha = 'c46929367cd3d05daaca3b44657726791b428fb2198f5e7e5367b5cc781307aa'
-endif
-if zstd_dep.found() and zstd_dep.version().version_compare('<=1.4.6')
-    check_sha = '9472ddc74dbd96291077bbb8d793e605824be8dba45e3e94bbc54b7de21a37a1'
-endif
-if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.5')
-    check_sha = '6911b50cad5b6ed3ee89322338c559afdd0e72f614d3817b47ce370df52fd6b4'
-endif
-if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.4')
-    check_sha = 'ded0d04884b13ba23d00f9b11b2b5950f8b9670d742f67d4195707ed85e73048'
-endif
-if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.3')
-    check_sha = '437a0ec28def0c7f361402f6bb337cb963e6a3682bc742dd9e56171f6ece9881'
-endif
-test(
-    'compress manual file - no dict',
-    shacheck,
-    args: [
-        zck,
-        'LICENSE.manual.nodict.fodt.zck',
-        check_sha,
-        '-m',
-        '-s', '<text:',
-        '-o', 'LICENSE.manual.nodict.fodt.zck',
-        join_paths(file_path, 'LICENSE.fodt')
-    ]
-)
-
-check_sha = '4d165a1412013ca38ab2195166e0b91d989137b08065ea23cd49779b7ef6fd09'
-if zstd_dep.found() and zstd_dep.version().version_compare('<=1.4.9')
-    check_sha = '5fc2449aeb51f6a898529fa4d53b04de6df6a352826f819dc2b39b153ddaa788'
-endif
-if zstd_dep.found() and zstd_dep.version().version_compare('<=1.4.6')
-    check_sha = '4e86b47410a3a5090c7d60040d24d8d390c31f16f96ea112c8f153888eaf8c6e'
-endif
-if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.5')
-    check_sha = '62ee66fbf41a1f18617f400383eb38905050050f0f435a6e56df4a30d1bb694d'
-endif
-if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.4')
-    check_sha = 'd5670c6ab81bdfa9b21eb21486a1cfa691a211fd83018914ea99ed9bdf509266'
-endif
-if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.3')
-    check_sha = '71e6e770545df9bae2560d683d876d25df5e7f697ad20f9535b907d76db09876'
-endif
-test(
-    'compress manual file - dict',
-    shacheck,
-    args: [
-        zck,
-        'LICENSE.manual.dict.fodt.zck',
-        check_sha,
-        '-D', join_paths(file_path, 'LICENSE.dict'),
-        '-m',
-        '-s', '<text:',
-        '-o', 'LICENSE.manual.dict.fodt.zck',
-        join_paths(file_path, 'LICENSE.fodt')
-    ]
-)
 run_target('test-abi',
            command: 'abi.sh')
 

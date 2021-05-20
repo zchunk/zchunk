@@ -214,7 +214,7 @@ test(
 )
 
 if build_machine.endian() != 'big'
-    check_sha = '3d2fa50ede0d2d70c9683e5a175819f2cb597bc4b2a6fe3cea5f2b8b2f78d2cc'
+    check_sha = '4f07f865bb15624cf854aa369e14a3538ad9e9bf98e233036d37d2568e60b7cc'
     if zstd_dep.found() and zstd_dep.version().version_compare('<=1.4.9')
         check_sha = 'eff3098803ba80f0c446d49f48188f89167d7f29cdc8a98c19f0ecfb4e2ee3c9'
     endif
@@ -240,7 +240,7 @@ if build_machine.endian() != 'big'
         ]
     )
 
-    check_sha = 'a939da7db34d3e1cbb9970c092a8902a3dc3fc2dda8469c24dfda4aebbd6e164'
+    check_sha = '4a495d993483f5f7915f0267c5ce6fc94a263b9dd58cf0bbf33aa0dbcdbb6669'
     if zstd_dep.found() and zstd_dep.version().version_compare('<=1.4.9')
         check_sha = 'b86795ca14eb04b382d1c7f94501aa5d1a2ddb05a5351c0235d00edb954e9b66'
     endif
@@ -264,7 +264,7 @@ if build_machine.endian() != 'big'
     )
 endif
 
-check_sha = 'c715ef49e4582ef155e185eb665551fe065bafb21c07a69cc71d90075da034ff'
+check_sha = 'db42e903a2cf3b859835298272ff45bff6d2435d32fe7fda2bfe2815ab161994'
 if zstd_dep.found() and zstd_dep.version().version_compare('<=1.4.9')
     check_sha = 'c46929367cd3d05daaca3b44657726791b428fb2198f5e7e5367b5cc781307aa'
 endif
@@ -294,7 +294,7 @@ test(
     ]
 )
 
-check_sha = 'acda73e0092dd33de24e51db09f8611dd7330837c393cabdaaee7ea0f79e6309'
+check_sha = '4d165a1412013ca38ab2195166e0b91d989137b08065ea23cd49779b7ef6fd09'
 if zstd_dep.found() and zstd_dep.version().version_compare('<=1.4.9')
     check_sha = '5fc2449aeb51f6a898529fa4d53b04de6df6a352826f819dc2b39b153ddaa788'
 endif

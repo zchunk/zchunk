@@ -23,6 +23,9 @@ else
     zstd_dep = dependency('libzstd', required : get_option('with-zstd') == 'enabled')
     if zstd_dep.found()
         add_project_arguments('-DZCHUNK_ZSTD', language : 'c')
+        if zstd_dep.version().version_compare('<=1.4.9')
+            add_project_arguments('-DOLD_ZSTD', language : 'c')
+        endif
     endif
 endif
 

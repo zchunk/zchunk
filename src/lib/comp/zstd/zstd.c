@@ -37,16 +37,39 @@ static bool init(zckCtx *zck, zckComp *comp) {
     VALIDATE_BOOL(zck);
     ALLOCD_BOOL(zck, comp);
 
+    size_t retval = 0;
+
     comp->cctx = ZSTD_createCCtx();
+#ifndef OLD_ZSTD
+    retval = ZSTD_CCtx_setParameter(comp->cctx, ZSTD_c_compressionLevel, comp->level);
+    if(ZSTD_isError(retval)) {
+        set_fatal_error(zck, "Unable to set compression level to %i", comp->level);
+        return false;
+    }
+    // This seems to be the only way to make the compression deterministic across
+    // architectures with zstd 1.5.0
+    retval = ZSTD_CCtx_setParameter(comp->cctx, ZSTD_c_strategy, ZSTD_btopt);
+    if(ZSTD_isError(retval)) {
+        set_fatal_error(zck, "Unable to set compression strategy");
+        return false;
+    }
+#endif //OLD_ZSTD
     comp->dctx = ZSTD_createDCtx();
     if(comp->dict && comp->dict_size > 0) {
+#ifdef OLD_ZSTD
         comp->cdict_ctx = ZSTD_createCDict(comp->dict, comp->dict_size,
                                            comp->level);
         if(comp->cdict_ctx == NULL) {
-            set_fatal_error(zck,
-                            "Unable to create zstd compression dict context");
+            set_fatal_error(zck, "Unable to create zstd compression dict context");
             return false;
         }
+#else
+        retval = ZSTD_CCtx_loadDictionary(comp->cctx, comp->dict, comp->dict_size);
+        if(ZSTD_isError(retval)) {
+            set_fatal_error(zck, "Unable to add zdict to compression context");
+            return false;
+        }
+#endif //OLD_ZSTD
         comp->ddict_ctx = ZSTD_createDDict(comp->dict, comp->dict_size);
         if(comp->ddict_ctx == NULL) {
             set_fatal_error(zck,
@@ -115,7 +138,7 @@ static bool end_cchunk(zckCtx *zck, zckComp *comp, char **dst, size_t *dst_size,
     }
 
     *dst = zmalloc(max_size);
-
+#ifdef OLD_ZSTD
     /* Currently, compression isn't deterministic when using contexts in
      * zstd 1.3.5, so this works around it */
     if(use_dict && comp->cdict_ctx) {
@@ -131,6 +154,11 @@ static bool end_cchunk(zckCtx *zck, zckComp *comp, char **dst, size_t *dst_size,
         *dst_size = ZSTD_compress(*dst, max_size, comp->dc_data,
                                   comp->dc_data_size, comp->level);
     }
+#else
+    *dst_size = ZSTD_compress2(comp->cctx, *dst, max_size, comp->dc_data,
+                               comp->dc_data_size);
+#endif //OLD_ZSTD
+
     free(comp->dc_data);
     comp->dc_data = NULL;
     comp->dc_data_loc = 0;

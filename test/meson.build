@@ -152,7 +152,7 @@ test(
     ]
 )
 test(
-    'decompress auto-chunked file - nocomp',
+    'decompress previously generated auto-chunked file - nocomp',
     shacheck,
     args: [
         unzck,
@@ -162,7 +162,7 @@ test(
     ]
 )
 test(
-    'decompress auto-chunked file - no dict',
+    'decompress previously generated auto-chunked file - no dict',
     shacheck,
     args: [
         unzck,
@@ -172,7 +172,7 @@ test(
     ]
 )
 test(
-    'decompress auto-chunked file - dict',
+    'decompress previously generated auto-chunked file - dict',
     shacheck,
     args: [
         unzck,
@@ -182,7 +182,7 @@ test(
     ]
 )
 test(
-    'decompress manual file - no dict',
+    'decompress previously generated manual file - no dict',
     shacheck,
     args: [
         unzck,
@@ -192,7 +192,7 @@ test(
     ]
 )
 test(
-    'decompress manual file - dict',
+    'decompress previously generated manual file - dict',
     shacheck,
     args: [
         unzck,
@@ -202,7 +202,7 @@ test(
     ]
 )
 test(
-    'decompress dict from auto-chunked file',
+    'decompress dict from previously generated auto-chunked file',
     shacheck,
     args: [
         unzck,
@@ -238,8 +238,20 @@ if build_machine.endian() != 'big'
             join_paths(file_path, 'LICENSE.fodt')
         ]
     )
+    test(
+        'decompress auto-chunked file - no dict',
+        shacheck,
+        args: [
+            unzck,
+            'LICENSE.nodict.fodt',
+            '394ed6c2fc4ac47e5ee111a46f2a35b8010a56c7747748216f52105e868d5a3e',
+            'LICENSE.nodict.fodt.zck'
+        ],
+        is_parallel: false
+    )
 
-    check_sha = '4a495d993483f5f7915f0267c5ce6fc94a263b9dd58cf0bbf33aa0dbcdbb6669'
+
+    check_sha = '11d08d01c7877d51b84a0f97ebf651ca3304de10cdf207223df2dbc3295fa532'
     if zstd_dep.found() and zstd_dep.version().version_compare('<=1.4.9')
         check_sha = 'b86795ca14eb04b382d1c7f94501aa5d1a2ddb05a5351c0235d00edb954e9b66'
     endif
@@ -260,6 +272,17 @@ if build_machine.endian() != 'big'
             '-o', 'LICENSE.dict.fodt.zck',
             join_paths(file_path, 'LICENSE.fodt')
         ]
+    )
+    test(
+        'decompress auto-chunked file - dict',
+        shacheck,
+        args: [
+            unzck,
+            'LICENSE.dict.fodt',
+            '394ed6c2fc4ac47e5ee111a46f2a35b8010a56c7747748216f52105e868d5a3e',
+            'LICENSE.dict.fodt.zck'
+        ],
+        is_parallel: false
     )
 
     check_sha = 'db42e903a2cf3b859835298272ff45bff6d2435d32fe7fda2bfe2815ab161994'
@@ -291,8 +314,19 @@ if build_machine.endian() != 'big'
             join_paths(file_path, 'LICENSE.fodt')
         ]
     )
+    test(
+        'decompress manual file - no dict',
+        shacheck,
+        args: [
+            unzck,
+            'LICENSE.manual.nodict.fodt',
+            '394ed6c2fc4ac47e5ee111a46f2a35b8010a56c7747748216f52105e868d5a3e',
+            'LICENSE.manual.nodict.fodt.zck'
+        ],
+        is_parallel: false
+    )
 
-    check_sha = '4d165a1412013ca38ab2195166e0b91d989137b08065ea23cd49779b7ef6fd09'
+    check_sha = 'ee8df850bc4797e6696b966a74a459129b0f6d23dfb720d1cc8cba6f2b209dd2'
     if zstd_dep.found() and zstd_dep.version().version_compare('<=1.4.9')
         check_sha = '5fc2449aeb51f6a898529fa4d53b04de6df6a352826f819dc2b39b153ddaa788'
     endif
@@ -321,6 +355,17 @@ if build_machine.endian() != 'big'
             '-o', 'LICENSE.manual.dict.fodt.zck',
             join_paths(file_path, 'LICENSE.fodt')
         ]
+    )
+    test(
+        'decompress manual file - dict',
+        shacheck,
+        args: [
+            unzck,
+            'LICENSE.manual.dict.fodt',
+            '394ed6c2fc4ac47e5ee111a46f2a35b8010a56c7747748216f52105e868d5a3e',
+            'LICENSE.manual.dict.fodt.zck'
+        ],
+        is_parallel: false
     )
 endif
 

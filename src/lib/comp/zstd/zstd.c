@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Jonathan Dieter <jdieter@gmail.com>
+ * Copyright 2018, 2021 Jonathan Dieter <jdieter@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -155,8 +155,23 @@ static bool end_cchunk(zckCtx *zck, zckComp *comp, char **dst, size_t *dst_size,
                                   comp->dc_data_size, comp->level);
     }
 #else
-    *dst_size = ZSTD_compress2(comp->cctx, *dst, max_size, comp->dc_data,
-                               comp->dc_data_size);
+    if(!use_dict && comp->dict_size > 0) {
+        size_t retval = ZSTD_CCtx_loadDictionary(comp->cctx, NULL, 0);
+        if(ZSTD_isError(retval)) {
+            set_fatal_error(zck, "Unable to add zdict to compression context");
+            return false;
+        }
+        *dst_size = ZSTD_compress2(comp->cctx, *dst, max_size, comp->dc_data,
+                                   comp->dc_data_size);
+        retval = ZSTD_CCtx_loadDictionary(comp->cctx, comp->dict, comp->dict_size);
+        if(ZSTD_isError(retval)) {
+            set_fatal_error(zck, "Unable to add zdict to compression context");
+            return false;
+        }
+    } else {
+        *dst_size = ZSTD_compress2(comp->cctx, *dst, max_size, comp->dc_data,
+                                   comp->dc_data_size);
+    }
 #endif //OLD_ZSTD
 
     free(comp->dc_data);

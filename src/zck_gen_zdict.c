@@ -42,6 +42,10 @@
 #include <argp.h>
 #include <zck.h>
 
+#if defined(stdout)
+#undef stdout
+#endif
+
 #include "util_common.h"
 
 static char doc[] = "zck_gen_zdict - Generate a zdict for a zchunk file";

@@ -1,3 +1,7 @@
+NOTE: Any flags marked EXPERIMENTAL are still in development and the format, as
+      it applies to those flags, is still in flux.  It is strongly recommended
+      that no public zchunk files be created using EXPERIMENTAL flags
+
 A zchunk file contains two parts, the header and the body.  The header consists
 of four parts:
  * The lead: Everything necessary to validate the header
@@ -5,13 +9,16 @@ of four parts:
  * The index: Details about each chunk
  * The signatures: Signatures used to sign the zchunk file
 
-Definitions:
+Definitions and document conventions:
 (ci)
  Compressed (unsigned) integer - An variable length little endian integer where
  the first seven bits of the number are stored in the first byte, followed by
  the next seven bits in the next byte, and so on.  The top bit of all bytes
  except the final byte must be zero, and the top bit of the final byte must be
  one, indicating the end of the number.
+
+[#]
+ Section is only used if flag # is set.
 
 The lead:
 +-+-+-+-+-+====================+==================+=================+
@@ -42,18 +49,17 @@ The preface:
 | Data checksum | Flags (ci) | Compression type (ci ) |
 +===============+============+========================+
 
-(Optional elements will only be set if flag 1 is set to 1)
-+=============================+
-| Optional element count (ci) |
-+=============================+
++=================================+
+| Optional element count (ci) [1] |
++=================================+
 
-[+==========================+=================================+
-[| Optional element id (ci) | Optional element data size (ci) |
-[+==========================+=================================+
+[+==============================+=====================================+
+[| Optional element id (ci) [1] | Optional element data size (ci) [1] |
+[+==============================+=====================================+
 
-+=======================+]
-| Optional element data |] ...
-+=======================+]
++===========================+]
+| Optional element data [1] |] ...
++===========================+]
 
 Data checksum
  This is the checksum of everything after the header, including the compressed
@@ -68,6 +74,7 @@ Flags
  Current flags are:
   bit 0: File has data streams
   bit 1: File has optional elements
+  bit 2: EXPERIMENTAL: File may be applied against an uncompressed source
 
 Compression type
  This is an integer containing the type of compression used to compress dict and
@@ -107,22 +114,21 @@ The index:
 +=================+==========================+==================+
 
 (Dict stream will only exist if flag 0 is set to 1)
-+==================+===============+==================+
-| Dict stream (ci) | Dict checksum | Dict length (ci) |
-+==================+===============+==================+
++======================+===============+==================+
+| Dict stream (ci) [0] | Dict checksum | Dict length (ci) |
++======================+===============+==================+
 
 +===============================+
 | Uncompressed dict length (ci) |
 +===============================+
 
-(Chunk stream will only exist if flag 0 is set to 1)
-[+===================+================+===================+
-[| Chunk stream (ci) | Chunk checksum | Chunk length (ci) |
-[+===================+================+===================+
+[+=======================+================+=================================+
+[| Chunk stream (ci) [0] | Chunk checksum | Uncompressed chunk checksum [2] |
+[+=======================+================+=================================+
 
-+==========================+]
-| Uncompressed length (ci) |] ...
-+==========================+]
++===================+==========================+]
+| Chunk length (ci) | Uncompressed length (ci) |] ...
++===================+==========================+]
 
 Index size
  This is an integer containing the size of the index.
@@ -167,6 +173,12 @@ Chunk stream
 Chunk checksum
  This is the checksum of the compressed chunk, used to detect whether any two
  chunks are identical.
+
+EXPERIMENTAL: NOTE: Uncompressed chunk checksum will only exist if flag 2 is set
+                    to 1
+Uncompressed chunk checksum
+ This is the checksum of the uncompressed chunk, used to detect whether a chunk
+ from an uncompressed source is identical to the compressed chunk
 
 Chunk length
  This is an integer containing the length of the chunk.

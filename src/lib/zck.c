@@ -292,6 +292,8 @@ bool PUBLIC zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t value) {
         }
         zck->prep_hdr_size = value;
 
+    } else if(option == ZCK_UNCOMP_HEADER) {
+        zck->has_uncompressed_source = 1;
     /* Hash options */
     } else if(option < 100) {
         /* Currently no hash options other than setting hash type, so bail */

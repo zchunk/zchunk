@@ -37,21 +37,27 @@ static bool create_chunk(zckCtx *zck) {
 
     clear_work_index(zck);
     zck->work_index_item = zmalloc(sizeof(zckChunk));
-    if(!hash_init(zck, &(zck->work_index_hash), &(zck->chunk_hash_type)))
+    if(!hash_init(zck, &(zck->work_index_hash), &(zck->chunk_hash_type)) ||
+      (!hash_init(zck, &(zck->work_index_hash_uncomp), &(zck->chunk_hash_type))))
         return false;
     return true;
 }
 
 static bool finish_chunk(zckIndex *index, zckChunk *item, char *digest,
-                        bool valid, zckCtx *zck) {
+                        char *digest_uncompressed, bool valid, zckCtx *zck) {
     VALIDATE_BOOL(zck);
     ALLOCD_BOOL(zck, index);
     ALLOCD_BOOL(zck, item);
 
     item->digest = zmalloc(index->digest_size);
+    item->digest_uncompressed = zmalloc(index->digest_size);
     if(digest) {
         memcpy(item->digest, digest, index->digest_size);
         item->digest_size = index->digest_size;
+    }
+    if(digest_uncompressed) {
+        memcpy(item->digest_uncompressed, digest_uncompressed, index->digest_size);
+        item->digest_size_uncompressed = index->digest_size;
     }
     item->start = index->length;
     item->valid = valid;
@@ -65,6 +71,15 @@ static bool finish_chunk(zckIndex *index, zckChunk *item, char *digest,
     index->last = item;
     index->count += 1;
     index->length += item->comp_length;
+
+    char *s = get_digest_string(digest, index->digest_size);
+    if (zck->has_uncompressed_source) {
+        char *s1 = get_digest_string(digest_uncompressed, index->digest_size);
+        zck_log(ZCK_LOG_DEBUG, "Index %d digest %s digest uncomp %s", index->count, s, s1);
+        free(s1);
+    } else
+        zck_log(ZCK_LOG_DEBUG, "Index %d digest %s", index->count, s);
+    free(s);
     return true;
 }
 
@@ -88,7 +103,8 @@ bool index_create(zckCtx *zck) {
     if(zck->index.first) {
         zckChunk *tmp = zck->index.first;
         while(tmp) {
-            index_malloc += zck->index.digest_size + MAX_COMP_SIZE*2;
+            index_malloc += (zck->has_uncompressed_source + 1) * zck->index.digest_size +
+		    MAX_COMP_SIZE * 2;
             tmp = tmp->next;
         }
     }
@@ -103,6 +119,11 @@ bool index_create(zckCtx *zck) {
             /* Write digest */
             memcpy(index+index_size, tmp->digest, zck->index.digest_size);
             index_size += zck->index.digest_size;
+	    /* Write digest for uncompressed if any */
+	    if (zck->has_uncompressed_source) {
+                memcpy(index+index_size, tmp->digest_uncompressed, zck->index.digest_size);
+                index_size += zck->index.digest_size;
+	    }
             /* Write compressed size */
             compint_from_size(index+index_size, tmp->comp_length,
                                   &index_size);
@@ -121,7 +142,7 @@ bool index_create(zckCtx *zck) {
 }
 
 bool index_new_chunk(zckCtx *zck, zckIndex *index, char *digest,
-                     int digest_size, size_t comp_size, size_t orig_size,
+                     int digest_size, char *digest_uncompressed, size_t comp_size, size_t orig_size,
                      zckChunk *src, bool finished) {
     VALIDATE_BOOL(zck);
 
@@ -138,7 +159,7 @@ bool index_new_chunk(zckCtx *zck, zckIndex *index, char *digest,
     chk->comp_length = comp_size;
     chk->length = orig_size;
     chk->src = src;
-    return finish_chunk(index, chk, digest, finished, zck);
+    return finish_chunk(index, chk, digest, digest_uncompressed, finished, zck);
 }
 
 bool index_add_to_chunk(zckCtx *zck, char *data, size_t comp_size,
@@ -168,6 +189,7 @@ bool index_finish_chunk(zckCtx *zck) {
         return false;
 
     char *digest = NULL;
+    char *digest_uncompressed = NULL;
     if(zck->work_index_item->length > 0) {
         /* Finalize chunk checksum */
         digest = hash_finalize(zck, &(zck->work_index_hash));
@@ -177,16 +199,27 @@ bool index_finish_chunk(zckCtx *zck) {
                             zck_hash_name_from_type(zck->index.hash_type));
             return false;
         }
+        digest_uncompressed = hash_finalize(zck, &(zck->work_index_hash_uncomp));
+        if(digest_uncompressed == NULL) {
+            set_fatal_error(zck, "Unable to calculate %s checksum for new chunk",
+                            zck_hash_name_from_type(zck->index.hash_type));
+            free(digest);
+            return false;
+        }
     } else {
         digest = zmalloc(zck->chunk_hash_type.digest_size);
+        digest_uncompressed = zmalloc(zck->chunk_hash_type.digest_size);
     }
-    if(!finish_chunk(&(zck->index), zck->work_index_item, digest, true, zck)) {
+    if(!finish_chunk(&(zck->index), zck->work_index_item, digest, digest_uncompressed, true, zck)) {
         free(digest);
+        free(digest_uncompressed);
         return false;
     }
 
     free(digest);
+    free(digest_uncompressed);
     zck->work_index_item = NULL;
     hash_close(&(zck->work_index_hash));
+    hash_close(&(zck->work_index_hash_uncomp));
     return true;
 }

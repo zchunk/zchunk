@@ -176,9 +176,14 @@ int main (int argc, char *argv[]) {
                 dprintf(STDERR_FILENO, "%s", zck_get_error(zck));
                 exit(1);
             }
-            printf("%12lu %s %12lu %12lu %12lu",
+            char *digest_uncompressed = zck_get_chunk_digest_uncompressed(chk);
+            if (!digest_uncompressed)
+                digest_uncompressed = "";
+
+            printf("%12lu %s %s %12lu %12lu %12lu",
                    (long unsigned)zck_get_chunk_number(chk),
                    digest,
+                   digest_uncompressed,
                    (long unsigned)zck_get_chunk_start(chk),
                    (long unsigned)zck_get_chunk_comp_size(chk),
                    (long unsigned)zck_get_chunk_size(chk));

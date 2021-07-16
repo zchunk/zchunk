@@ -158,6 +158,8 @@ static ssize_t comp_write(zckCtx *zck, const char *src, const size_t src_size) {
         free(dst);
         return -1;
     }
+    if(zck->has_uncompressed_source && !hash_update(zck, &(zck->work_index_hash_uncomp), src, src_size))
+        return -1;
     free(dst);
     return src_size;
 }

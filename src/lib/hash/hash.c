@@ -517,6 +517,16 @@ char PUBLIC *zck_get_chunk_digest(zckChunk *item) {
     return get_digest_string(item->digest, item->digest_size);
 }
 
+char PUBLIC *zck_get_chunk_digest_uncompressed(zckChunk *item) {
+    if(item == NULL)
+        return NULL;
+    if (!item->zck->has_uncompressed_source) {
+        return NULL;
+    }
+    return get_digest_string(item->digest_uncompressed, item->digest_size_uncompressed);
+}
+
+
 /* Returns 1 if all chunks are valid, -1 if even one isn't and 0 if error */
 int PUBLIC zck_find_valid_chunks(zckCtx *zck) {
     VALIDATE_READ_BOOL(zck);

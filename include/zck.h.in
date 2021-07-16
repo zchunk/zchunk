@@ -26,6 +26,7 @@ typedef enum zck_ioption {
     ZCK_HASH_CHUNK_TYPE,        /* Set chunk hash type using zck_hash */
     ZCK_VAL_HEADER_HASH_TYPE,   /* Set what the header hash type *should* be */
     ZCK_VAL_HEADER_LENGTH,      /* Set what the header length *should* be */
+    ZCK_UNCOMP_HEADER,          /* Header should contain uncompressed size, too */
     ZCK_COMP_TYPE = 100,        /* Set compression type using zck_comp */
     ZCK_MANUAL_CHUNK,           /* Disable auto-chunking */
     ZCK_CHUNK_MIN,              /* Minimum chunk size when manual chunking */
@@ -262,6 +263,9 @@ char *zck_get_chunk_digest(zckChunk *item)
     __attribute__ ((warn_unused_result));
 /* Get digest size of chunk hash type */
 ssize_t zck_get_chunk_digest_size(zckCtx *zck)
+    __attribute__ ((warn_unused_result));
+/* Get uncompressed chunk digest */
+char *zck_get_chunk_digest_uncompressed(zckChunk *item)
     __attribute__ ((warn_unused_result));
 /* Get chunk data */
 ssize_t zck_get_chunk_data(zckChunk *idx, char *dst, size_t dst_size)

@@ -85,6 +85,14 @@ bool index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
                             new);
         length += zck->index.digest_size;
 
+        /* Read uncompressed entry digest, if any */
+        if (zck->has_uncompressed_source) {
+            /* same size for digest as compressed */
+            new->digest_uncompressed = zmalloc(zck->index.digest_size);
+            memcpy(new->digest_uncompressed, data+length, zck->index.digest_size);
+            new->digest_size_uncompressed = zck->index.digest_size;
+            length += zck->index.digest_size;
+	}
         /* Read and store entry length */
         size_t chunk_length = 0;
         if(!compint_to_size(zck, &chunk_length, data+length, &length,

@@ -44,6 +44,10 @@ static bool check_flags(zckCtx *zck, size_t flags) {
     zck->has_optional_elems = flags & 2;
     if(zck->has_optional_elems)
         flags -= 2;
+    zck->has_uncompressed_source = flags & 4;
+    if(zck->has_uncompressed_source)
+        flags -= 4;
+
     flags = flags & (SIZE_MAX - 1);
     if(flags != 0) {
         set_fatal_error(zck, "Unknown flags(s) set");
@@ -177,13 +181,13 @@ static bool read_index(zckCtx *zck) {
     }
 
     char *header = NULL;
-    zck_log(ZCK_LOG_DEBUG, "Reading index");
     if(zck->lead_size + zck->preface_size + zck->index_size >
        zck->header_size) {
         set_fatal_error(zck, "Read past end of header");
         return false;
     }
     header = zck->header + zck->lead_size + zck->preface_size;
+    zck_log(ZCK_LOG_DEBUG, "Reading index at 0x%x", (unsigned long)(zck->lead_size + zck->preface_size));
     int max_length = zck->header_size - (zck->lead_size + zck->preface_size);
     if(!index_read(zck, header, zck->index_size, max_length))
         return false;
@@ -244,6 +248,8 @@ static bool preface_create(zckCtx *zck) {
     size_t flags = 0;
     if(zck->has_streams)
         flags &= 1;
+    if(zck->has_uncompressed_source)
+        flags |= 4;
     compint_from_size(header+length, flags, &length);
 
     /* Write out compression type and index size */

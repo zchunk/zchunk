@@ -113,6 +113,10 @@ int chunks_from_temp(zckCtx *zck) {
         return false;
 
     char *data = zmalloc(BUF_SIZE);
+    if (!data) {
+       zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+       return false;
+    }
 
     while((read_count = read(zck->temp_fd, data, BUF_SIZE)) > 0) {
         if(!write_data(zck, zck->fd, data, read_count)) {

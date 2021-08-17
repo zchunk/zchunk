@@ -102,6 +102,10 @@ static char *ascii_checksum_to_bin (zckCtx *zck, char *checksum,
     char *raw_checksum = zmalloc(checksum_length/2);
     char *rp = raw_checksum;
     int buf = 0;
+    if (!raw_checksum) {
+       zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+       return NULL;
+    }
     for (int i=0; i<checksum_length; i++) {
         // Get integer value of hex checksum character.  If -1 is returned, then
         // the character wasn't actually hex, so return NULL
@@ -122,13 +126,11 @@ static char *ascii_checksum_to_bin (zckCtx *zck, char *checksum,
 
 void *zmalloc(size_t size) {
     void *ret = calloc(1, size);
-    assert(ret);
     return ret;
 }
 
 void *zrealloc(void *ptr, size_t size) {
     void *ret = realloc(ptr, size);
-    assert(ret);
     return ret;
 }
 
@@ -148,6 +150,10 @@ int get_tmp_fd(zckCtx *zck) {
     }
 
     fname = zmalloc(strlen(template) + strlen(tmpdir) + 2);
+    if (!fname) {
+       zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+       return -ENOMEM;
+    }
     int i=0;
     for(i=0; i<strlen(tmpdir); i++)
         fname[i] = tmpdir[i];
@@ -188,6 +194,10 @@ bool import_dict(zckCtx *zck) {
 
     zck_log(ZCK_LOG_DEBUG, "Reading compression dict");
     char *data = zmalloc(size);
+    if (!data) {
+       zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+       return false;
+    }
     if(comp_read(zck, data, size, 0) != size) {
         set_error(zck, "Error reading compressed dict");
         return false;
@@ -208,6 +218,10 @@ bool PUBLIC zck_set_soption(zckCtx *zck, zck_soption option, const char *value,
                             size_t length) {
     VALIDATE_BOOL(zck);
     char *data = zmalloc(length);
+    if (!data) {
+       zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+       return false;
+    }
     memcpy(data, value, length);
 
     /* Validation options */
@@ -351,6 +365,10 @@ void PUBLIC zck_free(zckCtx **zck) {
 
 zckCtx PUBLIC *zck_create() {
     zckCtx *zck = zmalloc(sizeof(zckCtx));
+    if (!zck) {
+       zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+       return false;
+    }
     zck_clear_error(NULL);
     zck->prep_hash_type = -1;
     zck->prep_hdr_size = -1;

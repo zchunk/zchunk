@@ -37,6 +37,10 @@ static bool create_chunk(zckCtx *zck) {
 
     clear_work_index(zck);
     zck->work_index_item = zmalloc(sizeof(zckChunk));
+    if (!zck->work_index_item) {
+       zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+       return false;
+    }
     if(!hash_init(zck, &(zck->work_index_hash), &(zck->chunk_hash_type)) ||
       (!hash_init(zck, &(zck->work_index_hash_uncomp), &(zck->chunk_hash_type))))
         return false;
@@ -51,6 +55,11 @@ static bool finish_chunk(zckIndex *index, zckChunk *item, char *digest,
 
     item->digest = zmalloc(index->digest_size);
     item->digest_uncompressed = zmalloc(index->digest_size);
+    if (!item->digest || !item->digest_uncompressed) {
+       free(item->digest);
+       zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+       return false;
+    }
     if(digest) {
         memcpy(item->digest, digest, index->digest_size);
         item->digest_size = index->digest_size;
@@ -111,6 +120,10 @@ bool index_create(zckCtx *zck) {
 
     /* Write index */
     index = zmalloc(index_malloc);
+    if (!index) {
+       zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+       return false;
+    }
     compint_from_size(index+index_size, zck->index.hash_type, &index_size);
     compint_from_size(index+index_size, zck->index.count, &index_size);
     if(zck->index.first) {
@@ -155,6 +168,10 @@ bool index_new_chunk(zckCtx *zck, zckIndex *index, char *digest,
         return false;
     }
     zckChunk *chk = zmalloc(sizeof(zckChunk));
+    if (!chk) {
+       zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+       return false;
+    }
     index->digest_size = digest_size;
     chk->comp_length = comp_size;
     chk->length = orig_size;
@@ -209,6 +226,11 @@ bool index_finish_chunk(zckCtx *zck) {
     } else {
         digest = zmalloc(zck->chunk_hash_type.digest_size);
         digest_uncompressed = zmalloc(zck->chunk_hash_type.digest_size);
+        if (!digest || !digest_uncompressed) {
+           free(digest);
+           zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+           return false;
+        }
     }
     if(!finish_chunk(&(zck->index), zck->work_index_item, digest, digest_uncompressed, true, zck)) {
         free(digest);

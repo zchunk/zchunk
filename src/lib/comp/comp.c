@@ -394,6 +394,10 @@ bool comp_add_to_dc(zckCtx *zck, zckComp *comp, const char *src,
 
     /* Get rid of any already read data and allocate space for new data */
     char *temp = zmalloc(comp->dc_data_size - comp->dc_data_loc + src_size);
+    if (!temp) {
+        zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+        return false;
+    }
     if(comp->dc_data_loc != 0)
         zck_log(ZCK_LOG_DEBUG, "Freeing %lu bytes from decompressed buffer",
                 comp->dc_data_loc);
@@ -430,6 +434,10 @@ ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, bool use_dict) {
 
     size_t dc = 0;
     char *src = zmalloc(dst_size - dc);
+    if (!src) {
+        zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+        return false;
+    }
     bool finished_rd = false;
     bool finished_dc = false;
     zck_log(ZCK_LOG_DEBUG, "Trying to read %lu bytes", dst_size);

@@ -140,6 +140,10 @@ static bool end_cchunk(zckCtx *zck, zckComp *comp, char **dst, size_t *dst_size,
     }
 
     *dst = zmalloc(max_size);
+    if (!dst) {
+        zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+        return false;
+    }
 #ifdef OLD_ZSTD
     /* Currently, compression isn't deterministic when using contexts in
      * zstd 1.3.5, so this works around it */
@@ -205,6 +209,10 @@ static bool end_dchunk(zckCtx *zck, zckComp *comp, const bool use_dict,
     comp->data_size = 0;
 
     char *dst = zmalloc(fd_size);
+    if (!dst) {
+        zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+        return false;
+    }
     size_t retval = 0;
     zck_log(ZCK_LOG_DEBUG, "Decompressing %lu bytes to %lu bytes", src_size,
             fd_size);

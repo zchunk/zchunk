@@ -74,9 +74,18 @@ bool index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
 
         zckChunk *tmp = NULL;
         zckChunk *new = zmalloc(sizeof(zckChunk));
+        if (!new) {
+           zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+           return false;
+        }
 
         /* Read index entry digest */
         new->digest = zmalloc(zck->index.digest_size);
+        if (!new->digest) {
+           zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+           free(new);
+           return false;
+        }
         memcpy(new->digest, data+length, zck->index.digest_size);
         new->digest_size = zck->index.digest_size;
         HASH_FIND(hh, zck->index.ht, new->digest, new->digest_size, tmp);
@@ -89,6 +98,12 @@ bool index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
         if (zck->has_uncompressed_source) {
             /* same size for digest as compressed */
             new->digest_uncompressed = zmalloc(zck->index.digest_size);
+            if (!new->digest_uncompressed) {
+                free(new->digest);
+                free(new);
+                zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+                return false;
+            }
             memcpy(new->digest_uncompressed, data+length, zck->index.digest_size);
             new->digest_size_uncompressed = zck->index.digest_size;
             length += zck->index.digest_size;

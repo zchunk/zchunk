@@ -106,6 +106,10 @@ bool index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
             }
             memcpy(new->digest_uncompressed, data+length, zck->index.digest_size);
             new->digest_size_uncompressed = zck->index.digest_size;
+            HASH_FIND(hh, zck->index.ht, new->digest, new->digest_size, tmp);
+            if(!tmp)
+               HASH_ADD_KEYPTR(hhuncomp, zck->index_uncomp.ht, new->digest_uncompressed, new->digest_size,
+                               new);
             length += zck->index.digest_size;
 	}
         /* Read and store entry length */

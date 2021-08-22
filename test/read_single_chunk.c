@@ -69,7 +69,7 @@ int main (int argc, char *argv[]) {
         exit(1);
     }
     zckChunk *chunk1 = zck_get_chunk(zck, 1);
-    if(chunk == NULL) {
+    if(chunk1 == NULL) {
         printf("%s", zck_get_error(zck));
         zck_free(&zck);
         exit(1);

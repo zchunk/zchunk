@@ -37,7 +37,9 @@ static bool init(zckCtx *zck, zckComp *comp) {
     VALIDATE_BOOL(zck);
     ALLOCD_BOOL(zck, comp);
 
+#ifndef OLD_ZSTD
     size_t retval = 0;
+#endif
 
     comp->cctx = ZSTD_createCCtx();
 #ifndef OLD_ZSTD

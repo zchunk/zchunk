@@ -115,11 +115,13 @@ int chunks_from_temp(zckCtx *zck) {
     char *data = zmalloc(BUF_SIZE);
 
     while((read_count = read(zck->temp_fd, data, BUF_SIZE)) > 0) {
-        if(read_count == -1 || !write_data(zck, zck->fd, data, read_count)) {
+        if(!write_data(zck, zck->fd, data, read_count)) {
             free(data);
             return false;
         }
     }
     free(data);
+    if(read_count == -1)
+        return false;
     return true;
 }

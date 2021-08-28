@@ -230,7 +230,8 @@ int main (int argc, char *argv[]) {
     }
 
     if(arguments.uncompressed) {
-        if(!zck_set_ioption(zck, ZCK_UNCOMP_HEADER, 1)) {
+        if(!zck_set_ioption(zck, ZCK_UNCOMP_HEADER, 1) || 
+          (!zck_set_ioption(zck, ZCK_NO_MIN_CHUNKSIZE, 1))) {
             dprintf(STDERR_FILENO, "%s\n", zck_get_error(zck));
             exit(1);
         }

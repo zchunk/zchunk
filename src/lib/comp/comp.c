@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <unistd.h>
 #include <string.h>
 #include <math.h>
 #include <zck.h>
@@ -141,7 +142,7 @@ static ssize_t comp_end_dchunk(zckCtx *zck, bool use_dict, size_t fd_size) {
     return rb;
 }
 
-static ssize_t comp_write(zckCtx *zck, const char *src, const size_t src_size) {
+PUBLIC ssize_t comp_write(zckCtx *zck, const char *src, const size_t src_size) {
     VALIDATE_WRITE_INT(zck);
 
     if(src_size == 0)
@@ -542,28 +543,44 @@ hash_error:
     return -2;
 }
 
-const char PUBLIC *zck_comp_name_from_type(int comp_type) {
-    if(comp_type > 2) {
-        snprintf(unknown+8, 21, "%i)", comp_type);
-        return unknown;
-    }
-    return COMP_NAME[comp_type];
-}
-
-ssize_t PUBLIC zck_write(zckCtx *zck, const char *src, const size_t src_size) {
+static ssize_t _zck_write(zckCtx *zck, const char *src, int src_fd, const size_t src_size, bool inmemory) {
     VALIDATE_WRITE_INT(zck);
+    char *loc, *buf;
+    ssize_t bytesinbuf = 0; /* Bytes available in buffer, used to check if file is truncated */
+    size_t bufsize = 2 * CHUNK_DEFAULT_MAX;
 
     zck_log(ZCK_LOG_DDEBUG, "Starting up");
 
     if(src_size == 0)
         return 0;
-
     if(!zck->comp.started && !comp_init(zck))
         return -1;
 
+    if (zck->chunk_max_size)
+        bufsize = 2 * zck->chunk_max_size;
+    if(!inmemory && zck->manual_chunk) {
+        zck_log(ZCK_LOG_ERROR, "Manual chunk only for in RAM files");
+        return -1;
+    }
+    if (inmemory) {
+    	loc = (char *)src;
+    } else {
+        buf = zmalloc(bufsize);
+        if (!buf) {
+            zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+            return -1;
+        }
+        loc = buf;
+        bytesinbuf = read(src_fd, loc, bufsize);
+        if (bytesinbuf < 0) {
+            zck_log(ZCK_LOG_ERROR, "Reading from src file fails");
+            free(buf);
+            return -1;
+        }
+    }
+
     zck_log(ZCK_LOG_DDEBUG, "Starting up");
 
-    const char *loc = src;
     size_t loc_size = src_size;
     size_t loc_written = 0;
     uint32_t buzhash_res;
@@ -586,6 +603,7 @@ ssize_t PUBLIC zck_write(zckCtx *zck, const char *src, const size_t src_size) {
             return src_size;
     } else {
         for(size_t i=0; i<loc_size; ) {
+	    size_t pos;
             if (!buzhash_update(&(zck->buzhash), loc+i, zck->buzhash_width, &buzhash_res)) {
                 zck_log(ZCK_LOG_ERROR, "OOM in buzhash_update");
                 return -1;
@@ -597,6 +615,7 @@ ssize_t PUBLIC zck_write(zckCtx *zck, const char *src, const size_t src_size) {
                     return -1;
                 loc += i;
                 loc_size -= i;
+		pos = i;
                 i = 0;
                 if(zck->comp.dc_data_size >= zck->chunk_max_size)
                     zck_log(ZCK_LOG_DDEBUG,
@@ -611,7 +630,27 @@ ssize_t PUBLIC zck_write(zckCtx *zck, const char *src, const size_t src_size) {
                 }
                 if(zck_end_chunk(zck) < 0)
                     return -1;
-            } else {
+
+                if (!inmemory) {
+	            size_t bytes_avail = bytesinbuf - pos;
+                    memcpy(buf, loc, bytes_avail);
+                    bytesinbuf = read(src_fd, buf + bytes_avail, bufsize - bytes_avail); 
+                    if (bytesinbuf < 0) {
+                        zck_log(ZCK_LOG_ERROR, "Reading from src file fails");
+                        free(buf);
+                        return -1;
+                    }
+		    /*
+		     * Reach EOF, checks we have all requested bytes
+		     */
+                    if ((bytesinbuf + bytes_avail != bufsize) &&
+                        (bytesinbuf + bytes_avail != loc_size)) {
+                        zck_log(ZCK_LOG_ERROR, "Less bytes as required bytesinbuf %lu bytesavail %lu loc_size %lu src_size %lu", bytesinbuf, bytes_avail, loc_size, src_size);
+                    }
+                    bytesinbuf += bytes_avail;
+                    loc = buf;
+                }
+	    } else {
                 i++;
             }
         }
@@ -619,6 +658,22 @@ ssize_t PUBLIC zck_write(zckCtx *zck, const char *src, const size_t src_size) {
             return -1;
         return src_size;
     }
+}
+
+const char PUBLIC *zck_comp_name_from_type(int comp_type) {
+    if(comp_type > 2) {
+        snprintf(unknown+8, 21, "%i)", comp_type);
+        return unknown;
+    }
+    return COMP_NAME[comp_type];
+}
+
+ssize_t PUBLIC zck_write(zckCtx *zck, const char *src, const size_t src_size) {
+    return _zck_write(zck, src, -1, src_size, true);
+}
+
+ssize_t PUBLIC zck_write_from_fd(zckCtx *zck, int fd, const size_t src_size) {
+    return _zck_write(zck, NULL, fd, src_size, false);
 }
 
 ssize_t PUBLIC zck_end_chunk(zckCtx *zck) {

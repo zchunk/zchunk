@@ -566,6 +566,7 @@ ssize_t PUBLIC zck_write(zckCtx *zck, const char *src, const size_t src_size) {
     const char *loc = src;
     size_t loc_size = src_size;
     size_t loc_written = 0;
+    uint32_t buzhash_res;
 
     if(zck->manual_chunk) {
         while(zck->comp.dc_data_size + loc_size > zck->chunk_max_size) {
@@ -585,8 +586,12 @@ ssize_t PUBLIC zck_write(zckCtx *zck, const char *src, const size_t src_size) {
             return src_size;
     } else {
         for(size_t i=0; i<loc_size; ) {
-            if((buzhash_update(&(zck->buzhash), loc+i, zck->buzhash_width) &
-                zck->buzhash_bitmask) == 0 ||
+            if (!buzhash_update(&(zck->buzhash), loc+i, zck->buzhash_width, &buzhash_res)) {
+                zck_log(ZCK_LOG_ERROR, "OOM in buzhash_update");
+                return -1;
+            }
+
+            if((buzhash_res & zck->buzhash_bitmask) == 0 ||
                zck->comp.dc_data_size + i >= zck->chunk_auto_max) {
                 if(comp_write(zck, loc, i) != i)
                     return -1;

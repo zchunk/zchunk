@@ -174,6 +174,10 @@ char PUBLIC *zck_get_range_char(zckCtx *zck, zckRange *range) {
         if(length > buf_size-loc) {
             buf_size = (int)(buf_size * 1.5);
             output = zrealloc(output, buf_size);
+            if (!output) {
+                zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+                return output;
+            }
             continue;
         }
         loc += length;

@@ -120,6 +120,10 @@ size_t multipart_extract(zckDL *dl, char *b, size_t l) {
     /* Add new data to stored buffer */
     if(mp->buffer) {
         buf = zrealloc(mp->buffer, mp->buffer_len + l);
+        if (!buf) {
+            zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+            return 0;
+        }
         memcpy(buf + mp->buffer_len, b, l);
         l = mp->buffer_len + l;
         mp->buffer = NULL;  // No need to free, buf holds realloc'd buffer

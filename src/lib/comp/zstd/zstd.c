@@ -118,6 +118,10 @@ static ssize_t compress(zckCtx *zck, zckComp *comp, const char *src,
     ALLOCD_INT(zck, comp);
 
     comp->dc_data = zrealloc(comp->dc_data, comp->dc_data_size + src_size);
+    if (!comp->dc_data) {
+        zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+        return -1;
+    }
 
     memcpy(comp->dc_data + comp->dc_data_size, src, src_size);
     *dst = NULL;

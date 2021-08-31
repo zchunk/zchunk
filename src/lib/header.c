@@ -65,6 +65,10 @@ static bool read_optional_element(zckCtx *zck, size_t id, size_t data_size,
 static bool read_header_from_file(zckCtx *zck) {
     /* Allocate header and store any extra bytes at beginning of header */
     zck->header = zrealloc(zck->header, zck->lead_size + zck->header_length);
+    if (!zck->header) {
+        zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+        return false;
+    }
     zck->lead_string = zck->header;
     char *header = zck->header + zck->lead_size;
     size_t loaded = 0;
@@ -269,6 +273,10 @@ static bool preface_create(zckCtx *zck) {
 
     /* Shrink header to actual size */
     header = zrealloc(header, length);
+    if (!header) {
+        zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+        return false;
+    }
 
     zck->preface_string = header;
     zck->preface_size = length;
@@ -321,6 +329,10 @@ static bool lead_create(zckCtx *zck) {
     length += zck->hash_type.digest_size;
 
     header = zrealloc(header, length);
+    if (!header) {
+        zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+        return false;
+    }
 
     zck->lead_string = header;
     zck->lead_size = length;
@@ -477,6 +489,10 @@ static bool read_lead(zckCtx *zck) {
     /* Read header digest */
     zck_log(ZCK_LOG_DEBUG, "Reading header digest");
     header = zrealloc(header, length + zck->hash_type.digest_size);
+    if (!header) {
+        zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+        return false;
+    }
     size_t to_read = 0;
     if(lead < length + zck->hash_type.digest_size)
         to_read = length + zck->hash_type.digest_size - lead;

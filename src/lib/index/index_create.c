@@ -148,6 +148,10 @@ bool index_create(zckCtx *zck) {
     }
     /* Shrink index to actual size */
     index = zrealloc(index, index_size);
+    if (!index) {
+        zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+        return false;
+    }
     zck->index_string = index;
     zck->index_size = index_size;
     zck_log(ZCK_LOG_DEBUG, "Generated index: %lu bytes", zck->index_size);

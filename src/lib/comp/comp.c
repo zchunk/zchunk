@@ -116,6 +116,10 @@ static bool comp_add_to_data(zckCtx *zck, zckComp *comp, const char *src,
     ALLOCD_BOOL(zck, src);
 
     comp->data = zrealloc(comp->data, comp->data_size + src_size);
+    if (!comp->data) {
+        zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+        return false;
+    }
     zck_log(ZCK_LOG_DEBUG, "Adding %lu bytes to compressed buffer",
         src_size);
     memcpy(comp->data + comp->data_size, src, src_size);

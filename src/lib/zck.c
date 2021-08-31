@@ -131,6 +131,12 @@ void *zmalloc(size_t size) {
 
 void *zrealloc(void *ptr, size_t size) {
     void *ret = realloc(ptr, size);
+    /*
+     * Realloc does not touch the original block if fails.
+     * Policy is to free memory and returns with error (Null)
+     */
+    if (!ret && ptr)
+        free(ptr);
     return ret;
 }
 

@@ -83,6 +83,8 @@ bool zck_init_write (zckCtx *zck, int dst_fd)
  * actually appear in the zchunk file until zck_close() is called */
 ssize_t zck_write(zckCtx *zck, const char *src, const size_t src_size)
     __attribute__ ((warn_unused_result));
+ssize_t zck_write_from_fd(zckCtx *zck, int fd, const size_t src_size)
+    __attribute__ ((warn_unused_result));
 /* Create a chunk boundary */
 ssize_t zck_end_chunk(zckCtx *zck)
     __attribute__ ((warn_unused_result));

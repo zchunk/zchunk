@@ -44,6 +44,10 @@ static bool check_flags(zckCtx *zck, size_t flags) {
     zck->has_optional_elems = flags & 2;
     if(zck->has_optional_elems)
         flags -= 2;
+    zck->has_uncompressed_source = flags & 4;
+    if(zck->has_uncompressed_source)
+        flags -= 4;
+
     flags = flags & (SIZE_MAX - 1);
     if(flags != 0) {
         set_fatal_error(zck, "Unknown flags(s) set");
@@ -61,6 +65,10 @@ static bool read_optional_element(zckCtx *zck, size_t id, size_t data_size,
 static bool read_header_from_file(zckCtx *zck) {
     /* Allocate header and store any extra bytes at beginning of header */
     zck->header = zrealloc(zck->header, zck->lead_size + zck->header_length);
+    if (!zck->header) {
+        zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+        return false;
+    }
     zck->lead_string = zck->header;
     char *header = zck->header + zck->lead_size;
     size_t loaded = 0;
@@ -116,6 +124,10 @@ static bool read_preface(zckCtx *zck) {
         return false;
     }
     zck->full_hash_digest = zmalloc(zck->hash_type.digest_size);
+    if (!zck->full_hash_digest) {
+	    zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+	    return false;
+    }
     memcpy(zck->full_hash_digest, header+length, zck->hash_type.digest_size);
     length += zck->hash_type.digest_size;
 
@@ -177,13 +189,13 @@ static bool read_index(zckCtx *zck) {
     }
 
     char *header = NULL;
-    zck_log(ZCK_LOG_DEBUG, "Reading index");
     if(zck->lead_size + zck->preface_size + zck->index_size >
        zck->header_size) {
         set_fatal_error(zck, "Read past end of header");
         return false;
     }
     header = zck->header + zck->lead_size + zck->preface_size;
+    zck_log(ZCK_LOG_DEBUG, "Reading index at 0x%x", (unsigned long)(zck->lead_size + zck->preface_size));
     int max_length = zck->header_size - (zck->lead_size + zck->preface_size);
     if(!index_read(zck, header, zck->index_size, max_length))
         return false;
@@ -234,6 +246,10 @@ static bool preface_create(zckCtx *zck) {
     int header_malloc = zck->hash_type.digest_size + 4 + 2*MAX_COMP_SIZE;
 
     char *header = zmalloc(header_malloc);
+    if (!header) {
+	    zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+	    return false;
+    }
     size_t length = 0;
 
     /* Write out the full data digest */
@@ -244,6 +260,8 @@ static bool preface_create(zckCtx *zck) {
     size_t flags = 0;
     if(zck->has_streams)
         flags &= 1;
+    if(zck->has_uncompressed_source)
+        flags |= 4;
     compint_from_size(header+length, flags, &length);
 
     /* Write out compression type and index size */
@@ -255,6 +273,10 @@ static bool preface_create(zckCtx *zck) {
 
     /* Shrink header to actual size */
     header = zrealloc(header, length);
+    if (!header) {
+        zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+        return false;
+    }
 
     zck->preface_string = header;
     zck->preface_size = length;
@@ -266,6 +288,10 @@ static bool sig_create(zckCtx *zck) {
     char *header = zmalloc(MAX_COMP_SIZE);
     size_t length = 0;
 
+    if (!header) {
+	    zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+	    return false;
+    }
     zck_log(ZCK_LOG_DEBUG, "Calculating %i signatures", zck->sigs.count);
 
     /* Write out signature count and signatures */
@@ -289,6 +315,10 @@ static bool lead_create(zckCtx *zck) {
     memcpy(header, "\0ZCK1", 5);
     length += 5;
 
+    if (!header) {
+	    zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+	    return false;
+    }
     /* Write out full data and header hash type */
     compint_from_size(header + length, zck->hash_type.type, &length);
     /* Write out header length */
@@ -299,6 +329,10 @@ static bool lead_create(zckCtx *zck) {
     length += zck->hash_type.digest_size;
 
     header = zrealloc(header, length);
+    if (!header) {
+        zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+        return false;
+    }
 
     zck->lead_string = header;
     zck->lead_size = length;
@@ -339,6 +373,10 @@ bool header_create(zckCtx *zck) {
     zck_log(ZCK_LOG_DEBUG, "Merging into header: %lu bytes",
             zck->data_offset);
     zck->header = zmalloc(zck->data_offset);
+    if (!zck->header) {
+	    zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+	    return false;
+    }
     size_t offs = 0;
     memcpy(zck->header + offs, zck->lead_string, zck->lead_size);
     free(zck->lead_string);
@@ -398,6 +436,10 @@ static bool read_lead(zckCtx *zck) {
     int lead = 5 + 2*MAX_COMP_SIZE;
 
     char *header = zmalloc(lead);
+    if (!header) {
+	    zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+	    return false;
+    }
     size_t length = 0;
 
     if(read_data(zck, header, lead) < lead) {
@@ -447,6 +489,10 @@ static bool read_lead(zckCtx *zck) {
     /* Read header digest */
     zck_log(ZCK_LOG_DEBUG, "Reading header digest");
     header = zrealloc(header, length + zck->hash_type.digest_size);
+    if (!header) {
+        zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+        return false;
+    }
     size_t to_read = 0;
     if(lead < length + zck->hash_type.digest_size)
         to_read = length + zck->hash_type.digest_size - lead;
@@ -475,6 +521,11 @@ static bool read_lead(zckCtx *zck) {
         return false;
     }
     zck->header_digest = zmalloc(zck->hash_type.digest_size);
+    if (!zck->header_digest) {
+	    zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+	    free(header);
+	    return false;
+    }
     memcpy(zck->header_digest, header + length, zck->hash_type.digest_size);
     length += zck->hash_type.digest_size;
 

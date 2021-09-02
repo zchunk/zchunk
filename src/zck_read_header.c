@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 #include <stdbool.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -167,8 +168,6 @@ int main (int argc, char *argv[]) {
     if(!arguments.quiet && arguments.show_chunks)
         printf("\n");
     if(arguments.show_chunks) {
-        printf("       Chunk Checksum %*c        Start    Comp size         Size\n",
-               (((int)zck_get_chunk_digest_size(zck)*2)-9), ' ');
         for(zckChunk *chk=zck_get_first_chunk(zck); chk;
             chk=zck_get_next_chunk(chk)) {
             char *digest = zck_get_chunk_digest(chk);
@@ -176,9 +175,25 @@ int main (int argc, char *argv[]) {
                 dprintf(STDERR_FILENO, "%s", zck_get_error(zck));
                 exit(1);
             }
-            printf("%12lu %s %12lu %12lu %12lu",
+            char *digest_uncompressed = zck_get_chunk_digest_uncompressed(chk);
+            if (!digest_uncompressed)
+                digest_uncompressed = "";
+
+	    if (chk == zck_get_first_chunk(zck)) {
+		    bool has_uncompressed = (strlen(digest_uncompressed) > 0);
+		    if (has_uncompressed)
+                        printf("       Chunk Checksum %*cChecksum uncompressed %*c       Start    Comp size         Size\n",
+                           (((int)zck_get_chunk_digest_size(zck) * 2) - (int)strlen("Checksum")), ' ',
+                           ((int)zck_get_chunk_digest_size(zck) * 2) - (int)strlen("Uncompressed Checksum"), ' ');
+                    else
+                        printf("       Chunk Checksum %*c        Start    Comp size         Size\n",
+                              (((int)zck_get_chunk_digest_size(zck) * 2) - (int)strlen("Checksum")), ' ');
+
+	    }
+            printf("%12lu %s %s %12lu %12lu %12lu",
                    (long unsigned)zck_get_chunk_number(chk),
                    digest,
+                   digest_uncompressed,
                    (long unsigned)zck_get_chunk_start(chk),
                    (long unsigned)zck_get_chunk_comp_size(chk),
                    (long unsigned)zck_get_chunk_size(chk));

@@ -100,11 +100,13 @@ const uint32_t buzhash_table[] = {
     0x7bf7cabc, 0xf9c18d66, 0x593ade65, 0xd95ddf11,
 };
 
-uint32_t buzhash_update (buzHash *b, const char *s, size_t window) {
+bool buzhash_update (buzHash *b, const char *s, size_t window, uint32_t *output) {
     if(b->window == NULL || b->window_size != window) {
         if(b->window)
             free(b->window);
         b->window = calloc(1, window);
+        if (!b->window)
+            return false;
         assert(b->window);
         b->window_loc = 0;
         b->window_fill = 0;
@@ -116,10 +118,12 @@ uint32_t buzhash_update (buzHash *b, const char *s, size_t window) {
         b->window_fill++;
         if(b->window_fill < b->window_size) {
             b->h ^= rol32 (buzhash_table[(uint8_t) (*s)], window - b->window_fill);
-            return 1;
+            *output = 1;
+            return true;
         } else {
             b->h ^= buzhash_table[(uint8_t) (*s)];
-            return b->h;
+            *output = b->h;
+            return true;
         }
     }
     b->h = rol32 (b->h, 1) ^
@@ -127,7 +131,8 @@ uint32_t buzhash_update (buzHash *b, const char *s, size_t window) {
            buzhash_table[(uint8_t) *s];
     b->window[b->window_loc++] = *s;
     b->window_loc %= b->window_size;
-    return b->h;
+    *output = b->h;
+    return true;
 }
 
 void buzhash_reset (buzHash *b) {

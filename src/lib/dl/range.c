@@ -42,6 +42,10 @@ static zckRangeItem *range_insert_new(zckCtx *zck, zckRangeItem *prev,
     VALIDATE_PTR(zck);
 
     zckRangeItem *new = zmalloc(sizeof(zckRangeItem));
+    if (!new) {
+       zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+       return NULL;
+    }
     new->start = start;
     new->end = end;
     if(prev) {
@@ -54,7 +58,7 @@ static zckRangeItem *range_insert_new(zckCtx *zck, zckRangeItem *prev,
     }
     if(add_index)
         if(!index_new_chunk(zck, &(info->index), idx->digest, idx->digest_size,
-                            end-start+1, end-start+1, idx, false)) {
+                            idx->digest_uncompressed, end-start+1, end-start+1, idx, false)) {
             free(new);
             return NULL;
         }
@@ -151,6 +155,10 @@ void PUBLIC zck_range_free(zckRange **info) {
 char PUBLIC *zck_get_range_char(zckCtx *zck, zckRange *range) {
     int buf_size = BUF_SIZE;
     char *output = zmalloc(buf_size);
+    if (!output) {
+       zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+       return NULL;
+    }
     int loc = 0;
     int count = 0;
     zckRangeItem *ri = range->first;
@@ -166,6 +174,10 @@ char PUBLIC *zck_get_range_char(zckCtx *zck, zckRange *range) {
         if(length > buf_size-loc) {
             buf_size = (int)(buf_size * 1.5);
             output = zrealloc(output, buf_size);
+            if (!output) {
+                zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+                return output;
+            }
             continue;
         }
         loc += length;
@@ -181,6 +193,10 @@ zckRange PUBLIC *zck_get_missing_range(zckCtx *zck, int max_ranges) {
     VALIDATE_PTR(zck);
 
     zckRange *range = zmalloc(sizeof(zckRange));
+    if (!range) {
+       zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+       return NULL;
+    }
     for(zckChunk *chk = zck->index.first; chk; chk = chk->next) {
         if(chk->valid)
             continue;

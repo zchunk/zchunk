@@ -146,6 +146,10 @@ static int validate_checksums(zckCtx *zck, zck_log_type bad_checksums) {
 char *get_digest_string(const char *digest, int size) {
     char *str = zmalloc(size*2+1);
 
+    if (!str) {
+       zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+       return NULL;
+    }
     for(int i=0; i<size; i++)
         snprintf(str + i*2, 3, "%02x", (unsigned char)digest[i]);
     return str;
@@ -212,12 +216,20 @@ bool hash_init(zckCtx *zck, zckHash *hash, zckHashType *hash_type) {
     if(hash_type->type == ZCK_HASH_SHA1) {
         zck_log(ZCK_LOG_DDEBUG, "Initializing SHA-1 hash");
         hash->ctx = zmalloc(sizeof(SHA_CTX));
+        if (!hash->ctx) {
+           zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+           return false;
+        }
         hash->type = hash_type;
         SHA1_Init((SHA_CTX *) hash->ctx);
         return true;
     } else if(hash_type->type == ZCK_HASH_SHA256) {
         zck_log(ZCK_LOG_DDEBUG, "Initializing SHA-256 hash");
         hash->ctx = zmalloc(sizeof(SHA256_CTX));
+        if (!hash->ctx) {
+           zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+           return false;
+        }
         hash->type = hash_type;
         SHA256_Init((SHA256_CTX *) hash->ctx);
         return true;
@@ -225,6 +237,10 @@ bool hash_init(zckCtx *zck, zckHash *hash, zckHashType *hash_type) {
               hash_type->type <= ZCK_HASH_SHA512_128) {
         zck_log(ZCK_LOG_DDEBUG, "Initializing SHA-512 hash");
         hash->ctx = zmalloc(sizeof(SHA512_CTX));
+        if (!hash->ctx) {
+           zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+           return false;
+        }
         hash->type = hash_type;
         SHA512_Init((SHA512_CTX *) hash->ctx);
         return true;
@@ -279,17 +295,29 @@ char *hash_finalize(zckCtx *zck, zckHash *hash) {
     }
     if(hash->type->type == ZCK_HASH_SHA1) {
         unsigned char *digest = zmalloc(SHA1_DIGEST_LENGTH);
+        if (!digest) {
+           zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+           return false;
+        }
         SHA1_Final((sha1_byte*)digest, (SHA_CTX *)hash->ctx);
         hash_close(hash);
         return (char *)digest;
     } else if(hash->type->type == ZCK_HASH_SHA256) {
         unsigned char *digest = zmalloc(SHA256_DIGEST_SIZE);
+        if (!digest) {
+           zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+           return false;
+        }
         SHA256_Final(digest, (SHA256_CTX *)hash->ctx);
         hash_close(hash);
         return (char *)digest;
     } else if(hash->type->type >= ZCK_HASH_SHA512 &&
               hash->type->type <= ZCK_HASH_SHA512_128) {
         unsigned char *digest = zmalloc(SHA512_DIGEST_SIZE);
+        if (!digest) {
+           zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+           return false;
+        }
         SHA512_Final(digest, (SHA512_CTX *)hash->ctx);
         hash_close(hash);
         return (char *)digest;
@@ -516,6 +544,16 @@ char PUBLIC *zck_get_chunk_digest(zckChunk *item) {
         return NULL;
     return get_digest_string(item->digest, item->digest_size);
 }
+
+char PUBLIC *zck_get_chunk_digest_uncompressed(zckChunk *item) {
+    if(item == NULL)
+        return NULL;
+    if (!item->zck->has_uncompressed_source) {
+        return NULL;
+    }
+    return get_digest_string(item->digest_uncompressed, item->digest_size_uncompressed);
+}
+
 
 /* Returns 1 if all chunks are valid, -1 if even one isn't and 0 if error */
 int PUBLIC zck_find_valid_chunks(zckCtx *zck) {

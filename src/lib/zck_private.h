@@ -150,6 +150,8 @@ struct zckDL {
 struct zckChunk {
     char *digest;
     int digest_size;
+    char *digest_uncompressed;
+    int digest_size_uncompressed;
     int valid;
     size_t number;
     size_t start;
@@ -159,6 +161,7 @@ struct zckChunk {
     struct zckChunk *src;
     zckCtx *zck;
     UT_hash_handle hh;
+    UT_hash_handle hhuncomp;
 };
 
 /* Contains everything about an index and a pointer to the first index item */
@@ -262,9 +265,14 @@ struct zckCtx {
     zckIndex index;
     zckChunk *work_index_item;
     zckHash work_index_hash;
+    zckIndex index_uncomp;
+    zckChunk *work_index_item_uncomp;
+    zckHash work_index_hash_uncomp;
     size_t stream;
     int has_streams;
     int has_optional_elems;
+    int has_uncompressed_source;
+    int no_check_min_size;
 
     char *read_buf;
     size_t read_buf_size;
@@ -340,7 +348,7 @@ bool index_read(zckCtx *zck, char *data, size_t size, size_t max_length)
 bool index_create(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 bool index_new_chunk(zckCtx *zck, zckIndex *index, char *digest, int digest_size,
-                     size_t comp_size, size_t orig_size, zckChunk *src, bool valid)
+                     char* digest_uncompressed, size_t comp_size, size_t orig_size, zckChunk *src, bool valid)
     __attribute__ ((warn_unused_result));
 bool index_add_to_chunk(zckCtx *zck, char *data, size_t comp_size,
                         size_t orig_size)

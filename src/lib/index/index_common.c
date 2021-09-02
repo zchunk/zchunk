@@ -89,6 +89,7 @@ void clear_work_index(zckCtx *zck) {
         return;
 
     hash_close(&(zck->work_index_hash));
+    hash_close(&(zck->work_index_hash_uncomp));
     if(zck->work_index_item)
         index_free_item(&(zck->work_index_item));
 }

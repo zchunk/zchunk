@@ -57,6 +57,8 @@ static struct argp_option options[] = {
      "Set zstd compression dictionary to FILE"},
     {"manual-chunk", 'm', 0,        0,
      "Don't do any automatic chunking (implies -s)"},
+    {"uncompressed", 'u', 0,        0,
+     "Add extension in header for uncompressed data"},
     {"version",      'V', 0,        0, "Show program version"},
     { 0 }
 };
@@ -69,6 +71,7 @@ struct arguments {
   char *output;
   char *dict;
   bool exit;
+  bool uncompressed;
 };
 
 static error_t parse_opt (int key, char *arg, struct argp_state *state) {
@@ -94,6 +97,9 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
             break;
         case 'D':
             arguments->dict = arg;
+            break;
+        case 'u':
+            arguments->uncompressed = true;
             break;
         case 'V':
             version();
@@ -223,6 +229,13 @@ int main (int argc, char *argv[]) {
         }
     }
 
+    if(arguments.uncompressed) {
+        if(!zck_set_ioption(zck, ZCK_UNCOMP_HEADER, 1) || 
+          (!zck_set_ioption(zck, ZCK_NO_MIN_CHUNKSIZE, 1))) {
+            dprintf(STDERR_FILENO, "%s\n", zck_get_error(zck));
+            exit(1);
+        }
+    }
     char *data;
     int in_fd = open(arguments.args[0], O_RDONLY);
     off_t in_size = 0;

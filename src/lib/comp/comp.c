@@ -116,6 +116,10 @@ static bool comp_add_to_data(zckCtx *zck, zckComp *comp, const char *src,
     ALLOCD_BOOL(zck, src);
 
     comp->data = zrealloc(comp->data, comp->data_size + src_size);
+    if (!comp->data) {
+        zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+        return false;
+    }
     zck_log(ZCK_LOG_DEBUG, "Adding %lu bytes to compressed buffer",
         src_size);
     memcpy(comp->data + comp->data_size, src, src_size);
@@ -158,6 +162,8 @@ static ssize_t comp_write(zckCtx *zck, const char *src, const size_t src_size) {
         free(dst);
         return -1;
     }
+    if(zck->has_uncompressed_source && !hash_update(zck, &(zck->work_index_hash_uncomp), src, src_size))
+        return -1;
     free(dst);
     return src_size;
 }
@@ -392,6 +398,10 @@ bool comp_add_to_dc(zckCtx *zck, zckComp *comp, const char *src,
 
     /* Get rid of any already read data and allocate space for new data */
     char *temp = zmalloc(comp->dc_data_size - comp->dc_data_loc + src_size);
+    if (!temp) {
+        zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+        return false;
+    }
     if(comp->dc_data_loc != 0)
         zck_log(ZCK_LOG_DEBUG, "Freeing %lu bytes from decompressed buffer",
                 comp->dc_data_loc);
@@ -428,6 +438,10 @@ ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, bool use_dict) {
 
     size_t dc = 0;
     char *src = zmalloc(dst_size - dc);
+    if (!src) {
+        zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+        return false;
+    }
     bool finished_rd = false;
     bool finished_dc = false;
     zck_log(ZCK_LOG_DEBUG, "Trying to read %lu bytes", dst_size);
@@ -552,6 +566,7 @@ ssize_t PUBLIC zck_write(zckCtx *zck, const char *src, const size_t src_size) {
     const char *loc = src;
     size_t loc_size = src_size;
     size_t loc_written = 0;
+    uint32_t buzhash_res;
 
     if(zck->manual_chunk) {
         while(zck->comp.dc_data_size + loc_size > zck->chunk_max_size) {
@@ -571,8 +586,12 @@ ssize_t PUBLIC zck_write(zckCtx *zck, const char *src, const size_t src_size) {
             return src_size;
     } else {
         for(size_t i=0; i<loc_size; ) {
-            if((buzhash_update(&(zck->buzhash), loc+i, zck->buzhash_width) &
-                zck->buzhash_bitmask) == 0 ||
+            if (!buzhash_update(&(zck->buzhash), loc+i, zck->buzhash_width, &buzhash_res)) {
+                zck_log(ZCK_LOG_ERROR, "OOM in buzhash_update");
+                return -1;
+            }
+
+            if((buzhash_res & zck->buzhash_bitmask) == 0 ||
                zck->comp.dc_data_size + i >= zck->chunk_auto_max) {
                 if(comp_write(zck, loc, i) != i)
                     return -1;
@@ -585,7 +604,7 @@ ssize_t PUBLIC zck_write(zckCtx *zck, const char *src, const size_t src_size) {
                             "chunk");
                 else
                     zck_log(ZCK_LOG_DDEBUG, "Automatically ending chunk");
-                if(zck->comp.dc_data_size < zck->chunk_auto_min) {
+                if(!zck->no_check_min_size && zck->comp.dc_data_size < zck->chunk_auto_min) {
                     zck_log(ZCK_LOG_DDEBUG,
                             "Chunk too small, refusing to end chunk");
                     continue;
@@ -608,7 +627,7 @@ ssize_t PUBLIC zck_end_chunk(zckCtx *zck) {
     if(!zck->comp.started && !comp_init(zck))
         return -1;
 
-    if(zck->comp.dc_data_size < zck->chunk_min_size) {
+    if(!zck->no_check_min_size && zck->comp.dc_data_size < zck->chunk_min_size) {
         zck_log(ZCK_LOG_DDEBUG, "Chunk too small, refusing to end chunk");
         return zck->comp.dc_data_size;
     }

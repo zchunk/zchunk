@@ -65,6 +65,10 @@ void set_error_wf(zckCtx *zck, int fatal, const char *function,
         zck->msg = zmalloc(size + old_size + 3);
     else
         zck->msg = zmalloc(size + 2);
+    if (!zck->msg) {
+       zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+       return;
+    }
     va_start(args, format);
     vsnprintf(zck->msg, size + 1, format, args);
     va_end(args);

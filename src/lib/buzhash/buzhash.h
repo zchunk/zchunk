@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 typedef struct buzHash {
     uint32_t h;
@@ -13,7 +14,7 @@ typedef struct buzHash {
     int window_fill;
 } buzHash;
 
-uint32_t buzhash_update (buzHash *b, const char *s, size_t window);
+bool buzhash_update (buzHash *b, const char *s, size_t window, uint32_t *output);
 void buzhash_reset (buzHash *b);
 
 #endif

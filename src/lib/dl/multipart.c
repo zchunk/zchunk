@@ -41,7 +41,7 @@ static char *add_boundary_to_regex(zckCtx *zck, const char *regex,
     if(regex == NULL || boundary == NULL)
         return NULL;
     char *regex_b = zmalloc(strlen(regex) + strlen(boundary) + 1);
-    if(snprintf(regex_b, strlen(regex) + strlen(boundary), regex,
+    if(!regex_b || snprintf(regex_b, strlen(regex) + strlen(boundary), regex,
                 boundary) != strlen(regex) + strlen(boundary) - 2) {
         free(regex_b);
         set_error(zck, "Unable to build regular expression");
@@ -81,7 +81,7 @@ static bool gen_regex(zckDL *dl) {
     if(regex_n == NULL)
         return false;
     dl->dl_regex = zmalloc(sizeof(regex_t));
-    if(!create_regex(dl->zck, dl->dl_regex, regex_n)) {
+    if(!dl->dl_regex || !create_regex(dl->zck, dl->dl_regex, regex_n)) {
         free(regex_n);
         return false;
     }
@@ -90,7 +90,7 @@ static bool gen_regex(zckDL *dl) {
     if(regex_e == NULL)
         return false;
     dl->end_regex = zmalloc(sizeof(regex_t));
-    if(!create_regex(dl->zck, dl->end_regex, regex_e)) {
+    if(!dl->end_regex || !create_regex(dl->zck, dl->end_regex, regex_e)) {
         free(regex_e);
         return false;
     }
@@ -120,6 +120,10 @@ size_t multipart_extract(zckDL *dl, char *b, size_t l) {
     /* Add new data to stored buffer */
     if(mp->buffer) {
         buf = zrealloc(mp->buffer, mp->buffer_len + l);
+        if (!buf) {
+            zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+            return 0;
+        }
         memcpy(buf + mp->buffer_len, b, l);
         l = mp->buffer_len + l;
         mp->buffer = NULL;  // No need to free, buf holds realloc'd buffer
@@ -164,6 +168,10 @@ size_t multipart_extract(zckDL *dl, char *b, size_t l) {
             size_t size = buf + l - header_start;
             if(size > 0) {
                 mp->buffer = zmalloc(size);
+                if (!mp->buffer) {
+                   zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+                   return 0;
+                }
                 memcpy(mp->buffer, header_start, size);
                 mp->buffer_len = size;
             }
@@ -226,13 +234,17 @@ size_t multipart_get_boundary(zckDL *dl, char *b, size_t size) {
     if(dl->hdr_regex == NULL) {
         char *regex = "boundary *= *(.*?) *\r";
         dl->hdr_regex = zmalloc(sizeof(regex_t));
-        if(!create_regex(dl->zck, dl->hdr_regex, regex))
+        if(!dl->hdr_regex || !create_regex(dl->zck, dl->hdr_regex, regex))
             return 0;
     }
 
     /* Copy buffer to null-terminated string because POSIX regex requires null-
      * terminated string */
     char *buf = zmalloc(size+1);
+    if (!buf) {
+        zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+        return 0;
+    }
     buf[size] = '\0';
     memcpy(buf, b, size);
 
@@ -249,6 +261,11 @@ size_t multipart_get_boundary(zckDL *dl, char *b, size_t size) {
 	    boundary_length -= 2;
 	}
         char *boundary = zmalloc(boundary_length + 1);
+        if (!boundary) {
+            zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+            free(buf);
+            return 0;
+        }
         memcpy(boundary, boundary_start, boundary_length);
         zck_log(ZCK_LOG_DEBUG, "Multipart boundary: %s", boundary);
         dl->boundary = boundary;

@@ -49,6 +49,10 @@ static ssize_t compress(zckCtx *zck, zckComp *comp, const char *src,
     ALLOCD_INT(zck, comp);
 
     *dst = zmalloc(src_size);
+    if (!dst) {
+        zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+        return 0;
+    }
 
     memcpy(*dst, src, src_size);
     *dst_size = src_size;

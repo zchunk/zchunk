@@ -48,16 +48,16 @@ static ssize_t compress(zckCtx *zck, zckComp *comp, const char *src,
     ALLOCD_INT(zck, dst_size);
     ALLOCD_INT(zck, comp);
 
-    *dst = zmalloc(src_size);
-    if (!dst) {
+    comp->dc_data = zrealloc(comp->dc_data, comp->dc_data_size + src_size);
+    if (!comp->dc_data) {
         zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
-        return 0;
+        return -1;
     }
+    memcpy(comp->dc_data + comp->dc_data_size, src, src_size);
+    *dst = NULL;
+    *dst_size = 0;
 
-    memcpy(*dst, src, src_size);
-    *dst_size = src_size;
-
-    return *dst_size;
+    return 0;
 }
 
 static bool end_cchunk(zckCtx *zck, zckComp *comp, char **dst, size_t *dst_size,
@@ -67,8 +67,16 @@ static bool end_cchunk(zckCtx *zck, zckComp *comp, char **dst, size_t *dst_size,
     ALLOCD_BOOL(zck, dst_size);
     ALLOCD_BOOL(zck, comp);
 
-    *dst = NULL;
-    *dst_size = 0;
+    *dst = zmalloc(comp->dc_data_size);
+    if (!dst) {
+        zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+        return 0;
+    }
+    memcpy(*dst, comp->dc_data, comp->dc_data_size);
+    *dst_size = comp->dc_data_size;
+    free(comp->dc_data);
+    comp->dc_data = NULL;
+    comp->dc_data_loc = 0;
 
     return true;
 }

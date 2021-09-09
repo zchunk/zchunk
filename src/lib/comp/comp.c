@@ -646,7 +646,7 @@ static ssize_t _zck_write(zckCtx *zck, const char *src, int src_fd, const size_t
                             "chunk");
                 else
                     zck_log(ZCK_LOG_DDEBUG, "Automatically ending chunk");
-                if(!zck->no_check_min_size && zck->comp.dc_data_size < zck->chunk_auto_min) {
+                if(zck->comp.dc_data_size < zck->chunk_auto_min) {
                     zck_log(ZCK_LOG_DDEBUG,
                             "Chunk too small, refusing to end chunk");
                     continue;
@@ -691,7 +691,7 @@ ssize_t PUBLIC zck_end_chunk(zckCtx *zck) {
     if(!zck->comp.started && !comp_init(zck))
         return -1;
 
-    if(!zck->no_check_min_size && zck->comp.dc_data_size < zck->chunk_min_size) {
+    if(zck->comp.dc_data_size < zck->chunk_min_size) {
         zck_log(ZCK_LOG_DDEBUG, "Chunk too small, refusing to end chunk");
         //return zck->comp.dc_data_size;
 	return -EAGAIN;

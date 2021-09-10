@@ -105,9 +105,9 @@ bool index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
                 return false;
             }
             memcpy(new->digest_uncompressed, data+length, zck->index.digest_size);
-            HASH_FIND(hh, zck->index.ht, new->digest, new->digest_size, tmp);
+            HASH_FIND(hhuncomp, zck->index.htuncomp, new->digest_uncompressed, new->digest_size, tmp);
             if(!tmp)
-               HASH_ADD_KEYPTR(hhuncomp, zck->index_uncomp.ht, new->digest_uncompressed, new->digest_size,
+               HASH_ADD_KEYPTR(hhuncomp, zck->index.htuncomp, new->digest_uncompressed, new->digest_size,
                                new);
             length += zck->index.digest_size;
 	}

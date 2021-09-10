@@ -302,3 +302,29 @@ void PUBLIC zck_reset_failed_chunks(zckCtx *zck) {
             idx->valid = 0;
     return;
 }
+
+bool PUBLIC zck_generate_hashdb(zckCtx *zck) {
+    if (zck->index.ht || zck->index.htuncomp) {
+        zck_log(ZCK_LOG_ERROR, "Hash DB already present, it could not be created");
+        return false;
+    }
+
+    for(zckChunk *idx = zck->index.first; idx; idx=idx->next) {
+        zckChunk *tmp = NULL;
+        HASH_FIND(hh, zck->index.ht, idx->digest, idx->digest_size, tmp);
+        if(!tmp)
+            HASH_ADD_KEYPTR(hh, zck->index.ht, idx->digest, idx->digest_size,
+                            idx);
+        /*
+         * Do the same if there is uncompressed digest
+         */
+        if (zck->has_uncompressed_source && idx->digest_uncompressed) {
+            HASH_FIND(hhuncomp, zck->index.htuncomp, idx->digest_uncompressed, idx->digest_size, tmp);
+            if(!tmp)
+               HASH_ADD_KEYPTR(hhuncomp, zck->index.htuncomp, idx->digest_uncompressed, idx->digest_size,
+                               idx);
+        }
+    }
+
+    return true;
+}

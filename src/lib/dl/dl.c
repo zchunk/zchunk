@@ -256,6 +256,47 @@ bool PUBLIC zck_copy_chunks(zckCtx *src, zckCtx *tgt) {
     return true;
 }
 
+bool PUBLIC zck_find_matching_chunks(zckCtx *src, zckCtx *tgt) {
+
+    if (!src || !tgt)
+        return false;
+
+    zckIndex *src_info = &(src->index);
+    zckIndex *tgt_info = &(tgt->index);
+    zckChunk *tgt_idx = tgt_info->first;
+    while(tgt_idx) {
+        zckChunk *f = NULL;
+        /*
+         * This function can be called multiple time with different
+         * zckCtx *src, and the resulting tgt will have a list with
+         * chunks from different sources. Check first if comparison ran
+         * for the chunk and it was already set as valid
+         */
+        if (tgt_idx->valid)
+            continue;
+        /*
+         * Compare digest for compressed data if the same compressor
+         * was iused
+         */
+        if (src->comp.type == tgt->comp.type) {
+            HASH_FIND(hh, src_info->ht, tgt_idx->digest, tgt_idx->digest_size, f);
+        } else if (src->has_uncompressed_source && tgt->has_uncompressed_source) {
+            HASH_FIND(hhuncomp, src_info->htuncomp, tgt_idx->digest_uncompressed, tgt_idx->digest_size, f);
+        } else {
+
+        }
+        if(f && f->length == tgt_idx->length) {
+            tgt_idx->valid = 1;
+            tgt_idx->src = f;
+        } else {
+            tgt_idx->src = tgt_idx;
+        }
+        tgt_idx = tgt_idx->next;
+    }
+
+    return true;
+}
+
 ssize_t PUBLIC zck_dl_get_bytes_downloaded(zckDL *dl) {
     ALLOCD_INT(NULL, dl);
 

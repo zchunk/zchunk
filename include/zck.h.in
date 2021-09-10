@@ -86,7 +86,8 @@ ssize_t zck_write(zckCtx *zck, const char *src, const size_t src_size)
 /* Create a chunk boundary */
 ssize_t zck_end_chunk(zckCtx *zck)
     __attribute__ ((warn_unused_result));
-
+/* Create the database for uthash if not present (done automatically by read */
+bool zck_generate_hashdb(zckCtx *zck);
 
 /*******************************************************************
  * Common functions for finishing a zchunk file
@@ -174,7 +175,8 @@ int zck_failed_chunks(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 /* Reset failed chunks to become missing */
 void zck_reset_failed_chunks(zckCtx *zck);
-
+/* Find chunks from a source */
+bool zck_find_matching_chunks(zckCtx *src, zckCtx *tgt);
 
 /*******************************************************************
  * The functions should be all you need to read and write a zchunk

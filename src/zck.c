@@ -55,6 +55,8 @@ static struct argp_option options[] = {
      "Set zstd compression dictionary to FILE"},
     {"manual-chunk",       'm', 0,           0,
      "Don't do any automatic chunking (implies -s)"},
+    {"chunk-hash-type",     'h', "HASH",     0,
+     "Set hash type to one of sha256, sha512, sha512_128"},
     {"uncompressed",       'u', 0,           0,
      "Add extension in header for uncompressed data"},
     {"version",            'V', 0,           0, "Show program version"},
@@ -75,6 +77,7 @@ struct arguments {
   char *compression_format;
   bool exit;
   bool uncompressed;
+  zck_hash chunk_hashtype;
 };
 
 static error_t parse_opt (int key, char *arg, struct argp_state *state) {
@@ -94,6 +97,20 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
             break;
         case 'm':
             arguments->manual_chunk = true;
+            break;
+        case 'h':
+            if (!strcmp(arg, "sha256"))
+                arguments->chunk_hashtype = ZCK_HASH_SHA256;
+            else if (!strcmp(arg, "sha512"))
+                arguments->chunk_hashtype = ZCK_HASH_SHA512;
+            else if (!strcmp(arg, "sha512_128"))
+                arguments->chunk_hashtype = ZCK_HASH_SHA512_128;
+            else {
+                dprintf(STDERR_FILENO, "Wrong value for chunk hashtype. \n "
+                        "It should be one of sha1|sha256|sha512|sha512_128 instead of %s\n", arg);
+                return -EINVAL;
+            }
+
             break;
         case 'o':
             arguments->output = arg;
@@ -141,6 +158,7 @@ int main (int argc, char *argv[]) {
 
     /* Defaults */
     arguments.log_level = ZCK_LOG_ERROR;
+    arguments.chunk_hashtype = ZCK_HASH_UNKNOWN;
     arguments.compression_format = "zstd";
 
     int retval = argp_parse(&argp, argc, argv, 0, 0, &arguments);
@@ -254,6 +272,12 @@ int main (int argc, char *argv[]) {
     if(arguments.uncompressed) {
         if(!zck_set_ioption(zck, ZCK_UNCOMP_HEADER, 1)) {
             dprintf(STDERR_FILENO, "%s\n", zck_get_error(zck));
+            exit(1);
+        }
+    }
+    if (arguments.chunk_hashtype != ZCK_HASH_UNKNOWN) {
+        if(!zck_set_ioption(zck, ZCK_HASH_CHUNK_TYPE, arguments.chunk_hashtype)) {
+            dprintf(STDERR_FILENO, "Unable to set hash type %s\n", zck_get_error(zck));
             exit(1);
         }
     }

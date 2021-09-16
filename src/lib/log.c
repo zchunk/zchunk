@@ -36,6 +36,8 @@
 static zck_log_type log_level = ZCK_LOG_ERROR;
 static int log_fd = STDERR_FILENO;
 
+static logcallback callback = NULL; 
+
 void PUBLIC zck_set_log_level(zck_log_type ll) {
     log_level = ll;
 }
@@ -44,14 +46,24 @@ void PUBLIC zck_set_log_fd(int fd) {
     log_fd = fd;
 }
 
+void PUBLIC zck_set_log_callback(logcallback function) {
+    if (!function)
+        return;
+    callback = function;
+}
+
 void zck_log_v(const char *function, zck_log_type lt, const char *format,
      va_list args) {
     if(lt < log_level || log_level == ZCK_LOG_ERROR)
         return;
 
-    dprintf(log_fd, "%s: ", function);
-    vdprintf(log_fd, format, args);
-    dprintf(log_fd, "\n");
+    if (callback) {
+        callback(function, lt, format, args);
+    } else {
+        dprintf(log_fd, "%s: ", function);
+        vdprintf(log_fd, format, args);
+        dprintf(log_fd, "\n");
+    }
 }
 
 void zck_log_wf(const char *function, zck_log_type lt, const char *format, ...) {

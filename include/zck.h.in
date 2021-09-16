@@ -5,6 +5,7 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdarg.h>
 #include <sys/types.h>
 
 typedef enum zck_hash {
@@ -129,6 +130,9 @@ const char *zck_get_error(zckCtx *zck);
 /* Clear error message
  * Returns 1 if message was cleared, 0 if error is fatal and can't be cleared */
 bool zck_clear_error(zckCtx *zck);
+/* Set a callback for logs instead to write into a fd */
+typedef void (*logcallback)(const char *function, zck_log_type lt, const char *format, va_list args);
+void zck_set_log_callback(logcallback function);
 
 /*******************************************************************
  * Miscellaneous utilities

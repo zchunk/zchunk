@@ -183,6 +183,17 @@ zckChunk PUBLIC *zck_get_next_chunk(zckChunk *idx) {
     return idx->next;
 }
 
+zckChunk PUBLIC *zck_get_src_chunk(zckChunk *idx) {
+    if(idx && idx->zck) {
+        VALIDATE_PTR(idx->zck);
+        ALLOCD_PTR(idx->zck, idx);
+    } else {
+        ALLOCD_PTR(NULL, idx);
+    }
+
+    return idx->src;
+}
+
 ssize_t PUBLIC zck_get_chunk_start(zckChunk *idx) {
     if(idx && idx->zck) {
         VALIDATE_INT(idx->zck);

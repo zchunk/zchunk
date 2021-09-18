@@ -149,9 +149,8 @@ struct zckDL {
 /* Contains an index item pointing to a chunk */
 struct zckChunk {
     char *digest;
-    int digest_size;
     char *digest_uncompressed;
-    int digest_size_uncompressed;
+    int digest_size;
     int valid;
     size_t number;
     size_t start;

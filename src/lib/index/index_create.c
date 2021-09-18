@@ -66,7 +66,6 @@ static bool finish_chunk(zckIndex *index, zckChunk *item, char *digest,
     }
     if(digest_uncompressed) {
         memcpy(item->digest_uncompressed, digest_uncompressed, index->digest_size);
-        item->digest_size_uncompressed = index->digest_size;
     }
     item->start = index->length;
     item->valid = valid;

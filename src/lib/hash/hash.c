@@ -551,7 +551,7 @@ char PUBLIC *zck_get_chunk_digest_uncompressed(zckChunk *item) {
     if (!item->zck->has_uncompressed_source) {
         return NULL;
     }
-    return get_digest_string(item->digest_uncompressed, item->digest_size_uncompressed);
+    return get_digest_string(item->digest_uncompressed, item->digest_size);
 }
 
 

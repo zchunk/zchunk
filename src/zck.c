@@ -48,18 +48,20 @@ static char doc[] = "zck - Create a new zchunk file";
 static char args_doc[] = "<file>";
 
 static struct argp_option options[] = {
-    {"verbose",      'v', 0,        0,
-     "Increase verbosity (can be specified more than once for debugging)"},
-    {"output",       'o', "FILE",   0,
+    {"output",             'o', "FILE",      0,
      "Output to specified FILE"},
-    {"split",        's', "STRING", 0, "Split chunks at beginning of STRING"},
-    {"dict",         'D', "FILE",   0,
+    {"split",              's', "STRING",    0, "Split chunks at beginning of STRING"},
+    {"dict",               'D', "FILE",      0,
      "Set zstd compression dictionary to FILE"},
-    {"manual-chunk", 'm', 0,        0,
+    {"manual-chunk",       'm', 0,           0,
      "Don't do any automatic chunking (implies -s)"},
-    {"uncompressed", 'u', 0,        0,
+    {"uncompressed",       'u', 0,           0,
      "Add extension in header for uncompressed data"},
-    {"version",      'V', 0,        0, "Show program version"},
+    {"version",            'V', 0,           0, "Show program version"},
+    {"compression-format", 200,   "none/zstd", 0,
+     "Set compression format for file (none/zstd) (default: zstd)", 1},
+    {"verbose",            'v', 0,           0,
+     "Increase verbosity (can be specified more than once for debugging)", 1},
     { 0 }
 };
 
@@ -70,6 +72,7 @@ struct arguments {
   bool manual_chunk;
   char *output;
   char *dict;
+  char *compression_format;
   bool exit;
   bool uncompressed;
 };
@@ -100,6 +103,9 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
             break;
         case 'u':
             arguments->uncompressed = true;
+            break;
+        case 200:
+            arguments->compression_format = arg;
             break;
         case 'V':
             version();
@@ -135,6 +141,7 @@ int main (int argc, char *argv[]) {
 
     /* Defaults */
     arguments.log_level = ZCK_LOG_ERROR;
+    arguments.compression_format = "zstd";
 
     int retval = argp_parse(&argp, argc, argv, 0, 0, &arguments);
     if(retval || arguments.exit)
@@ -228,7 +235,22 @@ int main (int argc, char *argv[]) {
             exit(1);
         }
     }
-
+    if(arguments.compression_format) {
+        if(strncmp(arguments.compression_format, "zstd", 4) == 0) {
+            if(!zck_set_ioption(zck, ZCK_COMP_TYPE, ZCK_COMP_ZSTD)) {
+                dprintf(STDERR_FILENO, "%s\n", zck_get_error(zck));
+                exit(1);
+            }
+        } else if(strncmp(arguments.compression_format, "none", 4) == 0) {
+            if(!zck_set_ioption(zck, ZCK_COMP_TYPE, ZCK_COMP_NONE)) {
+                dprintf(STDERR_FILENO, "%s\n", zck_get_error(zck));
+                exit(1);
+            }
+        } else {
+            dprintf(STDERR_FILENO, "Unknown compression type: %s\n", arguments.compression_format);
+            exit(1);
+        }
+    }
     if(arguments.uncompressed) {
         if(!zck_set_ioption(zck, ZCK_UNCOMP_HEADER, 1)) {
             dprintf(STDERR_FILENO, "%s\n", zck_get_error(zck));

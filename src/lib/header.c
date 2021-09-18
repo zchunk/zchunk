@@ -50,7 +50,7 @@ static bool check_flags(zckCtx *zck, size_t flags) {
 
     flags = flags & (SIZE_MAX - 1);
     if(flags != 0) {
-        set_fatal_error(zck, "Unknown flags(s) set");
+        set_fatal_error(zck, "Unknown flags(s) set: %i", flags);
         return false;
     }
     return true;

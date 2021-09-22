@@ -149,9 +149,8 @@ struct zckDL {
 /* Contains an index item pointing to a chunk */
 struct zckChunk {
     char *digest;
-    int digest_size;
     char *digest_uncompressed;
-    int digest_size_uncompressed;
+    int digest_size;
     int valid;
     size_t number;
     size_t start;
@@ -272,7 +271,6 @@ struct zckCtx {
     int has_streams;
     int has_optional_elems;
     int has_uncompressed_source;
-    int no_check_min_size;
 
     char *read_buf;
     size_t read_buf_size;

@@ -264,6 +264,8 @@ ssize_t zck_get_chunk_number(zckChunk *idx)
 /* Get validity of current chunk - 1 = valid, 0 = missing, -1 = invalid */
 int zck_get_chunk_valid(zckChunk *idx)
     __attribute__ ((warn_unused_result));
+/* set validity of current chunk - 1 = valid, 0 = missing, -1 = invalid */
+bool zck_set_chunk_valid(zckChunk *idx, int valid);
 /* Get chunk digest */
 char *zck_get_chunk_digest(zckChunk *item)
     __attribute__ ((warn_unused_result));

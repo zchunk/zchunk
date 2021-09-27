@@ -252,6 +252,22 @@ int PUBLIC zck_get_chunk_valid(zckChunk *idx) {
     return idx->valid;
 }
 
+bool PUBLIC zck_set_chunk_valid(zckChunk *idx, int valid) {
+    if (!idx)
+        return false;
+    switch (valid) {
+        case -1:
+        case 0:
+        case 1:
+            break;
+        default:
+            return false;
+    }
+    idx->valid = valid;
+
+    return true;
+}
+
 bool PUBLIC zck_compare_chunk_digest(zckChunk *a, zckChunk *b) {
     if(a && a->zck) {
         VALIDATE_BOOL(a->zck);

@@ -24,6 +24,13 @@ read_single_comp_chunk = executable('read_single_comp_chunk',
                                     include_directories: incdir,
                                     dependencies: [zstd_dep, openssl_dep])
 shacheck = executable('shacheck', ['shacheck.c'] + util_sources, include_directories: incdir, dependencies: [zstd_dep, openssl_dep])
+zck_cmp_uncomp = executable(
+    'zck_cmp_uncomp',
+    ['zck_cmp_uncomp.c'],
+    include_directories: incdir,
+    link_with: zcklib,
+    install: false
+)
 file_path = join_paths(meson.source_root(), 'test/files')
 
 test(

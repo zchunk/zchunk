@@ -173,6 +173,7 @@ struct zckIndex {
     zckChunk *last;
     zckChunk *current;
     zckChunk *ht;
+    zckChunk *htuncomp;
 };
 
 /* Contains a single range */
@@ -264,7 +265,6 @@ struct zckCtx {
     zckIndex index;
     zckChunk *work_index_item;
     zckHash work_index_hash;
-    zckIndex index_uncomp;
     zckChunk *work_index_item_uncomp;
     zckHash work_index_hash_uncomp;
     size_t stream;

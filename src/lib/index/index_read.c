@@ -105,9 +105,9 @@ bool index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
                 return false;
             }
             memcpy(new->digest_uncompressed, data+length, zck->index.digest_size);
-            HASH_FIND(hh, zck->index.ht, new->digest, new->digest_size, tmp);
+            HASH_FIND(hhuncomp, zck->index.htuncomp, new->digest_uncompressed, new->digest_size, tmp);
             if(!tmp)
-               HASH_ADD_KEYPTR(hhuncomp, zck->index_uncomp.ht, new->digest_uncompressed, new->digest_size,
+               HASH_ADD_KEYPTR(hhuncomp, zck->index.htuncomp, new->digest_uncompressed, new->digest_size,
                                new);
             length += zck->index.digest_size;
 	}
@@ -181,6 +181,17 @@ zckChunk PUBLIC *zck_get_next_chunk(zckChunk *idx) {
     }
 
     return idx->next;
+}
+
+zckChunk PUBLIC *zck_get_src_chunk(zckChunk *idx) {
+    if(idx && idx->zck) {
+        VALIDATE_PTR(idx->zck);
+        ALLOCD_PTR(idx->zck, idx);
+    } else {
+        ALLOCD_PTR(NULL, idx);
+    }
+
+    return idx->src;
 }
 
 ssize_t PUBLIC zck_get_chunk_start(zckChunk *idx) {
@@ -290,4 +301,30 @@ void PUBLIC zck_reset_failed_chunks(zckCtx *zck) {
         if(idx->valid == -1)
             idx->valid = 0;
     return;
+}
+
+bool PUBLIC zck_generate_hashdb(zckCtx *zck) {
+    if (zck->index.ht || zck->index.htuncomp) {
+        zck_log(ZCK_LOG_ERROR, "Hash DB already present, it could not be created");
+        return false;
+    }
+
+    for(zckChunk *idx = zck->index.first; idx; idx=idx->next) {
+        zckChunk *tmp = NULL;
+        HASH_FIND(hh, zck->index.ht, idx->digest, idx->digest_size, tmp);
+        if(!tmp)
+            HASH_ADD_KEYPTR(hh, zck->index.ht, idx->digest, idx->digest_size,
+                            idx);
+        /*
+         * Do the same if there is uncompressed digest
+         */
+        if (zck->has_uncompressed_source && idx->digest_uncompressed) {
+            HASH_FIND(hhuncomp, zck->index.htuncomp, idx->digest_uncompressed, idx->digest_size, tmp);
+            if(!tmp)
+               HASH_ADD_KEYPTR(hhuncomp, zck->index.htuncomp, idx->digest_uncompressed, idx->digest_size,
+                               idx);
+        }
+    }
+
+    return true;
 }

@@ -553,15 +553,11 @@ const char PUBLIC *zck_comp_name_from_type(int comp_type) {
 ssize_t PUBLIC zck_write(zckCtx *zck, const char *src, const size_t src_size) {
     VALIDATE_WRITE_INT(zck);
 
-    zck_log(ZCK_LOG_DDEBUG, "Starting up");
-
     if(src_size == 0)
         return 0;
 
     if(!zck->comp.started && !comp_init(zck))
         return -1;
-
-    zck_log(ZCK_LOG_DDEBUG, "Starting up");
 
     const char *loc = src;
     size_t loc_size = src_size;

@@ -5,6 +5,7 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdarg.h>
 #include <sys/types.h>
 
 typedef enum zck_hash {
@@ -85,7 +86,8 @@ ssize_t zck_write(zckCtx *zck, const char *src, const size_t src_size)
 /* Create a chunk boundary */
 ssize_t zck_end_chunk(zckCtx *zck)
     __attribute__ ((warn_unused_result));
-
+/* Create the database for uthash if not present (done automatically by read */
+bool zck_generate_hashdb(zckCtx *zck);
 
 /*******************************************************************
  * Common functions for finishing a zchunk file
@@ -129,6 +131,9 @@ const char *zck_get_error(zckCtx *zck);
 /* Clear error message
  * Returns 1 if message was cleared, 0 if error is fatal and can't be cleared */
 bool zck_clear_error(zckCtx *zck);
+/* Set a callback for logs instead to write into a fd */
+typedef void (*logcallback)(const char *function, zck_log_type lt, const char *format, va_list args);
+void zck_set_log_callback(logcallback function);
 
 /*******************************************************************
  * Miscellaneous utilities
@@ -170,7 +175,8 @@ int zck_failed_chunks(zckCtx *zck)
     __attribute__ ((warn_unused_result));
 /* Reset failed chunks to become missing */
 void zck_reset_failed_chunks(zckCtx *zck);
-
+/* Find chunks from a source */
+bool zck_find_matching_chunks(zckCtx *src, zckCtx *tgt);
 
 /*******************************************************************
  * The functions should be all you need to read and write a zchunk
@@ -276,7 +282,9 @@ ssize_t zck_get_chunk_comp_data(zckChunk *idx, char *dst, size_t dst_size)
 /* Find out if two chunk digests are the same */
 bool zck_compare_chunk_digest(zckChunk *a, zckChunk *b)
     __attribute__ ((warn_unused_result));
-
+/* Get associate src chunk if any */
+zckChunk *zck_get_src_chunk(zckChunk *idx)
+    __attribute__ ((warn_unused_result));
 
 /*******************************************************************
  * Advanced hash functions

@@ -378,6 +378,7 @@ bool comp_soption(zckCtx *zck, zck_soption option, const void *value,
         return false;
     }
     if(option == ZCK_COMP_DICT) {
+        zck_log(ZCK_LOG_DEBUG, "Adding dictionary of size %li", length);
         zck->comp.dict = (char *)value;
         zck->comp.dict_size = length;
     } else {

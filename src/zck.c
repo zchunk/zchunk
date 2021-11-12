@@ -236,23 +236,6 @@ int main (int argc, char *argv[]) {
     }
     free(out_name);
 
-    /*if(!zck_set_ioption(zck, ZCK_COMP_TYPE, ZCK_COMP_NONE)) {
-        perror("Unable to set compression type\n");
-        exit(1);
-    }*/
-    if(dict_size > 0) {
-        if(!zck_set_soption(zck, ZCK_COMP_DICT, dict, dict_size)) {
-            dprintf(STDERR_FILENO, "%s\n", zck_get_error(zck));
-            exit(1);
-        }
-    }
-    free(dict);
-    if(arguments.manual_chunk) {
-        if(!zck_set_ioption(zck, ZCK_MANUAL_CHUNK, 1)) {
-            dprintf(STDERR_FILENO, "%s\n", zck_get_error(zck));
-            exit(1);
-        }
-    }
     if(arguments.compression_format) {
         if(strncmp(arguments.compression_format, "zstd", 4) == 0) {
             if(!zck_set_ioption(zck, ZCK_COMP_TYPE, ZCK_COMP_ZSTD)) {
@@ -266,6 +249,19 @@ int main (int argc, char *argv[]) {
             }
         } else {
             dprintf(STDERR_FILENO, "Unknown compression type: %s\n", arguments.compression_format);
+            exit(1);
+        }
+    }
+    if(dict_size > 0) {
+        if(!zck_set_soption(zck, ZCK_COMP_DICT, dict, dict_size)) {
+            dprintf(STDERR_FILENO, "%s\n", zck_get_error(zck));
+            exit(1);
+        }
+    }
+    free(dict);
+    if(arguments.manual_chunk) {
+        if(!zck_set_ioption(zck, ZCK_MANUAL_CHUNK, 1)) {
+            dprintf(STDERR_FILENO, "%s\n", zck_get_error(zck));
             exit(1);
         }
     }

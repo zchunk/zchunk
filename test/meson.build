@@ -28,6 +28,7 @@ zck_cmp_uncomp = executable(
     'zck_cmp_uncomp',
     ['zck_cmp_uncomp.c'],
     include_directories: incdir,
+    dependencies: argplib,
     link_with: zcklib,
     install: false
 )

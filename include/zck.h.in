@@ -62,7 +62,7 @@ typedef size_t (*zck_wcb)(void *ptr, size_t l, size_t c, void *dl_v);
  * Reading a zchunk file
  *******************************************************************/
 /* Initialize zchunk context */
-zckCtx *zck_create()
+zckCtx *zck_create(void)
     __attribute__ ((warn_unused_result));
 /* Initialize zchunk for reading */
 bool zck_init_read (zckCtx *zck, int src_fd)
@@ -321,7 +321,7 @@ char *zck_get_range(size_t start, size_t end)
     __attribute__ ((warn_unused_result));
 /* Get the minimum size needed to download in order to know how large the header
  * is */
-int zck_get_min_download_size()
+int zck_get_min_download_size(void)
     __attribute__ ((warn_unused_result));
 /* Get the number of separate range items in the range */
 int zck_get_range_count(zckRange *range)

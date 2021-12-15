@@ -22,8 +22,6 @@
 #define CHUNK_DEFAULT_MIN 1
 #define CHUNK_DEFAULT_MAX 10485760 // 10MB
 
-#define PUBLIC __attribute__((visibility("default")))
-
 #define zck_log(...) zck_log_wf(__func__, __VA_ARGS__)
 
 #define set_error(zck, ...) set_error_wf(zck, 0, __func__, __VA_ARGS__)
@@ -301,125 +299,125 @@ struct zckCtx {
 };
 
 int get_tmp_fd()
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 bool import_dict(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 void *zmalloc(size_t size)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 void *zrealloc(void *ptr, size_t size)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 
 
 /* hash/hash.h */
 bool hash_setup(zckCtx *zck, zckHashType *ht, int h)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 bool hash_init(zckCtx *zck, zckHash *hash, zckHashType *hash_type)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 bool hash_update(zckCtx *zck, zckHash *hash, const char *message,
                  const size_t size)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 char *hash_finalize(zckCtx *zck, zckHash *hash)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 void hash_close(zckHash *hash);
 void hash_reset(zckHashType *ht);
 int validate_chunk(zckChunk *idx, zck_log_type bad_checksum)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 int validate_file(zckCtx *zck, zck_log_type bad_checksums)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 int validate_current_chunk(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 int validate_header(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 bool set_full_hash_type(zckCtx *zck, int hash_type)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 bool set_chunk_hash_type(zckCtx *zck, int hash_type)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 int get_max_hash_size()
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 char *get_digest_string(const char *digest, int size)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 
 
 /* index/index.c */
 bool index_read(zckCtx *zck, char *data, size_t size, size_t max_length)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 bool index_create(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 bool index_new_chunk(zckCtx *zck, zckIndex *index, char *digest, int digest_size,
                      char* digest_uncompressed, size_t comp_size, size_t orig_size, zckChunk *src, bool valid)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 bool index_add_to_chunk(zckCtx *zck, char *data, size_t comp_size,
                         size_t orig_size)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 bool index_finish_chunk(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 void index_clean(zckIndex *index);
 void index_free(zckCtx *zck);
 void clear_work_index(zckCtx *zck);
 bool write_index(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 
 
 /* io.c */
 int seek_data(zckCtx *zck, off_t offset, int whence)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 ssize_t tell_data(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 ssize_t read_data(zckCtx *zck, char *data, size_t length)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 int write_data(zckCtx *zck, int fd, const char *data, size_t length)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 int chunks_from_temp(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 
 /* header.c */
 bool header_create(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 bool write_header(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 
 /* comp/comp.c */
 bool comp_init(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 bool comp_close(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 bool comp_reset(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 bool comp_add_to_dc(zckCtx *zck, zckComp *comp, const char *src, size_t src_size)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, bool use_dict)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 bool comp_ioption(zckCtx *zck, zck_ioption option, ssize_t value)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 bool comp_soption(zckCtx *zck, zck_soption option, const void *value,
                   size_t length)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 
 /* dl/range.c */
 char *range_get_char(zckRangeItem **range, int max_ranges)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 
 /* dl/multipart.c */
 size_t multipart_extract(zckDL *dl, char *b, size_t l)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 size_t multipart_get_boundary(zckDL *dl, char *b, size_t size)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 void reset_mp(zckMP *mp);
 
 /* dl/dl.c */
 int dl_write_range(zckDL *dl, const char *at, size_t length)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 
 /* compint.c */
 int compint_from_int(zckCtx *zck, char *compint, int val, size_t *length)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 void compint_from_size(char *compint, size_t val, size_t *length);
 int compint_to_int(zckCtx *zck, int *val, const char *compint, size_t *length,
                    size_t max_length)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 int compint_to_size(zckCtx *zck, size_t *val, const char *compint,
                     size_t *length, size_t max_length)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 
 /* log.c */
 void zck_log_v(const char *function, zck_log_type lt, const char *format,

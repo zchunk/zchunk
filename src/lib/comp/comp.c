@@ -543,7 +543,7 @@ hash_error:
     return -2;
 }
 
-const char PUBLIC *zck_comp_name_from_type(int comp_type) {
+const char ZCK_PUBLIC_API *zck_comp_name_from_type(int comp_type) {
     if(comp_type > 2) {
         snprintf(unknown+8, 21, "%i)", comp_type);
         return unknown;
@@ -551,7 +551,7 @@ const char PUBLIC *zck_comp_name_from_type(int comp_type) {
     return COMP_NAME[comp_type];
 }
 
-ssize_t PUBLIC zck_write(zckCtx *zck, const char *src, const size_t src_size) {
+ssize_t ZCK_PUBLIC_API zck_write(zckCtx *zck, const char *src, const size_t src_size) {
     VALIDATE_WRITE_INT(zck);
 
     if(src_size == 0)
@@ -618,7 +618,7 @@ ssize_t PUBLIC zck_write(zckCtx *zck, const char *src, const size_t src_size) {
     }
 }
 
-ssize_t PUBLIC zck_end_chunk(zckCtx *zck) {
+ssize_t ZCK_PUBLIC_API zck_end_chunk(zckCtx *zck) {
     VALIDATE_WRITE_INT(zck);
 
     if(!zck->comp.started && !comp_init(zck))
@@ -657,14 +657,14 @@ ssize_t PUBLIC zck_end_chunk(zckCtx *zck) {
     return data_size;
 }
 
-ssize_t PUBLIC zck_read(zckCtx *zck, char *dst, size_t dst_size) {
+ssize_t ZCK_PUBLIC_API zck_read(zckCtx *zck, char *dst, size_t dst_size) {
     VALIDATE_READ_INT(zck);
     ALLOCD_INT(zck, dst);
 
     return comp_read(zck, dst, dst_size, 1);
 }
 
-ssize_t PUBLIC zck_get_chunk_comp_data(zckChunk *idx, char *dst,
+ssize_t ZCK_PUBLIC_API zck_get_chunk_comp_data(zckChunk *idx, char *dst,
                                        size_t dst_size) {
     zckCtx *zck = NULL;
     if(idx && idx->zck) {
@@ -694,7 +694,7 @@ ssize_t PUBLIC zck_get_chunk_comp_data(zckChunk *idx, char *dst,
     return read_data(zck, dst, dst_size);
 }
 
-ssize_t PUBLIC zck_get_chunk_data(zckChunk *idx, char *dst,
+ssize_t ZCK_PUBLIC_API zck_get_chunk_data(zckChunk *idx, char *dst,
                                   size_t dst_size) {
     zckCtx *zck = NULL;
     if(idx && idx->zck) {

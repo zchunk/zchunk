@@ -232,7 +232,7 @@ int dl_write_range(zckDL *dl, const char *at, size_t length) {
     return wb + wb2;
 }
 
-bool PUBLIC zck_copy_chunks(zckCtx *src, zckCtx *tgt) {
+PUBLIC bool zck_copy_chunks(zckCtx *src, zckCtx *tgt) {
     VALIDATE_READ_BOOL(src);
     VALIDATE_READ_BOOL(tgt);
 
@@ -256,7 +256,7 @@ bool PUBLIC zck_copy_chunks(zckCtx *src, zckCtx *tgt) {
     return true;
 }
 
-bool PUBLIC zck_find_matching_chunks(zckCtx *src, zckCtx *tgt) {
+PUBLIC bool zck_find_matching_chunks(zckCtx *src, zckCtx *tgt) {
 
     if (!src || !tgt)
         return false;
@@ -297,20 +297,20 @@ bool PUBLIC zck_find_matching_chunks(zckCtx *src, zckCtx *tgt) {
     return true;
 }
 
-ssize_t PUBLIC zck_dl_get_bytes_downloaded(zckDL *dl) {
+PUBLIC ssize_t zck_dl_get_bytes_downloaded(zckDL *dl) {
     ALLOCD_INT(NULL, dl);
 
     return dl->dl;
 }
 
-ssize_t PUBLIC zck_dl_get_bytes_uploaded(zckDL *dl) {
+PUBLIC ssize_t zck_dl_get_bytes_uploaded(zckDL *dl) {
     ALLOCD_INT(NULL, dl);
 
     return dl->ul;
 }
 
 /* Initialize zckDL.  When finished, zckDL *must* be freed by zck_dl_free() */
-zckDL PUBLIC *zck_dl_init(zckCtx *zck) {
+PUBLIC zckDL *zck_dl_init(zckCtx *zck) {
     zckDL *dl = zmalloc(sizeof(zckDL));
     if (!dl) {
        zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
@@ -322,7 +322,7 @@ zckDL PUBLIC *zck_dl_init(zckCtx *zck) {
 }
 
 /* Reset dl while maintaining download statistics and private information */
-void PUBLIC zck_dl_reset(zckDL *dl) {
+PUBLIC void zck_dl_reset(zckDL *dl) {
     if(!dl)
         return;
 
@@ -345,7 +345,7 @@ void PUBLIC zck_dl_reset(zckDL *dl) {
 }
 
 /* Free zckDL and set pointer to NULL */
-void PUBLIC zck_dl_free(zckDL **dl) {
+PUBLIC void zck_dl_free(zckDL **dl) {
     zck_dl_reset(*dl);
     if((*dl)->mp)
         free((*dl)->mp);
@@ -353,53 +353,53 @@ void PUBLIC zck_dl_free(zckDL **dl) {
     *dl = NULL;
 }
 
-zckCtx PUBLIC *zck_dl_get_zck(zckDL *dl) {
+PUBLIC zckCtx *zck_dl_get_zck(zckDL *dl) {
     ALLOCD_PTR(NULL, dl);
 
     return dl->zck;
 }
 
-bool PUBLIC zck_dl_set_zck(zckDL *dl, zckCtx *zck) {
+PUBLIC bool zck_dl_set_zck(zckDL *dl, zckCtx *zck) {
     ALLOCD_BOOL(NULL, dl);
 
     dl->zck = zck;
     return true;
 }
-bool PUBLIC zck_dl_set_range(zckDL *dl, zckRange *range) {
+PUBLIC bool zck_dl_set_range(zckDL *dl, zckRange *range) {
     ALLOCD_BOOL(NULL, dl);
 
     dl->range = range;
     return true;
 }
 
-zckRange PUBLIC *zck_dl_get_range(zckDL *dl) {
+PUBLIC zckRange *zck_dl_get_range(zckDL *dl) {
     ALLOCD_PTR(NULL, dl);
 
     return dl->range;
 }
 
-bool PUBLIC zck_dl_set_header_cb(zckDL *dl, zck_wcb func) {
+PUBLIC bool zck_dl_set_header_cb(zckDL *dl, zck_wcb func) {
     ALLOCD_BOOL(NULL, dl);
 
     dl->header_cb = func;
     return true;
 }
 
-bool PUBLIC zck_dl_set_header_data(zckDL *dl, void *data) {
+PUBLIC bool zck_dl_set_header_data(zckDL *dl, void *data) {
     ALLOCD_BOOL(NULL, dl);
 
     dl->header_data = data;
     return true;
 }
 
-bool PUBLIC zck_dl_set_write_cb(zckDL *dl, zck_wcb func) {
+PUBLIC bool zck_dl_set_write_cb(zckDL *dl, zck_wcb func) {
     ALLOCD_BOOL(NULL, dl);
 
     dl->write_cb = func;
     return true;
 }
 
-bool PUBLIC zck_dl_set_write_data(zckDL *dl, void *data) {
+PUBLIC bool zck_dl_set_write_data(zckDL *dl, void *data) {
     ALLOCD_BOOL(NULL, dl);
 
     dl->write_data = data;
@@ -410,7 +410,7 @@ bool PUBLIC zck_dl_set_write_data(zckDL *dl, void *data) {
  * Callbacks
  *******************************************************************/
 
-size_t PUBLIC zck_header_cb(char *b, size_t l, size_t c, void *dl_v) {
+PUBLIC size_t zck_header_cb(char *b, size_t l, size_t c, void *dl_v) {
     ALLOCD_BOOL(NULL, dl_v);
     zckDL *dl = (zckDL*)dl_v;
 
@@ -422,7 +422,7 @@ size_t PUBLIC zck_header_cb(char *b, size_t l, size_t c, void *dl_v) {
     return c*l;
 }
 
-size_t PUBLIC zck_write_zck_header_cb(void *ptr, size_t l, size_t c,
+PUBLIC size_t zck_write_zck_header_cb(void *ptr, size_t l, size_t c,
                                       void *dl_v) {
     ALLOCD_BOOL(NULL, dl_v);
     zckDL *dl = (zckDL*)dl_v;
@@ -437,7 +437,7 @@ size_t PUBLIC zck_write_zck_header_cb(void *ptr, size_t l, size_t c,
     return wb;
 }
 
-size_t PUBLIC zck_write_chunk_cb(void *ptr, size_t l, size_t c, void *dl_v) {
+PUBLIC size_t zck_write_chunk_cb(void *ptr, size_t l, size_t c, void *dl_v) {
     ALLOCD_BOOL(NULL, dl_v);
     zckDL *dl = (zckDL*)dl_v;
 

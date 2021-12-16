@@ -20,7 +20,11 @@ endif
 if get_option('with-zstd') == 'disabled'
     zstd_dep = dependency('', required : false)
 else
-    zstd_dep = dependency('zstd', modules: 'zstd::libzstd_shared', required : get_option('with-zstd') == 'enabled')
+    if build_machine.system() == 'windows':
+        zstd_dep = dependency('zstd', modules: 'zstd::libzstd_shared', required : get_option('with-zstd') == 'enabled')
+    else
+        zstd_dep = dependency('libzstd', required : get_option('with-zstd') == 'enabled')
+    endif
     if zstd_dep.found()
         add_project_arguments('-DZCHUNK_ZSTD', language : 'c')
         if zstd_dep.version().version_compare('<=1.4.9')
@@ -29,7 +33,11 @@ else
     endif
 endif
 
-curl_dep = dependency('curl', modules: 'CURL::libcurl')
+if build_machine.system() == 'windows':
+    curl_dep = dependency('curl', modules: 'CURL::libcurl')
+else
+    curl_dep = dependency('libcurl')
+endif
 
 if build_machine.system() != 'windows'
     if build_machine.system() == 'darwin' or build_machine.system() == 'freebsd' or not cc.links('#include <argp.h>\nstatic error_t parse_opt (int key, char *arg, struct argp_state *state) { argp_usage(state); return 0; }; void main() {}')
@@ -42,7 +50,11 @@ endif
 if get_option('with-openssl') == 'disabled'
     openssl_dep = dependency('', required : false)
 else
-    openssl_dep = dependency('openssl', modules : ['OpenSSL::SSL', 'OpenSSL::Crypto'], required : get_option('with-openssl') == 'enabled')
+    if build_machine.system() == 'windows':
+        openssl_dep = dependency('openssl', modules : ['OpenSSL::SSL', 'OpenSSL::Crypto'], required : get_option('with-openssl') == 'enabled')
+    else
+        openssl_dep = dependency('openssl', required : get_option('with-openssl') == 'enabled')
+    endif
     if openssl_dep.found()
         add_project_arguments('-DZCHUNK_OPENSSL', language : 'c')
     endif

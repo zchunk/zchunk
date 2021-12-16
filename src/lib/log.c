@@ -64,9 +64,26 @@ void zck_log_v(const char *function, zck_log_type lt, const char *format,
     if (callback) {
         callback(function, lt, format, args);
     } else {
-        //dprintf(log_fd, "%s: ", function);
-        //vdprintf(log_fd, format, args);
-        //dprintf(log_fd, "\n");
+#ifdef _WIN32
+        if (log_fd == 2)
+        {
+            vprintf(stderr, "%s: ", function);
+            vfprintf(stderr, format, args);
+            vprintf(stderr, "\n");
+        }
+        else
+        {
+            FILE *fstream = _fdopen(log_fd, "a+");
+            vprintf(fstream, "%s: ", function);
+            vfprintf(fstream, format, args);
+            vprintf(fstream, "\n");
+            _close(fstream)
+        }
+#else
+        dprintf(log_fd, "%s: ", function);
+        vdprintf(log_fd, format, args);
+        dprintf(log_fd, "\n");
+#endif
     }
 }
 

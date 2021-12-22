@@ -187,7 +187,7 @@ int main (int argc, char *argv[]) {
     char *dict = NULL;
     off_t dict_size = 0;
     if(arguments.dict != NULL) {
-        int dict_fd = open(arguments.dict, O_RDONLY);
+        int dict_fd = open(arguments.dict, O_RDONLY | O_BINARY);
         if(dict_fd < 0) {
             ZCK_LOG_ERROR("Unable to open dictionary %s for reading",
                           arguments.dict);
@@ -213,7 +213,7 @@ int main (int argc, char *argv[]) {
         close(dict_fd);
     }
 
-    int dst_fd = open(out_name, O_TRUNC | O_WRONLY | O_CREAT, 0666);
+    int dst_fd = open(out_name, O_TRUNC | O_WRONLY | O_CREAT | O_BINARY, 0666);
     if(dst_fd < 0) {
         ZCK_LOG_ERROR("Unable to open %s", out_name);
         perror("");
@@ -280,7 +280,7 @@ int main (int argc, char *argv[]) {
         }
     }
     char *data;
-    int in_fd = open(arguments.args[0], O_RDONLY);
+    int in_fd = open(arguments.args[0], O_RDONLY | O_BINARY);
     off_t in_size = 0;
     if(in_fd < 0) {
         ZCK_LOG_ERROR("Unable to open %s for reading",

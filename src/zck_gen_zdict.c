@@ -209,7 +209,7 @@ int main (int argc, char *argv[]) {
 
     zck_set_log_level(arguments.log_level);
 
-    int src_fd = open(arguments.args[0], O_RDONLY);
+    int src_fd = open(arguments.args[0], O_RDONLY | O_BINARY);
     if(src_fd < 0) {
         ZCK_LOG_ERROR("Unable to open %s\n", arguments.args[0]);
         perror("");
@@ -269,7 +269,7 @@ int main (int argc, char *argv[]) {
         assert(dict_block);
         snprintf(dict_block, strlen(dir) + strlen(out_name) + 12, "%s/%s.%li",
                  dir, out_name, zck_get_chunk_number(idx));
-        int dst_fd = open(dict_block, O_TRUNC | O_WRONLY | O_CREAT, 0666);
+        int dst_fd = open(dict_block, O_TRUNC | O_WRONLY | O_CREAT | O_BINARY, 0666);
         if(dst_fd < 0) {
             ZCK_LOG_ERROR("Unable to open %s", dict_block);
             perror("");

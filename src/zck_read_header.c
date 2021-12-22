@@ -124,7 +124,7 @@ int main (int argc, char *argv[]) {
 
     zck_set_log_level(arguments.log_level);
 
-    int src_fd = open(arguments.args[0], O_RDONLY);
+    int src_fd = open(arguments.args[0], O_RDONLY | O_BINARY);
     if(src_fd < 0) {
         printf("Unable to open %s\n", arguments.args[0]);
         perror("");

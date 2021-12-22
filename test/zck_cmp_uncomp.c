@@ -126,7 +126,7 @@ int main (int argc, char *argv[]) {
     }
 
     zck_set_log_level(arguments.log_level);
-    int dst_fd = open("/dev/null", O_TRUNC | O_WRONLY | O_CREAT, 0666);
+    int dst_fd = open("/dev/null", O_TRUNC | O_WRONLY | O_CREAT | O_BINARY, 0666);
 
     zckCtx *zckSrc = zck_create();
     zckCtx *zckDst = zck_create();
@@ -141,7 +141,7 @@ int main (int argc, char *argv[]) {
         exit(1);
     }
    
-    int in_fd = open(arguments.args[0], O_RDONLY);
+    int in_fd = open(arguments.args[0], O_RDONLY | O_BINARY);
     off_t in_size = 0;
     if(in_fd < 0) {
         ZCK_LOG_ERROR("Unable to open %s for reading",
@@ -153,7 +153,7 @@ int main (int argc, char *argv[]) {
     /*
      * Read header in the zck file
      */
-    int zck_fd = open(arguments.args[1], O_RDONLY);
+    int zck_fd = open(arguments.args[1], O_RDONLY | O_BINARY);
     if(zck_fd < 0) {
         ZCK_LOG_ERROR("Unable to open %s for reading",
                 arguments.args[1]);

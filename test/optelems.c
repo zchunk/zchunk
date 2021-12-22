@@ -42,7 +42,7 @@ int main (int argc, char *argv[]) {
     char data[1000] = {0};
 
     /* Open zchunk file and verify that zck->has_optional_elems is set */
-    int in = open(argv[1], O_RDONLY);
+    int in = open(argv[1], O_RDONLY | O_BINARY);
     if(in < 0) {
         perror("Unable to open empty.optelems.zck for reading");
         exit(1);

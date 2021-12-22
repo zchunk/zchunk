@@ -291,7 +291,7 @@ int main (int argc, char *argv[]) {
 
     zckCtx *zck_src = NULL;
     if(arguments.source) {
-        int src_fd = open(arguments.source, O_RDONLY);
+        int src_fd = open(arguments.source, O_RDONLY | O_BINARY);
         if(src_fd < 0) {
             ZCK_LOG_ERROR("Unable to open %s\n", arguments.source);
             perror("");
@@ -318,7 +318,7 @@ int main (int argc, char *argv[]) {
     }
 
     char *outname = basename(arguments.args[0]);
-    int dst_fd = open(outname, O_RDWR | O_CREAT, 0666);
+    int dst_fd = open(outname, O_RDWR | O_CREAT | O_BINARY, 0666);
     if(dst_fd < 0) {
         ZCK_LOG_ERROR("Unable to open %s: %s\n", outname,
                 strerror(errno));

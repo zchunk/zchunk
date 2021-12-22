@@ -90,7 +90,7 @@ int main (int argc, char *argv[]) {
     }
 
     /* Open zchunk file and check that checksum matches */
-    int in = open(outf, O_RDONLY);
+    int in = open(outf, O_RDONLY | O_BINARY);
     if(in < 0) {
         perror("");
         printf("Unable to open %s for reading", outf);

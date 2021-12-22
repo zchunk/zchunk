@@ -131,7 +131,7 @@ int main (int argc, char *argv[]) {
             exit(1);
         }
     }
-    int src_fd = open(arguments.args[0], O_RDONLY);
+    int src_fd = open(arguments.args[0], O_RDONLY | O_BINARY);
     if(src_fd < 0) {
         ZCK_LOG_ERROR("Unable to open %s\n", arguments.args[0]);
         perror("");
@@ -154,7 +154,7 @@ int main (int argc, char *argv[]) {
     int dst_fd = STDOUT_FILENO;
 #endif
     if(!arguments.std_out) {
-        dst_fd = open(out_name, O_TRUNC | O_WRONLY | O_CREAT, 0666);
+        dst_fd = open(out_name, O_TRUNC | O_WRONLY | O_CREAT | O_BINARY, 0666);
         if(dst_fd < 0) {
             ZCK_LOG_ERROR("Unable to open %s", out_name);
             perror("");

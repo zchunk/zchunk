@@ -46,12 +46,12 @@ int main (int argc, char *argv[]) {
     strcpy(path, argv[1]);
 
     char *base_name = basename(path);
-    int in = open(argv[1], O_RDONLY);
+    int in = open(argv[1], O_RDONLY | O_BINARY);
     if(in < 0) {
         perror("Unable to open LICENSE.header.new.nodict.fodt.zck for reading");
         exit(1);
     }
-    int tgt = open(base_name, O_RDWR | O_CREAT, 0666);
+    int tgt = open(base_name, O_RDWR | O_CREAT | O_BINARY, 0666);
     if(tgt < 0) {
         perror("Unable to open LICENSE.header.new.nodict.fodt.zck for writing");
         exit(1);
@@ -76,7 +76,7 @@ int main (int argc, char *argv[]) {
     }
 
     /* Open source zchunk file and read header */
-    int src = open(argv[2], O_RDONLY);
+    int src = open(argv[2], O_RDONLY | O_BINARY);
     if(src < 0) {
         perror("Unable to open LICENSE.nodict.fodt.zck for reading");
         exit(1);

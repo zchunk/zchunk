@@ -42,7 +42,7 @@ char *echecksum =
 
 int main (int argc, char *argv[]) {
     /* Open zchunk file and verify second checksum */
-    int in = open(argv[1], O_RDONLY);
+    int in = open(argv[1], O_RDONLY | O_BINARY);
     if(in < 0) {
         perror("Unable to open LICENSE.dict.fodt.zck for reading");
         exit(1);

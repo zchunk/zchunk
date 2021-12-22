@@ -109,7 +109,7 @@ int main (int argc, char *argv[]) {
 
     zck_set_log_level(arguments.log_level);
 
-    int src_fd = open(arguments.args[0], O_RDONLY);
+    int src_fd = open(arguments.args[0], O_RDONLY | O_BINARY);
     if(src_fd < 0) {
         ZCK_LOG_ERROR("Unable to open %s\n", arguments.args[0]);
         perror("");
@@ -129,7 +129,7 @@ int main (int argc, char *argv[]) {
     }
     close(src_fd);
 
-    int tgt_fd = open(arguments.args[1], O_RDONLY);
+    int tgt_fd = open(arguments.args[1], O_RDONLY | O_BINARY);
     if(tgt_fd < 0) {
         ZCK_LOG_ERROR("Unable to open %s\n", arguments.args[1]);
         perror("");

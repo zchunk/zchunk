@@ -36,6 +36,11 @@
 #include <errno.h>
 #include <zck.h>
 
+#ifdef _WIN32
+#include <fcntl.h>
+#include <io.h>
+#endif
+
 #include "zck_private.h"
 
 
@@ -147,7 +152,11 @@ int get_tmp_fd(zckCtx *zck) {
     int temp_fd;
     char *fname = NULL;
     char template[] = "zcktempXXXXXX";
+#ifdef _WIN32
+    char *tmpdir = getenv("TEMP");
+#else
     char *tmpdir = getenv("TMPDIR");
+#endif
 
     if(tmpdir == NULL) {
         tmpdir = "/tmp/";
@@ -165,7 +174,11 @@ int get_tmp_fd(zckCtx *zck) {
     for(i=0; i<strlen(tmpdir); i++)
         fname[i] = tmpdir[i];
     int offset = i;
+#ifdef _WIN32
+    fname[offset] = '\\';
+#else
     fname[offset] = '/';
+#endif
     offset++;
     for(i=0; i<strlen(template); i++)
         fname[offset + i] = template[i];
@@ -178,22 +191,25 @@ int get_tmp_fd(zckCtx *zck) {
     // old_mode_mask = umask (S_IXUSR | S_IRWXG | S_IRWXO);
     errno_t out = _mktemp_s(
         fname,
-        offset
+        offset + 1
     );
 
+    printf("Trying to create file: %s\n", fname);
     // temp_fd = mkstemp(fname);
-    temp_fd = open(fname);
+    temp_fd = _open(fname, _O_BINARY | _O_CREAT | _O_TEMPORARY | _O_RDWR);
+    printf("result %d", temp_fd);
     // umask(old_mode_mask);
     if(temp_fd < 0) {
         free(fname);
-        set_error(zck, "Unable to create temporary file");
+        printf("ERROR Creating temp file: %s\n", strerror(errno));
+        set_error(zck, "Unable to create temporary file XX\n");
         return -1;
     }
-    if(unlink(fname) < 0) {
-        free(fname);
-        set_error(zck, "Unable to delete temporary file");
-        return -1;
-    }
+    // if(unlink(fname) < 0) {
+    //     free(fname);
+    //     set_error(zck, "Unable to delete temporary file");
+    //     return -1;
+    // }
     free(fname);
     return temp_fd;
 }

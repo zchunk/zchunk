@@ -25,6 +25,7 @@
  */
 
 #define _GNU_SOURCE
+#define STDERR_FILENO 2
 
 #include <assert.h>
 #include <stdlib.h>
@@ -35,7 +36,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#ifndef _WIN32
 #include <libgen.h>
+#endif
 #include <unistd.h>
 #include <argp.h>
 #include <zck.h>
@@ -124,13 +127,13 @@ int main (int argc, char *argv[]) {
     if(!arguments.std_out) {
         if(strlen(arguments.args[0]) < 5 ||
            strcmp(arguments.args[0] + strlen(arguments.args[0]) - 4, ".zck") != 0) {
-            dprintf(STDERR_FILENO, "Not a *.zck file: %s\n", arguments.args[0]);
+            ZCK_LOG_ERROR("Not a *.zck file: %s\n", arguments.args[0]);
             exit(1);
         }
     }
     int src_fd = open(arguments.args[0], O_RDONLY);
     if(src_fd < 0) {
-        dprintf(STDERR_FILENO, "Unable to open %s\n", arguments.args[0]);
+        ZCK_LOG_ERROR("Unable to open %s\n", arguments.args[0]);
         perror("");
         exit(1);
     }
@@ -145,11 +148,15 @@ int main (int argc, char *argv[]) {
     if(arguments.dict)
         snprintf(out_name + strlen(base_name) - 4, 7, ".zdict");
 
+#ifdef _WIN32
+    int dst_fd = _fileno(stdout);
+#else
     int dst_fd = STDOUT_FILENO;
+#endif
     if(!arguments.std_out) {
         dst_fd = open(out_name, O_TRUNC | O_WRONLY | O_CREAT, 0666);
         if(dst_fd < 0) {
-            dprintf(STDERR_FILENO, "Unable to open %s", out_name);
+            ZCK_LOG_ERROR("Unable to open %s", out_name);
             perror("");
             free(out_name);
             exit(1);
@@ -161,7 +168,7 @@ int main (int argc, char *argv[]) {
     char *data = NULL;
     zckCtx *zck = zck_create();
     if(!zck_init_read(zck, src_fd)) {
-        dprintf(STDERR_FILENO, "%s", zck_get_error(zck));
+        ZCK_LOG_ERROR("%s", zck_get_error(zck));
         goto error2;
     }
 
@@ -170,7 +177,7 @@ int main (int argc, char *argv[]) {
         zckChunk *dict = zck_get_first_chunk(zck);
         ssize_t dict_size = zck_get_chunk_size(dict);
         if(dict_size < 0) {
-            dprintf(STDERR_FILENO, "%s", zck_get_error(zck));
+            ZCK_LOG_ERROR("%s", zck_get_error(zck));
             goto error2;
         }
         data = calloc(dict_size, 1);
@@ -178,24 +185,24 @@ int main (int argc, char *argv[]) {
         ssize_t read_size = zck_get_chunk_data(dict, data, dict_size);
         if(read_size != dict_size) {
             if(read_size < 0)
-                dprintf(STDERR_FILENO, "%s", zck_get_error(zck));
+                ZCK_LOG_ERROR("%s", zck_get_error(zck));
             else
-                dprintf(STDERR_FILENO,
+                ZCK_LOG_ERROR(
                         "Dict size doesn't match expected size: %li != %li\n",
                         read_size, dict_size);
             goto error2;
         }
         if(write(dst_fd, data, dict_size) != dict_size) {
-            dprintf(STDERR_FILENO, "Error writing to %s\n", out_name);
+            ZCK_LOG_ERROR("Error writing to %s\n", out_name);
             goto error2;
         }
         if(dict_size > 0) {
             int ret = zck_get_chunk_valid(dict);
             if(ret < 1) {
                 if(ret == -1)
-                    dprintf(STDERR_FILENO, "Data checksum failed verification\n");
+                    ZCK_LOG_ERROR("Data checksum failed verification\n");
                 else
-                    dprintf(STDERR_FILENO, "%s", zck_get_error(zck));
+                    ZCK_LOG_ERROR("%s", zck_get_error(zck));
                 goto error2;
             }
         }
@@ -205,7 +212,7 @@ int main (int argc, char *argv[]) {
     int ret = zck_validate_data_checksum(zck);
     if(ret < 1) {
         if(ret == -1)
-            dprintf(STDERR_FILENO, "Data checksum failed verification\n");
+            ZCK_LOG_ERROR("Data checksum failed verification\n");
         goto error2;
     }
 
@@ -215,23 +222,23 @@ int main (int argc, char *argv[]) {
     while(true) {
         ssize_t read = zck_read(zck, data, BUF_SIZE);
         if(read < 0) {
-            dprintf(STDERR_FILENO, "%s", zck_get_error(zck));
+            ZCK_LOG_ERROR("%s", zck_get_error(zck));
             goto error2;
         }
         if(read == 0)
             break;
         if(write(dst_fd, data, read) != read) {
-            dprintf(STDERR_FILENO, "Error writing to %s\n", out_name);
+            ZCK_LOG_ERROR("Error writing to %s\n", out_name);
             goto error2;
         }
         total += read;
     }
     if(!zck_close(zck)) {
-        dprintf(STDERR_FILENO, "%s", zck_get_error(zck));
+        ZCK_LOG_ERROR("%s", zck_get_error(zck));
         goto error2;
     }
     if(arguments.log_level <= ZCK_LOG_INFO)
-        dprintf(STDERR_FILENO, "Decompressed %lu bytes\n", (unsigned long)total);
+        ZCK_LOG_ERROR("Decompressed %lu bytes\n", (unsigned long)total);
     good_exit = true;
 error2:
     free(data);

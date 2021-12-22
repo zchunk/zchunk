@@ -32,10 +32,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#ifndef _WIN32
 #include <libgen.h>
+#endif
 #include <errno.h>
 #include <zck.h>
-#include <libgen.h>
 #include "zck_private.h"
 #include "util.h"
 

@@ -67,17 +67,17 @@ void zck_log_v(const char *function, zck_log_type lt, const char *format,
 #ifdef _WIN32
         if (log_fd == 2)
         {
-            vprintf(stderr, "%s: ", function);
+            fprintf(stderr, "%s: ", function);
             vfprintf(stderr, format, args);
-            vprintf(stderr, "\n");
+            fprintf(stderr, "\n");
         }
         else
         {
             FILE *fstream = _fdopen(log_fd, "a+");
-            vprintf(fstream, "%s: ", function);
+            fprintf(fstream, "%s: ", function);
             vfprintf(fstream, format, args);
-            vprintf(fstream, "\n");
-            _close(fstream)
+            fprintf(fstream, "\n");
+            _close(fstream);
         }
 #else
         dprintf(log_fd, "%s: ", function);

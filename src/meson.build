@@ -1,17 +1,19 @@
 subdir('lib')
 
-if host_machine.system() != 'windows'
+# if host_machine.system() != 'windows'
+
     zck = executable(
         'zck',
-        ['zck.c', 'util_common.c'],
+        ['zck.c', 'util_common.c', 'memmem.c', 'lib/win32/basename.c'],
         include_directories: inc,
         dependencies: argplib,
         link_with: zcklib,
-        install: true
+        install: true,
+        c_args: ['/showIncludes']
     )
     unzck = executable(
         'unzck',
-        ['unzck.c', 'util_common.c'],
+        ['unzck.c', 'util_common.c', 'lib/win32/basename.c'],
         include_directories: inc,
         dependencies: argplib,
         link_with: zcklib,
@@ -19,7 +21,7 @@ if host_machine.system() != 'windows'
     )
     zckdl = executable(
         'zckdl',
-        ['zck_dl.c', 'util_common.c'],
+        ['zck_dl.c', 'util_common.c', 'lib/win32/basename.c', 'lib/win32/ftruncate.c'],
         include_directories: inc,
         dependencies: [argplib, curl_dep],
         link_with: zcklib,
@@ -27,7 +29,7 @@ if host_machine.system() != 'windows'
     )
     zck_gen_zdict = executable(
         'zck_gen_zdict',
-        ['zck_gen_zdict.c', 'util_common.c'],
+        ['zck_gen_zdict.c', 'util_common.c', 'lib/win32/basename.c'],
         include_directories: inc,
         dependencies: argplib,
         link_with: zcklib,
@@ -49,4 +51,4 @@ if host_machine.system() != 'windows'
         link_with: zcklib,
         install: true
     )
-endif
+# endif

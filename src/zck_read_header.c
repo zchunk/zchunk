@@ -23,6 +23,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#define STDERR_FILENO 2
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -132,12 +133,12 @@ int main (int argc, char *argv[]) {
 
     zckCtx *zck = zck_create();
     if(zck == NULL) {
-        dprintf(STDERR_FILENO, "%s", zck_get_error(NULL));
+        ZCK_LOG_ERROR("%s", zck_get_error(NULL));
         zck_clear_error(NULL);
         exit(1);
     }
     if(!zck_init_read(zck, src_fd)) {
-        dprintf(STDERR_FILENO, "Error reading zchunk header: %s",
+        ZCK_LOG_ERROR("Error reading zchunk header: %s",
                 zck_get_error(zck));
         zck_free(&zck);
         exit(1);
@@ -172,7 +173,7 @@ int main (int argc, char *argv[]) {
             chk=zck_get_next_chunk(chk)) {
             char *digest = zck_get_chunk_digest(chk);
             if(digest == NULL) {
-                dprintf(STDERR_FILENO, "%s", zck_get_error(zck));
+                ZCK_LOG_ERROR("%s", zck_get_error(zck));
                 exit(1);
             }
             char *digest_uncompressed = zck_get_chunk_digest_uncompressed(chk);

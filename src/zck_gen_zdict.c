@@ -25,6 +25,7 @@
  */
 
 #define _GNU_SOURCE
+#define STDERR_FILENO 2
 
 #include <assert.h>
 #include <stdlib.h>
@@ -34,9 +35,13 @@
 #include <stdbool.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifndef _WIN32
 #include <sys/wait.h>
+#endif
 #include <fcntl.h>
+#ifndef _WIN32
 #include <libgen.h>
+#endif
 #include <dirent.h>
 #include <unistd.h>
 #include <argp.h>
@@ -119,8 +124,12 @@ static struct argp argp = {options, parse_opt, args_doc, doc};
 char *get_tmp_dir(char *old_dir) {
     char *dir = NULL;
     if(old_dir == NULL) {
-        char template[] = "zcktempXXXXXX";
+        char* template = "zcktempXXXXXX";
+        #ifdef _WIN32
+        char *tmpdir = getenv("TEMP");
+        #else
         char *tmpdir = getenv("TMPDIR");
+        #endif
 
         if(tmpdir == NULL) {
             tmpdir = "/tmp/";
@@ -129,6 +138,36 @@ char *get_tmp_dir(char *old_dir) {
             return NULL;
         }
 
+#ifdef _WIN32
+        char* prev_cwd;
+
+        // Get the current working directory:
+        if ((prev_cwd = _getcwd( NULL, 0 )) == NULL)
+        {
+            ZCK_LOG_ERROR("Could not find current workdir");
+            return NULL;
+        }
+        if (chdir(tmpdir) != 0)
+        {
+            ZCK_LOG_ERROR("Could not change to Temp Dir");
+            return NULL;
+        }
+        errno_t err = _mktemp_s(template, 14);
+        if (err)
+        {
+            ZCK_LOG_ERROR("Could not generate temporary name");
+            return NULL;
+        }
+        if (_mkdir(template) != 0)
+        {
+            ZCK_LOG_ERROR("Could not create temp folder");
+            return NULL;
+        }
+        assert(chdir(template) == 0);
+        char* res = _getcwd(NULL, 0);
+        assert(chdir(prev_cwd));
+        return res;
+#else
         char *base_dir = calloc(strlen(template) + strlen(tmpdir) + 2, 1);
         assert(base_dir);
         int i=0;
@@ -146,6 +185,7 @@ char *get_tmp_dir(char *old_dir) {
             perror("ERROR: ");
             return NULL;
         }
+#endif
     } else {
         dir = calloc(strlen(old_dir) + 1, 1);
         assert(dir);
@@ -171,7 +211,7 @@ int main (int argc, char *argv[]) {
 
     int src_fd = open(arguments.args[0], O_RDONLY);
     if(src_fd < 0) {
-        dprintf(STDERR_FILENO, "Unable to open %s\n", arguments.args[0]);
+        ZCK_LOG_ERROR("Unable to open %s\n", arguments.args[0]);
         perror("");
         exit(1);
     }
@@ -191,14 +231,14 @@ int main (int argc, char *argv[]) {
     char *data = NULL;
     zckCtx *zck = zck_create();
     if(!zck_init_read(zck, src_fd)) {
-        dprintf(STDERR_FILENO, "%s", zck_get_error(zck));
+        ZCK_LOG_ERROR("%s", zck_get_error(zck));
         goto error2;
     }
 
     int ret = zck_validate_data_checksum(zck);
     if(ret < 1) {
         if(ret == -1)
-            dprintf(STDERR_FILENO, "Data checksum failed verification\n");
+            ZCK_LOG_ERROR("Data checksum failed verification\n");
         goto error2;
     }
 
@@ -209,7 +249,7 @@ int main (int argc, char *argv[]) {
             continue;
         ssize_t chunk_size = zck_get_chunk_size(idx);
         if(chunk_size < 0) {
-            dprintf(STDERR_FILENO, "%s", zck_get_error(zck));
+            ZCK_LOG_ERROR("%s", zck_get_error(zck));
             goto error2;
         }
         data = calloc(chunk_size, 1);
@@ -217,9 +257,9 @@ int main (int argc, char *argv[]) {
         ssize_t read_size = zck_get_chunk_data(idx, data, chunk_size);
         if(read_size != chunk_size) {
             if(read_size < 0)
-                dprintf(STDERR_FILENO, "%s", zck_get_error(zck));
+                ZCK_LOG_ERROR("%s", zck_get_error(zck));
             else
-                dprintf(STDERR_FILENO,
+                ZCK_LOG_ERROR(
                         "Chunk %li size doesn't match expected size: %li != %li\n",
                         zck_get_chunk_number(idx), read_size, chunk_size);
             goto error2;
@@ -231,13 +271,13 @@ int main (int argc, char *argv[]) {
                  dir, out_name, zck_get_chunk_number(idx));
         int dst_fd = open(dict_block, O_TRUNC | O_WRONLY | O_CREAT, 0666);
         if(dst_fd < 0) {
-            dprintf(STDERR_FILENO, "Unable to open %s", dict_block);
+            ZCK_LOG_ERROR("Unable to open %s", dict_block);
             perror("");
             free(dict_block);
             goto error2;
         }
         if(write(dst_fd, data, chunk_size) != chunk_size) {
-            dprintf(STDERR_FILENO, "Error writing to %s\n", dict_block);
+            ZCK_LOG_ERROR("Error writing to %s\n", dict_block);
             free(dict_block);
             goto error2;
         }
@@ -248,36 +288,47 @@ int main (int argc, char *argv[]) {
     snprintf(out_name + strlen(base_name) - 4, 7, ".zdict");
 
     if(!zck_close(zck)) {
-        dprintf(STDERR_FILENO, "%s", zck_get_error(zck));
+        ZCK_LOG_ERROR("%s", zck_get_error(zck));
         goto error2;
     }
 
     /* Create dictionary */
+#ifdef _WIN32
+    char buf[5000];
+    sprintf(buf, "zstd --train '%s' -r -o '%s'", dir, out_name);
+    int w = system(buf);
+    if (w < 0)
+    {
+        ZCK_LOG_ERROR("Error generating dict\n");
+        goto error2;
+    }
+#else
     int pid = fork();
     if(pid == 0) {
         execl("/usr/bin/zstd", "zstd", "--train", dir, "-r", "-o", out_name, NULL);
-        dprintf(STDERR_FILENO, "Unable to find /usr/bin/zstd\n");
+        ZCK_LOG_ERROR("Unable to find /usr/bin/zstd\n");
         exit(1);
     }
     int wstatus = 0;
     int w = waitpid(pid, &wstatus, 0);
+
     if (w == -1) {
-        dprintf(STDERR_FILENO, "Error waiting for zstd\n");
+        ZCK_LOG_ERROR("Error waiting for zstd\n");
         perror("");
         goto error2;
     }
     if(WEXITSTATUS(wstatus) != 0) {
-        dprintf(STDERR_FILENO, "Error generating dict\n");
+        ZCK_LOG_ERROR("Error generating dict\n");
         goto error2;
     }
-
+#endif
     /* Clean up temporary directory */
     if(!arguments.dir) {
         struct dirent *dp;
         DIR *dfd;
 
         if ((dfd = opendir(dir)) == NULL) {
-            dprintf(STDERR_FILENO, "Unable to read %s\n", dir);
+            ZCK_LOG_ERROR("Unable to read %s\n", dir);
             goto error2;
         }
 
@@ -289,23 +340,23 @@ int main (int argc, char *argv[]) {
             snprintf(full_path, strlen(dir) + strlen(dp->d_name) + 2, "%s/%s",
                      dir, dp->d_name);
             if(unlink(full_path) != 0) {
-                dprintf(STDERR_FILENO, "Unable to remove %s\n", full_path);
+                ZCK_LOG_ERROR("Unable to remove %s\n", full_path);
                 perror("");
                 err = true;
             } else {
                 if(arguments.log_level <= ZCK_LOG_INFO)
-                    dprintf(STDERR_FILENO, "Removed %s\n", full_path);
+                    ZCK_LOG_ERROR("Removed %s\n", full_path);
             }
             free(full_path);
         }
         closedir(dfd);
         if(!err) {
             if(rmdir(dir) != 0) {
-                dprintf(STDERR_FILENO, "Unable to remove %s\n", dir);
+                ZCK_LOG_ERROR("Unable to remove %s\n", dir);
                 perror("");
             }
         } else {
-            dprintf(STDERR_FILENO, "Errors encountered, not removing %s\n",
+            ZCK_LOG_ERROR("Errors encountered, not removing %s\n",
                     dir);
         }
     }

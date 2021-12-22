@@ -47,6 +47,26 @@ typedef enum zck_log_type {
     ZCK_LOG_NONE
 } zck_log_type;
 
+#ifdef _WIN32
+#define ZCK_WARN_UNUSED
+#define STDERR_FILENO 2
+typedef ptrdiff_t ssize_t;
+#else
+#define ZCK_WARN_UNUSED __attribute__ ((warn_unused_result))
+#endif
+
+#ifdef _WIN32
+#ifdef ZCHUNK_STATIC_LIB
+    #define PUBLIC
+#else
+    #ifdef ZCHUNK_EXPORTS
+        #define PUBLIC __declspec(dllexport)
+    #else
+        #define PUBLIC __declspec(dllimport)
+    #endif
+#endif
+#endif
+
 typedef struct zckCtx zckCtx;
 typedef struct zckHash zckHash;
 typedef struct zckChunk zckChunk;

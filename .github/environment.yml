@@ -1,0 +1,11 @@
+name: zchunk_test_env
+channels:
+- conda-forge
+dependencies:
+- libcurl
+- zstd
+- meson
+- c-compiler
+- ninja
+- pkg-config
+- sel(osx): argp-standalone

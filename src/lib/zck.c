@@ -39,6 +39,9 @@
 #ifdef _WIN32
 #include <fcntl.h>
 #include <io.h>
+#include <windows.h>
+#include <tchar.h>
+#include <stdio.h>
 #endif
 
 #include "zck_private.h"
@@ -153,7 +156,8 @@ int get_tmp_fd(zckCtx *zck) {
     char *fname = NULL;
     char template[] = "zcktempXXXXXX";
 #ifdef _WIN32
-    char *tmpdir = getenv("TEMP");
+    char* tmpdir = zmalloc(1000);
+    DWORD xxxxres = GetTempPathA(1000, tmpdir);
 #else
     char *tmpdir = getenv("TMPDIR");
 #endif
@@ -175,11 +179,11 @@ int get_tmp_fd(zckCtx *zck) {
         fname[i] = tmpdir[i];
     int offset = i;
 #ifdef _WIN32
-    fname[offset] = '\\';
+    // fname[offset] = '\\';
 #else
     fname[offset] = '/';
-#endif
     offset++;
+#endif
     for(i=0; i<strlen(template); i++)
         fname[offset + i] = template[i];
     offset += i;
@@ -194,10 +198,8 @@ int get_tmp_fd(zckCtx *zck) {
         offset + 1
     );
 
-    printf("Trying to create file: %s\n", fname);
     // temp_fd = mkstemp(fname);
-    temp_fd = _open(fname, _O_BINARY | _O_CREAT | _O_TEMPORARY | _O_RDWR);
-    printf("result %d", temp_fd);
+    temp_fd = _open(fname, _O_BINARY | _O_CREAT | _O_RDWR);
     // umask(old_mode_mask);
     if(temp_fd < 0) {
         free(fname);

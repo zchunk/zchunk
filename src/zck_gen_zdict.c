@@ -152,6 +152,7 @@ char *get_tmp_dir(char *old_dir) {
             ZCK_LOG_ERROR("Could not change to Temp Dir");
             return NULL;
         }
+        printf("generating temp name: ... \n");
         errno_t err = _mktemp_s(template, 14);
         if (err)
         {

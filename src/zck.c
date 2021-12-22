@@ -172,7 +172,8 @@ int main (int argc, char *argv[]) {
     char *base_name = NULL;
     char *out_name = NULL;
     if(arguments.output == NULL) {
-        base_name = basename(arguments.args[0]);
+        // base_name = basename(arguments.args[0]);
+        base_name = arguments.args[0];
         out_name = malloc(strlen(base_name) + 5);
         assert(out_name);
         snprintf(out_name, strlen(base_name) + 5, "%s.zck", base_name);

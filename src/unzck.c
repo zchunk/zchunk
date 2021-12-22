@@ -137,7 +137,10 @@ int main (int argc, char *argv[]) {
         perror("");
         exit(1);
     }
-    char *base_name = basename(arguments.args[0]);
+    // char *base_name = basename(arguments.args[0]);
+    char* base_name = arguments.args[0];
+    // printf("Basename pointer: %d", base_name);
+    // printf("Got basename: %s", base_name);
     char *out_name = NULL;
     if(arguments.dict)
         out_name = calloc(strlen(base_name) + 3, 1); // len .zck -> .zdict = +2

@@ -1,0 +1,35 @@
+name: CI
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    name: Compile and Run Tests
+    steps:
+      - uses: actions/checkout@v2
+      - name: install mamba
+        uses: mamba-org/provision-with-micromamba@main
+        with:
+          environment-file: .github/environment.yml
+      - name: Compile zchunk
+        shell: bash -l {0}
+        run: |
+          meson builddir
+          cd builddir
+          ninja
+      - name: Run zchunk tests
+        shell: bash -l {0}
+        run: |
+          cd builddir
+          ninja test

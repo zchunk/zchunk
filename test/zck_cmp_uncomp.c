@@ -35,10 +35,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#ifndef _WIN32
 #include <libgen.h>
+#endif
 #include <unistd.h>
 #include <argp.h>
 #include <zck.h>
+#include "util.h"
 
 #define BUFSIZE 16384
 static char doc[] = "zck_gen_header - Compare a file with a zck and reports which chunks changed";
@@ -119,30 +122,30 @@ int main (int argc, char *argv[]) {
         exit(retval);
 
     if (argc < 1) {
-       	dprintf(STDERR_FILENO, "Usage : %s filename", argv[0]);
-       	exit(1);
+        ZCK_LOG_ERROR("Usage : %s filename", argv[0]);
+        exit(1);
     }
 
     zck_set_log_level(arguments.log_level);
-    int dst_fd = open("/dev/null", O_TRUNC | O_WRONLY | O_CREAT, 0666);
+    int dst_fd = open("/dev/null", O_TRUNC | O_WRONLY | O_CREAT | O_BINARY, 0666);
 
     zckCtx *zckSrc = zck_create();
     zckCtx *zckDst = zck_create();
     if(!zckSrc || !zckDst) {
-        dprintf(STDERR_FILENO, "%s", zck_get_error(NULL));
+        ZCK_LOG_ERROR("%s", zck_get_error(NULL));
         zck_clear_error(NULL);
         exit(1);
     }
     if(!zck_init_write(zckSrc, dst_fd)) {
-        dprintf(STDERR_FILENO, "Unable to write %s ",
+        ZCK_LOG_ERROR("Unable to write %s ",
                 zck_get_error(zckSrc));
         exit(1);
     }
    
-    int in_fd = open(arguments.args[0], O_RDONLY);
+    int in_fd = open(arguments.args[0], O_RDONLY | O_BINARY);
     off_t in_size = 0;
     if(in_fd < 0) {
-        dprintf(STDERR_FILENO, "Unable to open %s for reading",
+        ZCK_LOG_ERROR("Unable to open %s for reading",
                 arguments.args[0]);
         perror("");
         exit(1);
@@ -151,16 +154,16 @@ int main (int argc, char *argv[]) {
     /*
      * Read header in the zck file
      */
-    int zck_fd = open(arguments.args[1], O_RDONLY);
+    int zck_fd = open(arguments.args[1], O_RDONLY | O_BINARY);
     if(zck_fd < 0) {
-        dprintf(STDERR_FILENO, "Unable to open %s for reading",
+        ZCK_LOG_ERROR("Unable to open %s for reading",
                 arguments.args[1]);
         perror("");
         exit(1);
     }
 
     if(!zck_init_read(zckDst, zck_fd)) {
-        dprintf(STDERR_FILENO, "Error reading zchunk header: %s",
+        ZCK_LOG_ERROR("Error reading zchunk header: %s",
                 zck_get_error(zckDst));
         zck_free(&zckSrc);
         zck_free(&zckDst);
@@ -169,7 +172,7 @@ int main (int argc, char *argv[]) {
 
     in_size = lseek(in_fd, 0, SEEK_END);
     if(in_size < 0) {
-        dprintf(STDERR_FILENO, "Unable to seek to end of input file");
+        ZCK_LOG_ERROR("Unable to seek to end of input file");
         exit(1);
     }
     if(lseek(in_fd, 0, SEEK_SET) < 0) {
@@ -178,33 +181,33 @@ int main (int argc, char *argv[]) {
     }
 
     if(!zck_set_ioption(zckSrc, ZCK_UNCOMP_HEADER, 1)) {
-        dprintf(STDERR_FILENO, "%s\n", zck_get_error(zckSrc));
+        ZCK_LOG_ERROR("%s\n", zck_get_error(zckSrc));
         exit(1);
     }
     if(!zck_set_ioption(zckSrc, ZCK_COMP_TYPE, ZCK_COMP_NONE))
         exit(1);
     if(!zck_set_ioption(zckSrc, ZCK_HASH_CHUNK_TYPE, ZCK_HASH_SHA256)) {
-        dprintf(STDERR_FILENO, "Unable to set hash type %s\n", zck_get_error(zckSrc));
+        ZCK_LOG_ERROR("Unable to set hash type %s\n", zck_get_error(zckSrc));
         exit(1);
     }
 
     char *buf = malloc(BUFSIZE);
     if (!buf) {
-        dprintf(STDERR_FILENO, "Unable to allocate buffer\n");
+        ZCK_LOG_ERROR("Unable to allocate buffer\n");
         exit(1);
     }
     ssize_t n;
     while ((n = read(in_fd, buf, BUFSIZE)) > 0) {
         if (zck_write(zckSrc, buf, n) < 0) {
-            dprintf(STDERR_FILENO, "zck_write failed: %s\n", zck_get_error(zckSrc));
+            ZCK_LOG_ERROR("zck_write failed: %s\n", zck_get_error(zckSrc));
             exit(1);
         }
     }
     /*
      * Start comparison
      */
-    dprintf(STDOUT_FILENO, "Compare original image with chunks in zck\n");
-    dprintf(STDOUT_FILENO, "-----------------------------------------\n");
+    printf("Compare original image with chunks in zck\n");
+    printf("-----------------------------------------\n");
     
     zck_generate_hashdb(zckSrc);
     zck_find_matching_chunks(zckSrc, zckDst);
@@ -213,7 +216,7 @@ int main (int argc, char *argv[]) {
     size_t todwl = 0;
     size_t reuse = 0;
     while (iter) {
-        dprintf(STDOUT_FILENO, "%12lu %s %s %12lu %12lu\n",
+        printf("%12lu %s %s %12lu %12lu\n",
                 zck_get_chunk_number(iter),
                 zck_get_chunk_valid(iter) ? "SRC" : "DST",
                 zck_get_chunk_digest_uncompressed(iter),
@@ -229,8 +232,8 @@ int main (int argc, char *argv[]) {
         iter = zck_get_next_chunk(iter);
     }
 
-    dprintf (STDOUT_FILENO, "\n\nTotal to be reused : %12lu\n", reuse);
-    dprintf (STDOUT_FILENO, "Total to be downloaded : %12lu\n", todwl);
+    printf("\n\nTotal to be reused : %12lu\n", reuse);
+    printf("Total to be downloaded : %12lu\n", todwl);
 
     close(in_fd);
     close(zck_fd);

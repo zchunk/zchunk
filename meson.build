@@ -40,14 +40,6 @@ else
     curl_dep = dependency('libcurl')
 endif
 
-if build_machine.system() != 'windows'
-    if build_machine.system() == 'darwin' or build_machine.system() == 'freebsd' or not cc.links('#include <argp.h>\nstatic error_t parse_opt (int key, char *arg, struct argp_state *state) { argp_usage(state); return 0; }; void main() {}')
-       argplib = cc.find_library('argp')
-    else
-       argplib = dependency('', required : false)
-    endif
-endif
-
 if get_option('with-openssl') == 'disabled'
     openssl_dep = dependency('', required : false)
 else
@@ -67,9 +59,16 @@ if host_machine.system() == 'windows'
     inc += include_directories('src/lib/win32')
 endif
 
+if build_machine.system() == 'windows' or build_machine.system() == 'darwin' or build_machine.system() == 'freebsd' or not cc.links('#include <argp.h>\nstatic error_t parse_opt (int key, char *arg, struct argp_state *state) { argp_usage(state); return 0; }; void main() {}')
+   inc += include_directories(get_option('prefix') / 'include')
+   argplib = cc.find_library('argp', dirs : get_option('prefix') / 'lib')
+else
+   argplib = dependency('', required : false)
+endif
+
 subdir('include')
 subdir('src')
-if not get_option('coverity') and host_machine.system() != 'windows'
+if not get_option('coverity')
     subdir('test')
 endif
 

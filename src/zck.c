@@ -35,7 +35,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#ifndef _WIN32
 #include <libgen.h>
+#endif
 #include <unistd.h>
 #include <argp.h>
 #include <zck.h>
@@ -106,7 +108,7 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
             else if (!strcmp(arg, "sha512_128"))
                 arguments->chunk_hashtype = ZCK_HASH_SHA512_128;
             else {
-                dprintf(STDERR_FILENO, "Wrong value for chunk hashtype. \n "
+                ZCK_LOG_ERROR("Wrong value for chunk hashtype. \n "
                         "It should be one of sha1|sha256|sha512|sha512_128 instead of %s\n", arg);
                 return -EINVAL;
             }
@@ -170,7 +172,8 @@ int main (int argc, char *argv[]) {
     char *base_name = NULL;
     char *out_name = NULL;
     if(arguments.output == NULL) {
-        base_name = basename(arguments.args[0]);
+        // base_name = basename(arguments.args[0]);
+        base_name = arguments.args[0];
         out_name = malloc(strlen(base_name) + 5);
         assert(out_name);
         snprintf(out_name, strlen(base_name) + 5, "%s.zck", base_name);
@@ -185,10 +188,10 @@ int main (int argc, char *argv[]) {
     char *dict = NULL;
     off_t dict_size = 0;
     if(arguments.dict != NULL) {
-        int dict_fd = open(arguments.dict, O_RDONLY);
+        int dict_fd = open(arguments.dict, O_RDONLY | O_BINARY);
         if(dict_fd < 0) {
-            dprintf(STDERR_FILENO, "Unable to open dictionary %s for reading",
-                    arguments.dict);
+            ZCK_LOG_ERROR("Unable to open dictionary %s for reading",
+                          arguments.dict);
             perror("");
             exit(1);
         }
@@ -211,9 +214,9 @@ int main (int argc, char *argv[]) {
         close(dict_fd);
     }
 
-    int dst_fd = open(out_name, O_TRUNC | O_WRONLY | O_CREAT, 0666);
+    int dst_fd = open(out_name, O_TRUNC | O_WRONLY | O_CREAT | O_BINARY, 0666);
     if(dst_fd < 0) {
-        dprintf(STDERR_FILENO, "Unable to open %s", out_name);
+        ZCK_LOG_ERROR("Unable to open %s", out_name);
         perror("");
         if(dict) {
             free(dict);
@@ -225,12 +228,12 @@ int main (int argc, char *argv[]) {
 
     zckCtx *zck = zck_create();
     if(zck == NULL) {
-        dprintf(STDERR_FILENO, "%s", zck_get_error(NULL));
+        ZCK_LOG_ERROR("%s", zck_get_error(NULL));
         zck_clear_error(NULL);
         exit(1);
     }
     if(!zck_init_write(zck, dst_fd)) {
-        dprintf(STDERR_FILENO, "Unable to write to %s: %s", out_name,
+        ZCK_LOG_ERROR("Unable to write to %s: %s", out_name,
                 zck_get_error(zck));
         exit(1);
     }
@@ -239,56 +242,56 @@ int main (int argc, char *argv[]) {
     if(arguments.compression_format) {
         if(strncmp(arguments.compression_format, "zstd", 4) == 0) {
             if(!zck_set_ioption(zck, ZCK_COMP_TYPE, ZCK_COMP_ZSTD)) {
-                dprintf(STDERR_FILENO, "%s\n", zck_get_error(zck));
+                ZCK_LOG_ERROR("%s\n", zck_get_error(zck));
                 exit(1);
             }
         } else if(strncmp(arguments.compression_format, "none", 4) == 0) {
             if(!zck_set_ioption(zck, ZCK_COMP_TYPE, ZCK_COMP_NONE)) {
-                dprintf(STDERR_FILENO, "%s\n", zck_get_error(zck));
+                ZCK_LOG_ERROR("%s\n", zck_get_error(zck));
                 exit(1);
             }
         } else {
-            dprintf(STDERR_FILENO, "Unknown compression type: %s\n", arguments.compression_format);
+            ZCK_LOG_ERROR("Unknown compression type: %s\n", arguments.compression_format);
             exit(1);
         }
     }
     if(dict_size > 0) {
         if(!zck_set_soption(zck, ZCK_COMP_DICT, dict, dict_size)) {
-            dprintf(STDERR_FILENO, "%s\n", zck_get_error(zck));
+            ZCK_LOG_ERROR("%s\n", zck_get_error(zck));
             exit(1);
         }
     }
     free(dict);
     if(arguments.manual_chunk) {
         if(!zck_set_ioption(zck, ZCK_MANUAL_CHUNK, 1)) {
-            dprintf(STDERR_FILENO, "%s\n", zck_get_error(zck));
+            ZCK_LOG_ERROR("%s\n", zck_get_error(zck));
             exit(1);
         }
     }
     if(arguments.uncompressed) {
         if(!zck_set_ioption(zck, ZCK_UNCOMP_HEADER, 1)) {
-            dprintf(STDERR_FILENO, "%s\n", zck_get_error(zck));
+            ZCK_LOG_ERROR("%s\n", zck_get_error(zck));
             exit(1);
         }
     }
     if (arguments.chunk_hashtype != ZCK_HASH_UNKNOWN) {
         if(!zck_set_ioption(zck, ZCK_HASH_CHUNK_TYPE, arguments.chunk_hashtype)) {
-            dprintf(STDERR_FILENO, "Unable to set hash type %s\n", zck_get_error(zck));
+            ZCK_LOG_ERROR("Unable to set hash type %s\n", zck_get_error(zck));
             exit(1);
         }
     }
     char *data;
-    int in_fd = open(arguments.args[0], O_RDONLY);
+    int in_fd = open(arguments.args[0], O_RDONLY | O_BINARY);
     off_t in_size = 0;
     if(in_fd < 0) {
-        dprintf(STDERR_FILENO, "Unable to open %s for reading",
+        ZCK_LOG_ERROR("Unable to open %s for reading",
                 arguments.args[0]);
         perror("");
         exit(1);
     }
     in_size = lseek(in_fd, 0, SEEK_END);
     if(in_size < 0) {
-        dprintf(STDERR_FILENO, "Unable to seek to end of input file");
+        ZCK_LOG_ERROR("Unable to seek to end of input file");
         exit(1);
     }
     if(lseek(in_fd, 0, SEEK_SET) < 0) {
@@ -299,7 +302,7 @@ int main (int argc, char *argv[]) {
         data = malloc(in_size);
         assert(data);
         if(read(in_fd, data, in_size) < in_size) {
-            dprintf(STDERR_FILENO, "Unable to read from input file\n");
+            ZCK_LOG_ERROR("Unable to read from input file\n");
             exit(1);
         }
         close(in_fd);
@@ -331,7 +334,7 @@ int main (int argc, char *argv[]) {
         /* Buzhash rolling window */
         } else {
             if(zck_write(zck, data, in_size) < 0) {
-                dprintf(STDERR_FILENO, "%s", zck_get_error(zck));
+                ZCK_LOG_ERROR("%s", zck_get_error(zck));
                 exit(1);
             }
         }
@@ -342,7 +345,7 @@ int main (int argc, char *argv[]) {
         exit(1);
     }
     if(arguments.log_level <= ZCK_LOG_INFO) {
-        dprintf(STDERR_FILENO, "Wrote %lu bytes in %lu chunks\n",
+        ZCK_LOG_ERROR("Wrote %lu bytes in %lu chunks\n",
                 (unsigned long)(zck_get_data_length(zck) +
                                 zck_get_header_length(zck)),
                 (long)zck_get_chunk_count(zck));

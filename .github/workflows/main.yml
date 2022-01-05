@@ -18,6 +18,11 @@ jobs:
     name: Compile and Run Tests
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
+        with:
+          repository: wolfv/argp-standalone
+          path: argp-standalone
+
       - name: install mamba
         uses: mamba-org/provision-with-micromamba@main
         with:
@@ -35,6 +40,15 @@ jobs:
         run: |
           cd builddir
           ninja test
+      - name: Compile argp-standalone
+        shell: cmd /C CALL {0}
+        if: runner.os == 'Windows'
+        run: |
+          CALL micromamba activate zchunk_test_env
+          cd argp-standalone
+          meson setup builddir
+          meson compile -C builddir --prefix=%CONDA_PREFIX%\Library
+          meson install -C builddir
       - name: Compile zchunk
         shell: cmd /C CALL {0}
         if: runner.os == 'Windows'

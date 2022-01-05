@@ -8,6 +8,10 @@
 #define BUF_SIZE 32768
 #endif
 
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
 void version();
 
 #endif

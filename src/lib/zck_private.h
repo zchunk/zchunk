@@ -111,7 +111,9 @@ struct zckHash {
     void *ctx;
 };
 
+#ifndef CURLINC_CURL_H
 typedef void CURL;
+#endif
 
 typedef struct zckMP {
     int state;

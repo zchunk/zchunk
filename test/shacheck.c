@@ -34,7 +34,9 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <zck.h>
+#ifndef _WIN32
 #include <sys/wait.h>
+#endif
 #include "zck_private.h"
 #include "util.h"
 
@@ -65,6 +67,9 @@ int main (int argc, char *argv[]) {
         args[i] = untaint(argv[i+3]);
 
     int status;
+#ifdef _WIN32
+    status = system(cmd);
+#else
     pid_t child_pid;
 
     child_pid = fork();
@@ -78,13 +83,14 @@ int main (int argc, char *argv[]) {
     } else {
         waitpid(child_pid, &status, 0);
     }
+#endif
     if (status != 0) {
         printf("Error running command\n");
         exit(1);
     }
 
     /* Open zchunk file and check that checksum matches */
-    int in = open(outf, O_RDONLY);
+    int in = open(outf, O_RDONLY | O_BINARY);
     if(in < 0) {
         perror("");
         printf("Unable to open %s for reading", outf);

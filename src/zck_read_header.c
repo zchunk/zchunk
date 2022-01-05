@@ -23,6 +23,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#define STDERR_FILENO 2
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -123,7 +124,7 @@ int main (int argc, char *argv[]) {
 
     zck_set_log_level(arguments.log_level);
 
-    int src_fd = open(arguments.args[0], O_RDONLY);
+    int src_fd = open(arguments.args[0], O_RDONLY | O_BINARY);
     if(src_fd < 0) {
         printf("Unable to open %s\n", arguments.args[0]);
         perror("");
@@ -132,12 +133,12 @@ int main (int argc, char *argv[]) {
 
     zckCtx *zck = zck_create();
     if(zck == NULL) {
-        dprintf(STDERR_FILENO, "%s", zck_get_error(NULL));
+        ZCK_LOG_ERROR("%s", zck_get_error(NULL));
         zck_clear_error(NULL);
         exit(1);
     }
     if(!zck_init_read(zck, src_fd)) {
-        dprintf(STDERR_FILENO, "Error reading zchunk header: %s",
+        ZCK_LOG_ERROR("Error reading zchunk header: %s",
                 zck_get_error(zck));
         zck_free(&zck);
         exit(1);
@@ -172,16 +173,16 @@ int main (int argc, char *argv[]) {
             chk=zck_get_next_chunk(chk)) {
             char *digest = zck_get_chunk_digest(chk);
             if(digest == NULL) {
-                dprintf(STDERR_FILENO, "%s", zck_get_error(zck));
+                ZCK_LOG_ERROR("%s", zck_get_error(zck));
                 exit(1);
             }
             char *digest_uncompressed = zck_get_chunk_digest_uncompressed(chk);
             if (!digest_uncompressed)
                 digest_uncompressed = "";
 
-	    if (chk == zck_get_first_chunk(zck)) {
-		    bool has_uncompressed = (strlen(digest_uncompressed) > 0);
-		    if (has_uncompressed)
+        if (chk == zck_get_first_chunk(zck)) {
+            bool has_uncompressed = (strlen(digest_uncompressed) > 0);
+            if (has_uncompressed)
                         printf("       Chunk Checksum %*cChecksum uncompressed %*c       Start    Comp size         Size\n",
                            (((int)zck_get_chunk_digest_size(zck) * 2) - (int)strlen("Checksum")), ' ',
                            ((int)zck_get_chunk_digest_size(zck) * 2) - (int)strlen("Uncompressed Checksum"), ' ');
@@ -189,7 +190,7 @@ int main (int argc, char *argv[]) {
                         printf("       Chunk Checksum %*c        Start    Comp size         Size\n",
                               (((int)zck_get_chunk_digest_size(zck) * 2) - (int)strlen("Checksum")), ' ');
 
-	    }
+        }
             printf("%12lu %s %s %12lu %12lu %12lu",
                    (long unsigned)zck_get_chunk_number(chk),
                    digest,

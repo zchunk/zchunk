@@ -75,6 +75,12 @@ typedef size_t (*zck_wcb)(void *ptr, size_t l, size_t c, void *dl_v);
     #define ZCK_PUBLIC_API __attribute__((visibility("default")))
 #endif
 
+#ifdef _WIN32
+#define ZCK_LOG_ERROR(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define ZCK_LOG_ERROR(...) dprintf(STDERR_FILENO, __VA_ARGS__)
+#endif
+
 /*******************************************************************
  * Reading a zchunk file
  *******************************************************************/

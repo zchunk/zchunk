@@ -23,7 +23,18 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#ifdef _WIN32
+#define ZCK_WARN_UNUSED
+#else
+#define ZCK_WARN_UNUSED __attribute__ ((warn_unused_result))
+#endif
+
+// O_BINARY is not defined on UNIX systems so we define it here for
+// portability purposes
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
 
 char *get_hash(char *data, size_t length, int type)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 

@@ -20,7 +20,8 @@ endif
 if get_option('with-zstd') == 'disabled'
     zstd_dep = dependency('', required : false)
 else
-    zstd_dep = dependency('libzstd', required : get_option('with-zstd') == 'enabled')
+    zstd_dep = dependency('libzstd', required : get_option('with-zstd') == 'enabled',
+                          default_options: ['bin_programs=false', 'zlib=disabled', 'lzma=disabled', 'lz4=disabled'])
     if zstd_dep.found()
         add_project_arguments('-DZCHUNK_ZSTD', language : 'c')
         if zstd_dep.version().version_compare('<=1.4.9')

@@ -3,6 +3,10 @@
 
 char* basename(char* path)
 {
+    // note this is not a proper basename implementation
+    char *p = strrchr (path, '\\');
+    return p ? p + 1 : (char *) path;
+
     // char full_path[MAX_PATH], drive[MAX_PATH], dir[MAX_PATH], filename[MAX_PATH], ext[MAX_PATH];
 
     // printf("Input: %s", path);
@@ -17,8 +21,6 @@ char* basename(char* path)
     // const char* res = malloc(MAX_PATH);
     // sprintf(res, "%s%s", filename, ext);
     // printf("Result: %s", res);
-    char *p = strrchr (path, '\\');
-    return p ? p + 1 : (char *) path;
 
     // return res;
 }

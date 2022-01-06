@@ -147,7 +147,12 @@ int get_tmp_fd(zckCtx *zck) {
     int temp_fd;
     char *fname = NULL;
     char template[] = "zcktempXXXXXX";
+
+    #ifdef _WIN32
+    char *tmpdir = getenv("TEMP");
+    #else
     char *tmpdir = getenv("TMPDIR");
+    #endif
 
     if(tmpdir == NULL) {
         tmpdir = "/tmp/";
@@ -165,7 +170,11 @@ int get_tmp_fd(zckCtx *zck) {
     for(i=0; i<strlen(tmpdir); i++)
         fname[i] = tmpdir[i];
     int offset = i;
+    #ifdef _WIN32
+    fname[offset] = '\\';
+    #else
     fname[offset] = '/';
+    #endif
     offset++;
     for(i=0; i<strlen(template); i++)
         fname[offset + i] = template[i];
@@ -178,9 +187,9 @@ int get_tmp_fd(zckCtx *zck) {
     #ifdef _WIN32
     errno_t out = _mktemp_s(
         fname,
-        offset
+        offset + 1
     );
-    temp_fd = open(fname);
+    temp_fd = open(fname, O_CREAT | O_EXCL | O_RDWR | O_BINARY);
     #else
     old_mode_mask = umask (S_IXUSR | S_IRWXG | S_IRWXO);
     temp_fd = mkstemp(fname);
@@ -191,11 +200,14 @@ int get_tmp_fd(zckCtx *zck) {
         set_error(zck, "Unable to create temporary file");
         return -1;
     }
+#ifndef _WIN32
+    // Files with open file handle cannot be removed on Windows
     if(unlink(fname) < 0) {
         free(fname);
         set_error(zck, "Unable to delete temporary file");
         return -1;
     }
+#endif
     free(fname);
     return temp_fd;
 }

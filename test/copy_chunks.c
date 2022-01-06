@@ -40,6 +40,10 @@
 #include "zck_private.h"
 #include "util.h"
 
+#ifdef _WIN32
+char* basename(char*);
+#endif
+
 int main (int argc, char *argv[]) {
     zck_set_log_level(ZCK_LOG_DEBUG);
     char *path = zmalloc(strlen(argv[1])+1);

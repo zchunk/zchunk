@@ -60,10 +60,10 @@ if host_machine.system() == 'windows'
 endif
 
 if build_machine.system() == 'windows' or build_machine.system() == 'darwin' or build_machine.system() == 'freebsd' or not cc.links('#include <argp.h>\nstatic error_t parse_opt (int key, char *arg, struct argp_state *state) { argp_usage(state); return 0; }; void main() {}')
-   inc += include_directories(get_option('prefix') / 'include')
-   argplib = cc.find_library('argp', dirs : get_option('prefix') / 'lib')
+    inc += include_directories(join_paths([get_option('prefix'), 'include']))
+    argplib = cc.find_library('argp', dirs : join_paths([get_option('prefix'), 'lib']))
 else
-   argplib = dependency('', required : false)
+    argplib = dependency('', required : false)
 endif
 
 subdir('include')

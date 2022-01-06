@@ -31,7 +31,7 @@ jobs:
         shell: bash -l {0}
         if: runner.os != 'Windows'
         run: |
-          meson builddir
+          meson builddir --prefix=$CONDA_PREFIX
           cd builddir
           ninja
       - name: Run zchunk tests

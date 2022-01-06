@@ -14,4 +14,9 @@
 
 void version();
 
+#ifdef _WIN32
+// add correct declaration for basename
+char* basename(char*);
+#endif
+
 #endif

@@ -5,6 +5,11 @@ char* basename(char* path)
 {
     // note this is not a proper basename implementation
     char *p = strrchr (path, '\\');
+    if (p == NULL)
+    {
+        // sometimes we pass paths on win with "/" seperators
+        p = strrchr(path, '/');
+    }
     return p ? p + 1 : (char *) path;
 
     // char full_path[MAX_PATH], drive[MAX_PATH], dir[MAX_PATH], filename[MAX_PATH], ext[MAX_PATH];

@@ -59,7 +59,6 @@ int main (int argc, char *argv[]) {
     char *cmd = untaint(argv[1]);
     char *outf = argv[2];
     char *echecksum = argv[3];
-
     char **args = calloc(argc-2, sizeof(void*));
 
     args[0] = cmd;
@@ -68,7 +67,15 @@ int main (int argc, char *argv[]) {
 
     int status;
 #ifdef _WIN32
-    status = system(cmd);
+    char* fullcmd = malloc(2000);
+    strcpy(fullcmd, args[0]);
+    for(int i=1; i<argc-3; i++)
+    {
+        strcat(fullcmd, " ");
+        strcat(fullcmd, args[i]);
+    }
+    status = system(fullcmd);
+    free(fullcmd);
 #else
     pid_t child_pid;
 
@@ -97,11 +104,11 @@ int main (int argc, char *argv[]) {
         exit(1);
     }
     /* Files must be smaller than 1MB  */
-    char data[1024*1024] = {0};
+    char* data = malloc(1024*1024);
     ssize_t len = read(in, data, 1024*1024);
     if(len < 0) {
         perror("");
-        printf("Unable to read from %s", outf);
+        printf("Unable to read from %s\n", outf);
         exit(1);
     }
     char *cksum = get_hash(data, len, ZCK_HASH_SHA256);
@@ -116,5 +123,6 @@ int main (int argc, char *argv[]) {
     for(int i=0; i<argc-3; i++)
         free(args[i]);
     free(args);
+    free(data);
     return 0;
 }

@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <string.h>
 
 // note this is not a proper basename implementation
 char* basename(char* path)

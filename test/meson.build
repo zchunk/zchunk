@@ -342,6 +342,11 @@ if build_machine.endian() != 'big'
     if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.3')
         check_sha = '437a0ec28def0c7f361402f6bb337cb963e6a3682bc742dd9e56171f6ece9881'
     endif
+    if host_machine.system() == 'windows'
+        split_at = '^<text:'
+    else
+        split_at = '<text:'
+    endif
     test(
         'compress manual file - no dict',
         shacheck,
@@ -350,7 +355,7 @@ if build_machine.endian() != 'big'
             'LICENSE.manual.nodict.fodt.zck',
             check_sha,
             '-m',
-            '-s', '<text:',
+            '-s', split_at,
             '-o', 'LICENSE.manual.nodict.fodt.zck',
             join_paths(file_path, 'LICENSE.fodt')
         ]
@@ -395,7 +400,7 @@ if build_machine.endian() != 'big'
             check_sha,
             '-D', join_paths(file_path, 'LICENSE.dict'),
             '-m',
-            '-s', '<text:',
+            '-s', split_at,
             '-o', 'LICENSE.manual.dict.fodt.zck',
             join_paths(file_path, 'LICENSE.fodt')
         ]

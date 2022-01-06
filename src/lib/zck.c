@@ -35,6 +35,9 @@
 #include <unistd.h>
 #include <errno.h>
 #include <zck.h>
+#ifdef _WIN32
+#include <fcntl.h>
+#endif
 
 #include "zck_private.h"
 

@@ -56,11 +56,10 @@ jobs:
           CALL micromamba activate zchunk_test_env
           meson setup builddir
           meson compile -C builddir
-      # TODO tests are not yet built
-      # - name: Run zchunk tests
-      #   shell: cmd /C CALL {0}
-      #   if: runner.os == 'Windows'
-      #   run: |
-      #     micromamba activate zchunk_test_env
-      #     cd builddir
-      #     ninja test
+      - name: Run zchunk tests
+        shell: cmd /C CALL {0}
+        if: runner.os == 'Windows'
+        run: |
+          CALL micromamba activate zchunk_test_env
+          cd builddir
+          ninja test

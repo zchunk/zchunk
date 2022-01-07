@@ -122,7 +122,7 @@ int main (int argc, char *argv[]) {
         exit(retval);
 
     if (argc < 1) {
-        ZCK_LOG_ERROR("Usage : %s filename", argv[0]);
+        LOG_ERROR("Usage : %s filename", argv[0]);
         exit(1);
     }
 
@@ -132,12 +132,12 @@ int main (int argc, char *argv[]) {
     zckCtx *zckSrc = zck_create();
     zckCtx *zckDst = zck_create();
     if(!zckSrc || !zckDst) {
-        ZCK_LOG_ERROR("%s", zck_get_error(NULL));
+        LOG_ERROR("%s", zck_get_error(NULL));
         zck_clear_error(NULL);
         exit(1);
     }
     if(!zck_init_write(zckSrc, dst_fd)) {
-        ZCK_LOG_ERROR("Unable to write %s ",
+        LOG_ERROR("Unable to write %s ",
                 zck_get_error(zckSrc));
         exit(1);
     }
@@ -145,7 +145,7 @@ int main (int argc, char *argv[]) {
     int in_fd = open(arguments.args[0], O_RDONLY | O_BINARY);
     off_t in_size = 0;
     if(in_fd < 0) {
-        ZCK_LOG_ERROR("Unable to open %s for reading",
+        LOG_ERROR("Unable to open %s for reading",
                 arguments.args[0]);
         perror("");
         exit(1);
@@ -156,14 +156,14 @@ int main (int argc, char *argv[]) {
      */
     int zck_fd = open(arguments.args[1], O_RDONLY | O_BINARY);
     if(zck_fd < 0) {
-        ZCK_LOG_ERROR("Unable to open %s for reading",
+        LOG_ERROR("Unable to open %s for reading",
                 arguments.args[1]);
         perror("");
         exit(1);
     }
 
     if(!zck_init_read(zckDst, zck_fd)) {
-        ZCK_LOG_ERROR("Error reading zchunk header: %s",
+        LOG_ERROR("Error reading zchunk header: %s",
                 zck_get_error(zckDst));
         zck_free(&zckSrc);
         zck_free(&zckDst);
@@ -172,7 +172,7 @@ int main (int argc, char *argv[]) {
 
     in_size = lseek(in_fd, 0, SEEK_END);
     if(in_size < 0) {
-        ZCK_LOG_ERROR("Unable to seek to end of input file");
+        LOG_ERROR("Unable to seek to end of input file");
         exit(1);
     }
     if(lseek(in_fd, 0, SEEK_SET) < 0) {
@@ -181,25 +181,25 @@ int main (int argc, char *argv[]) {
     }
 
     if(!zck_set_ioption(zckSrc, ZCK_UNCOMP_HEADER, 1)) {
-        ZCK_LOG_ERROR("%s\n", zck_get_error(zckSrc));
+        LOG_ERROR("%s\n", zck_get_error(zckSrc));
         exit(1);
     }
     if(!zck_set_ioption(zckSrc, ZCK_COMP_TYPE, ZCK_COMP_NONE))
         exit(1);
     if(!zck_set_ioption(zckSrc, ZCK_HASH_CHUNK_TYPE, ZCK_HASH_SHA256)) {
-        ZCK_LOG_ERROR("Unable to set hash type %s\n", zck_get_error(zckSrc));
+        LOG_ERROR("Unable to set hash type %s\n", zck_get_error(zckSrc));
         exit(1);
     }
 
     char *buf = malloc(BUFSIZE);
     if (!buf) {
-        ZCK_LOG_ERROR("Unable to allocate buffer\n");
+        LOG_ERROR("Unable to allocate buffer\n");
         exit(1);
     }
     ssize_t n;
     while ((n = read(in_fd, buf, BUFSIZE)) > 0) {
         if (zck_write(zckSrc, buf, n) < 0) {
-            ZCK_LOG_ERROR("zck_write failed: %s\n", zck_get_error(zckSrc));
+            LOG_ERROR("zck_write failed: %s\n", zck_get_error(zckSrc));
             exit(1);
         }
     }

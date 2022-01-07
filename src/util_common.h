@@ -19,4 +19,10 @@ void version();
 char* basename(char*);
 #endif
 
+#ifdef _WIN32
+#define LOG_ERROR(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define LOG_ERROR(...) dprintf(STDERR_FILENO, __VA_ARGS__)
+#endif
+
 #endif

@@ -133,12 +133,12 @@ int main (int argc, char *argv[]) {
 
     zckCtx *zck = zck_create();
     if(zck == NULL) {
-        ZCK_LOG_ERROR("%s", zck_get_error(NULL));
+        LOG_ERROR("%s", zck_get_error(NULL));
         zck_clear_error(NULL);
         exit(1);
     }
     if(!zck_init_read(zck, src_fd)) {
-        ZCK_LOG_ERROR("Error reading zchunk header: %s",
+        LOG_ERROR("Error reading zchunk header: %s",
                 zck_get_error(zck));
         zck_free(&zck);
         exit(1);
@@ -173,7 +173,7 @@ int main (int argc, char *argv[]) {
             chk=zck_get_next_chunk(chk)) {
             char *digest = zck_get_chunk_digest(chk);
             if(digest == NULL) {
-                ZCK_LOG_ERROR("%s", zck_get_error(zck));
+                LOG_ERROR("%s", zck_get_error(zck));
                 exit(1);
             }
             char *digest_uncompressed = zck_get_chunk_digest_uncompressed(chk);

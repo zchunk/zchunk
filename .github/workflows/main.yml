@@ -8,71 +8,45 @@ on:
       - main
 
 jobs:
-  test:
-    runs-on: ${{ matrix.os }}
+  ubuntu:
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        container_directory: [none, fedora-latest, centos-7, alpine-edge]
-        exclude:
-          - os: macos-latest
-            container_directory: fedora-latest
-          - os: macos-latest
-            container_directory: centos-7
-          - os: macos-latest
-            container_directory: alpine-edge
-          - os: windows-latest
-            container_directory: fedora-latest
-          - os: windows-latest
-            container_directory: centos-7
-          - os: windows-latest
-            container_directory: alpine-edge
-          - os: ubuntu-latest
-            container_directory: none
+        container_directory: [fedora-latest, centos-7, alpine-edge, opensuse-leap, debian-latest, ubuntu-rolling]
 
-    name: Compile and Run Tests
+    name: Compile and run tests
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Prep container
+        run: ./autotest/${{ matrix.container_directory }}/prep.sh
+
+      - name: Compile zchunk
+        run: ./autotest/${{ matrix.container_directory }}/build.sh
+
+      - name: Run zchunk tests
+        run: ./autotest/${{ matrix.container_directory }}/test.sh
+
+  windows:
+    runs-on: windows-latest
+
+    name: Compile and run tests (windows-latest)
     steps:
       - uses: actions/checkout@v2
 
       - uses: actions/checkout@v2
-        if: runner.os == 'Windows'
         with:
           repository: wolfv/argp-standalone
           path: argp-standalone
 
-      - name: install mamba
+      - name: Install mamba
         uses: mamba-org/provision-with-micromamba@main
-        if: runner.os == 'Windows' || runner.os == 'macOS'
         with:
           environment-file: .github/environment.yml
 
-      - name: Compile zchunk in container
-        if: runner.os == 'Linux'
-        run: ./autotest/${{ matrix.container_directory }}/build.sh
-
-      - name: Run zchunk tests in container
-        if: runner.os == 'Linux'
-        run: ./autotest/${{ matrix.container_directory }}/test.sh
-
-      - name: Compile zchunk on macOS
-        shell: bash -l {0}
-        if: runner.os == 'macOS'
-        run: |
-          meson builddir --prefix=$CONDA_PREFIX
-          cd builddir
-          ninja
-
-      - name: Run zchunk tests on macOS
-        shell: bash -l {0}
-        if: runner.os == 'macOS'
-        run: |
-          cd builddir
-          ninja test
-
-      - name: Compile argp-standalone for Windows
+      - name: Compile argp-standalone
         shell: cmd /C CALL {0}
-        if: runner.os == 'Windows'
         run: |
           CALL micromamba activate zchunk_test_env
           cd argp-standalone
@@ -80,18 +54,41 @@ jobs:
           meson compile -C builddir --prefix=%CONDA_PREFIX%\Library
           meson install -C builddir
 
-      - name: Compile zchunk on Windows
+      - name: Compile zchunk
         shell: cmd /C CALL {0}
-        if: runner.os == 'Windows'
         run: |
           CALL micromamba activate zchunk_test_env
           meson setup builddir
           meson compile -C builddir
 
-      - name: Run zchunk tests on Windows
+      - name: Run zchunk tests
         shell: cmd /C CALL {0}
-        if: runner.os == 'Windows'
         run: |
           CALL micromamba activate zchunk_test_env
+          cd builddir
+          ninja test
+
+  macos:
+    runs-on: macos-latest
+
+    name: Compile and run tests (macos-latest)
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install mamba
+        uses: mamba-org/provision-with-micromamba@main
+        with:
+          environment-file: .github/environment.yml
+
+      - name: Compile zchunk
+        shell: bash -l {0}
+        run: |
+          meson builddir --prefix=$CONDA_PREFIX
+          cd builddir
+          ninja
+
+      - name: Run zchunk tests
+        shell: bash -l {0}
+        run: |
           cd builddir
           ninja test

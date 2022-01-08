@@ -44,7 +44,7 @@
 
 
 /* If lead format changes, this needs to be changed */
-ZCK_PUBLIC_API int zck_get_min_download_size() {
+int ZCK_PUBLIC_API zck_get_min_download_size() {
     /* Magic + hash type + hash digest + header size */
     return 5 + MAX_COMP_SIZE*2 + get_max_hash_size();
 }
@@ -246,7 +246,7 @@ bool import_dict(zckCtx *zck) {
     return true;
 }
 
-ZCK_PUBLIC_API bool zck_set_soption(zckCtx *zck, zck_soption option, const char *value,
+bool ZCK_PUBLIC_API zck_set_soption(zckCtx *zck, zck_soption option, const char *value,
                             size_t length) {
     VALIDATE_BOOL(zck);
     char *data = zmalloc(length);
@@ -301,7 +301,7 @@ ZCK_PUBLIC_API bool zck_set_soption(zckCtx *zck, zck_soption option, const char 
     return true;
 }
 
-ZCK_PUBLIC_API bool zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t value) {
+bool ZCK_PUBLIC_API zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t value) {
     VALIDATE_BOOL(zck);
 
     /* Set hash type */
@@ -359,7 +359,7 @@ ZCK_PUBLIC_API bool zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t val
     return true;
 }
 
-ZCK_PUBLIC_API bool zck_close(zckCtx *zck) {
+bool ZCK_PUBLIC_API zck_close(zckCtx *zck) {
     VALIDATE_BOOL(zck);
 
     if(zck->mode == ZCK_MODE_WRITE) {
@@ -387,7 +387,7 @@ ZCK_PUBLIC_API bool zck_close(zckCtx *zck) {
     return true;
 }
 
-ZCK_PUBLIC_API void zck_free(zckCtx **zck) {
+void ZCK_PUBLIC_API zck_free(zckCtx **zck) {
     if(zck == NULL || *zck == NULL)
         return;
     zck_clear(*zck);
@@ -395,7 +395,7 @@ ZCK_PUBLIC_API void zck_free(zckCtx **zck) {
     *zck = NULL;
 }
 
-ZCK_PUBLIC_API zckCtx *zck_create() {
+zckCtx ZCK_PUBLIC_API *zck_create() {
     zckCtx *zck = zmalloc(sizeof(zckCtx));
     if (!zck) {
        zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
@@ -407,7 +407,7 @@ ZCK_PUBLIC_API zckCtx *zck_create() {
     return zck;
 }
 
-ZCK_PUBLIC_API bool zck_init_adv_read (zckCtx *zck, int src_fd) {
+bool ZCK_PUBLIC_API zck_init_adv_read (zckCtx *zck, int src_fd) {
     VALIDATE_BOOL(zck);
 
     zck->mode = ZCK_MODE_READ;
@@ -415,7 +415,7 @@ ZCK_PUBLIC_API bool zck_init_adv_read (zckCtx *zck, int src_fd) {
     return true;
 }
 
-ZCK_PUBLIC_API bool zck_init_read (zckCtx *zck, int src_fd) {
+bool ZCK_PUBLIC_API zck_init_read (zckCtx *zck, int src_fd) {
     VALIDATE_BOOL(zck);
 
     if(!zck_init_adv_read(zck, src_fd)) {
@@ -436,7 +436,7 @@ ZCK_PUBLIC_API bool zck_init_read (zckCtx *zck, int src_fd) {
     return true;
 }
 
-ZCK_PUBLIC_API bool zck_init_write (zckCtx *zck, int dst_fd) {
+bool ZCK_PUBLIC_API zck_init_write (zckCtx *zck, int dst_fd) {
     VALIDATE_BOOL(zck);
 
     zck->mode = ZCK_MODE_WRITE;
@@ -461,12 +461,12 @@ ZCK_PUBLIC_API bool zck_init_write (zckCtx *zck, int dst_fd) {
     return true;
 }
 
-ZCK_PUBLIC_API int zck_get_fd(zckCtx *zck) {
+int ZCK_PUBLIC_API zck_get_fd(zckCtx *zck) {
     VALIDATE_BOOL(zck);
     return zck->fd;
 }
 
-ZCK_PUBLIC_API bool zck_set_fd(zckCtx *zck, int fd) {
+bool ZCK_PUBLIC_API zck_set_fd(zckCtx *zck, int fd) {
     VALIDATE_BOOL(zck);
     zck->fd = fd;
     return true;

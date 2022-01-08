@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Build zchunk-alpine:edge if it doesn't exist
 HAVE_IMAGE=$(docker image ls -q zchunk-alpine:test)
 if [ "$HAVE_IMAGE" == "" ]; then

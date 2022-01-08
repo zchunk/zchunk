@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 docker pull opensuse/leap
 if [ "$?" -ne 0 ]; then
         exit 1

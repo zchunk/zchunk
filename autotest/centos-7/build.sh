@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Build zchunk-centos:7 if it doesn't exist
 HAVE_IMAGE=$(docker image ls -q zchunk-centos:7)
 if [ "$HAVE_IMAGE" == "" ]; then

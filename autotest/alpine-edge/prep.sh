@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 docker pull alpine:edge
 if [ "$?" -ne 0 ]; then
         exit 1

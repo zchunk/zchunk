@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Build zchunk-fedora:latest if it doesn't exist
 HAVE_IMAGE=$(docker image ls -q zchunk-fedora:test)
 if [ "$HAVE_IMAGE" == "" ]; then

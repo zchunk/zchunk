@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Build zchunk-opensuse:latest if it doesn't exist
 HAVE_IMAGE=$(docker image ls -q zchunk-opensuse:latest)
 if [ "$HAVE_IMAGE" == "" ]; then

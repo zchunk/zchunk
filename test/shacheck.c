@@ -68,11 +68,16 @@ int main (int argc, char *argv[]) {
     int status;
 #ifdef _WIN32
     char* fullcmd = malloc(2000);
-    strcpy(fullcmd, args[0]);
+    if (!fullcmd)
+    {
+        printf("Unable to allocate 2000 bytes\n");
+        exit(1);
+    }
+    strcpy_s(fullcmd, 2000, args[0]);
     for(int i=1; i<argc-3; i++)
     {
-        strcat(fullcmd, " ");
-        strcat(fullcmd, args[i]);
+        strcat_s(fullcmd, 2000, " ");
+        strcat_s(fullcmd, 2000, args[i]);
     }
     status = system(fullcmd);
     free(fullcmd);
@@ -105,6 +110,11 @@ int main (int argc, char *argv[]) {
     }
     /* Files must be smaller than 1MB  */
     char* data = malloc(1024*1024);
+    if (!data)
+    {
+        printf("Could not allocate 1024*1024 bytes for reading\n");
+        exit(1);
+    }
     ssize_t len = read(in, data, 1024*1024);
     if(len < 0) {
         perror("");

@@ -172,8 +172,7 @@ int main (int argc, char *argv[]) {
     char *base_name = NULL;
     char *out_name = NULL;
     if(arguments.output == NULL) {
-        // base_name = basename(arguments.args[0]);
-        base_name = arguments.args[0];
+        base_name = basename(arguments.args[0]);
         out_name = malloc(strlen(base_name) + 5);
         assert(out_name);
         snprintf(out_name, strlen(base_name) + 5, "%s.zck", base_name);
@@ -191,7 +190,7 @@ int main (int argc, char *argv[]) {
         int dict_fd = open(arguments.dict, O_RDONLY | O_BINARY);
         if(dict_fd < 0) {
             LOG_ERROR("Unable to open dictionary %s for reading",
-                          arguments.dict);
+                      arguments.dict);
             perror("");
             exit(1);
         }

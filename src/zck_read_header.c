@@ -180,9 +180,9 @@ int main (int argc, char *argv[]) {
             if (!digest_uncompressed)
                 digest_uncompressed = "";
 
-        if (chk == zck_get_first_chunk(zck)) {
-            bool has_uncompressed = (strlen(digest_uncompressed) > 0);
-            if (has_uncompressed)
+            if (chk == zck_get_first_chunk(zck)) {
+                bool has_uncompressed = (strlen(digest_uncompressed) > 0);
+                if (has_uncompressed)
                         printf("       Chunk Checksum %*cChecksum uncompressed %*c       Start    Comp size         Size\n",
                            (((int)zck_get_chunk_digest_size(zck) * 2) - (int)strlen("Checksum")), ' ',
                            ((int)zck_get_chunk_digest_size(zck) * 2) - (int)strlen("Uncompressed Checksum"), ' ');
@@ -190,7 +190,7 @@ int main (int argc, char *argv[]) {
                         printf("       Chunk Checksum %*c        Start    Comp size         Size\n",
                               (((int)zck_get_chunk_digest_size(zck) * 2) - (int)strlen("Checksum")), ' ');
 
-        }
+            }
             printf("%12lu %s %s %12lu %12lu %12lu",
                    (long unsigned)zck_get_chunk_number(chk),
                    digest,

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 docker pull fedora:latest
 if [ "$?" -ne 0 ]; then
         exit 1

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Build zchunk-debian:latest if it doesn't exist
 HAVE_IMAGE=$(docker image ls -q zchunk-debian:latest)
 if [ "$HAVE_IMAGE" == "" ]; then

@@ -1,35 +1,59 @@
 util_sources = []
 subdir('lib')
-incdir = include_directories(['lib', '../src/lib', '../include'])
+incdir = [include_directories(['lib', '../src/lib', '../include'])]
+if build_machine.system() == 'windows'
+    incdir += include_directories('../src/lib/win32')
+endif
+
+if host_machine.system() == 'windows'
+    preprocessor_defines = '-DZCHUNK_STATIC_LIB=1'
+    win_basename = ['../src/lib/win32/basename.c']
+else
+    preprocessor_defines = []
+    win_basename = []
+endif
+
+
 empty = executable('empty', ['empty.c'] + util_sources,
                    include_directories: incdir,
-                   dependencies: [zstd_dep, openssl_dep])
+                   dependencies: [zstd_dep, openssl_dep],
+                   c_args: preprocessor_defines)
 optelems = executable('optelems', ['optelems.c'] + util_sources,
                      include_directories: incdir,
-                     dependencies: [zstd_dep, openssl_dep])
-copy_chunks = executable('copy_chunks', ['copy_chunks.c'] + util_sources,
+                     dependencies: [zstd_dep, openssl_dep],
+                     c_args: preprocessor_defines)
+copy_chunks = executable('copy_chunks', ['copy_chunks.c'] + win_basename + util_sources,
                      include_directories: incdir,
-                     dependencies: [zstd_dep, openssl_dep])
+                     dependencies: [zstd_dep, openssl_dep],
+                     c_args: preprocessor_defines)
 
 invalid_input_checksum = executable('invalid_input_checksum',
                                     ['invalid_input_checksum.c'] + util_sources,
                                     include_directories: incdir,
-                                    dependencies: [zstd_dep, openssl_dep])
+                                    dependencies: [zstd_dep, openssl_dep],
+                                    c_args: preprocessor_defines)
 read_single_chunk = executable('read_single_chunk',
                                ['read_single_chunk.c'] + util_sources,
                                include_directories: incdir,
-                               dependencies: [zstd_dep, openssl_dep])
+                               dependencies: [zstd_dep, openssl_dep],
+                               c_args: preprocessor_defines)
 read_single_comp_chunk = executable('read_single_comp_chunk',
                                     ['read_single_comp_chunk.c'] + util_sources,
                                     include_directories: incdir,
-                                    dependencies: [zstd_dep, openssl_dep])
-shacheck = executable('shacheck', ['shacheck.c'] + util_sources, include_directories: incdir, dependencies: [zstd_dep, openssl_dep])
+                                    dependencies: [zstd_dep, openssl_dep],
+                                    c_args: preprocessor_defines)
+shacheck = executable('shacheck', 
+                      ['shacheck.c'] + util_sources,
+                      include_directories: incdir,
+                      dependencies: [zstd_dep, openssl_dep],
+                      c_args: preprocessor_defines)
 zck_cmp_uncomp = executable(
     'zck_cmp_uncomp',
     ['zck_cmp_uncomp.c'],
-    include_directories: incdir,
+    include_directories: inc + incdir,
     dependencies: argplib,
     link_with: zcklib,
+    c_args: preprocessor_defines,
     install: false
 )
 file_path = join_paths(meson.source_root(), 'test/files')
@@ -318,6 +342,11 @@ if build_machine.endian() != 'big'
     if zstd_dep.found() and zstd_dep.version().version_compare('<=1.3.3')
         check_sha = '437a0ec28def0c7f361402f6bb337cb963e6a3682bc742dd9e56171f6ece9881'
     endif
+    if host_machine.system() == 'windows'
+        split_at = '^<text:'
+    else
+        split_at = '<text:'
+    endif
     test(
         'compress manual file - no dict',
         shacheck,
@@ -326,7 +355,7 @@ if build_machine.endian() != 'big'
             'LICENSE.manual.nodict.fodt.zck',
             check_sha,
             '-m',
-            '-s', '<text:',
+            '-s', split_at,
             '-o', 'LICENSE.manual.nodict.fodt.zck',
             join_paths(file_path, 'LICENSE.fodt')
         ]
@@ -371,7 +400,7 @@ if build_machine.endian() != 'big'
             check_sha,
             '-D', join_paths(file_path, 'LICENSE.dict'),
             '-m',
-            '-s', '<text:',
+            '-s', split_at,
             '-o', 'LICENSE.manual.dict.fodt.zck',
             join_paths(file_path, 'LICENSE.fodt')
         ]

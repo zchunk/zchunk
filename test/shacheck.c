@@ -34,7 +34,9 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <zck.h>
+#ifndef _WIN32
 #include <sys/wait.h>
+#endif
 #include "zck_private.h"
 #include "util.h"
 
@@ -57,7 +59,6 @@ int main (int argc, char *argv[]) {
     char *cmd = untaint(argv[1]);
     char *outf = argv[2];
     char *echecksum = argv[3];
-
     char **args = calloc(argc-2, sizeof(void*));
 
     args[0] = cmd;
@@ -65,6 +66,22 @@ int main (int argc, char *argv[]) {
         args[i] = untaint(argv[i+3]);
 
     int status;
+#ifdef _WIN32
+    char* fullcmd = malloc(2000);
+    if (!fullcmd)
+    {
+        printf("Unable to allocate 2000 bytes\n");
+        exit(1);
+    }
+    strcpy_s(fullcmd, 2000, args[0]);
+    for(int i=1; i<argc-3; i++)
+    {
+        strcat_s(fullcmd, 2000, " ");
+        strcat_s(fullcmd, 2000, args[i]);
+    }
+    status = system(fullcmd);
+    free(fullcmd);
+#else
     pid_t child_pid;
 
     child_pid = fork();
@@ -78,24 +95,30 @@ int main (int argc, char *argv[]) {
     } else {
         waitpid(child_pid, &status, 0);
     }
+#endif
     if (status != 0) {
         printf("Error running command\n");
         exit(1);
     }
 
     /* Open zchunk file and check that checksum matches */
-    int in = open(outf, O_RDONLY);
+    int in = open(outf, O_RDONLY | O_BINARY);
     if(in < 0) {
         perror("");
         printf("Unable to open %s for reading", outf);
         exit(1);
     }
     /* Files must be smaller than 1MB  */
-    char data[1024*1024] = {0};
+    char* data = malloc(1024*1024);
+    if (!data)
+    {
+        printf("Could not allocate 1024*1024 bytes for reading\n");
+        exit(1);
+    }
     ssize_t len = read(in, data, 1024*1024);
     if(len < 0) {
         perror("");
-        printf("Unable to read from %s", outf);
+        printf("Unable to read from %s\n", outf);
         exit(1);
     }
     char *cksum = get_hash(data, len, ZCK_HASH_SHA256);
@@ -110,5 +133,6 @@ int main (int argc, char *argv[]) {
     for(int i=0; i<argc-3; i++)
         free(args[i]);
     free(args);
+    free(data);
     return 0;
 }

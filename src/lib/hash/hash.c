@@ -463,7 +463,7 @@ int validate_header(zckCtx *zck) {
 }
 
 /* Returns 1 if data hash matches, -1 if it doesn't and 0 if error */
-int PUBLIC zck_validate_data_checksum(zckCtx *zck) {
+int ZCK_PUBLIC_API zck_validate_data_checksum(zckCtx *zck) {
     VALIDATE_READ_BOOL(zck);
 
     if(!seek_data(zck, zck->data_offset, SEEK_SET))
@@ -495,7 +495,7 @@ int PUBLIC zck_validate_data_checksum(zckCtx *zck) {
     return ret;
 }
 
-const char PUBLIC *zck_hash_name_from_type(int hash_type) {
+const ZCK_PUBLIC_API char *zck_hash_name_from_type(int hash_type) {
     if(hash_type >= ZCK_HASH_UNKNOWN || hash_type < 0) {
         snprintf(unknown+8, 21, "%i)", hash_type);
         return unknown;
@@ -503,49 +503,49 @@ const char PUBLIC *zck_hash_name_from_type(int hash_type) {
     return HASH_NAME[hash_type];
 }
 
-int PUBLIC zck_get_full_hash_type(zckCtx *zck) {
+int ZCK_PUBLIC_API zck_get_full_hash_type(zckCtx *zck) {
     VALIDATE_INT(zck);
 
     return zck->hash_type.type;
 }
 
-ssize_t PUBLIC zck_get_full_digest_size(zckCtx *zck) {
+ssize_t ZCK_PUBLIC_API zck_get_full_digest_size(zckCtx *zck) {
     VALIDATE_INT(zck);
 
     return zck->hash_type.digest_size;
 }
 
-int PUBLIC zck_get_chunk_hash_type(zckCtx *zck) {
+int ZCK_PUBLIC_API zck_get_chunk_hash_type(zckCtx *zck) {
     VALIDATE_INT(zck);
 
     return zck->index.hash_type;
 }
 
-ssize_t PUBLIC zck_get_chunk_digest_size(zckCtx *zck) {
+ssize_t ZCK_PUBLIC_API zck_get_chunk_digest_size(zckCtx *zck) {
     VALIDATE_INT(zck);
 
     return zck->index.digest_size;
 }
 
-char PUBLIC *zck_get_header_digest(zckCtx *zck) {
+char ZCK_PUBLIC_API *zck_get_header_digest(zckCtx *zck) {
     VALIDATE_PTR(zck);
 
     return get_digest_string(zck->header_digest, zck->hash_type.digest_size);
 }
 
-char PUBLIC *zck_get_data_digest(zckCtx *zck) {
+char ZCK_PUBLIC_API *zck_get_data_digest(zckCtx *zck) {
     VALIDATE_PTR(zck);
 
     return get_digest_string(zck->full_hash_digest, zck->hash_type.digest_size);
 }
 
-char PUBLIC *zck_get_chunk_digest(zckChunk *item) {
+char ZCK_PUBLIC_API *zck_get_chunk_digest(zckChunk *item) {
     if(item == NULL)
         return NULL;
     return get_digest_string(item->digest, item->digest_size);
 }
 
-char PUBLIC *zck_get_chunk_digest_uncompressed(zckChunk *item) {
+char ZCK_PUBLIC_API *zck_get_chunk_digest_uncompressed(zckChunk *item) {
     if(item == NULL || !item->zck->has_uncompressed_source)
         return NULL;
     return get_digest_string(item->digest_uncompressed, item->digest_size);
@@ -553,14 +553,14 @@ char PUBLIC *zck_get_chunk_digest_uncompressed(zckChunk *item) {
 
 
 /* Returns 1 if all chunks are valid, -1 if even one isn't and 0 if error */
-int PUBLIC zck_find_valid_chunks(zckCtx *zck) {
+int ZCK_PUBLIC_API zck_find_valid_chunks(zckCtx *zck) {
     VALIDATE_READ_BOOL(zck);
 
     return validate_checksums(zck, ZCK_LOG_DEBUG);
 }
 
 /* Returns 1 if all checksums matched, -1 if even one doesn't and 0 if error */
-int PUBLIC zck_validate_checksums(zckCtx *zck) {
+int ZCK_PUBLIC_API zck_validate_checksums(zckCtx *zck) {
     VALIDATE_READ_BOOL(zck);
 
     return validate_checksums(zck, ZCK_LOG_WARNING);

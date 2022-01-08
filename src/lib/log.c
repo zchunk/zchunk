@@ -34,19 +34,23 @@
 #include "zck_private.h"
 
 static zck_log_type log_level = ZCK_LOG_ERROR;
+#ifdef _WIN32
+static int log_fd = 2;
+#else
 static int log_fd = STDERR_FILENO;
+#endif
 
 static logcallback callback = NULL; 
 
-void PUBLIC zck_set_log_level(zck_log_type ll) {
+void ZCK_PUBLIC_API zck_set_log_level(zck_log_type ll) {
     log_level = ll;
 }
 
-void PUBLIC zck_set_log_fd(int fd) {
+void ZCK_PUBLIC_API zck_set_log_fd(int fd) {
     log_fd = fd;
 }
 
-void PUBLIC zck_set_log_callback(logcallback function) {
+void ZCK_PUBLIC_API zck_set_log_callback(logcallback function) {
     if (!function)
         return;
     callback = function;
@@ -60,9 +64,26 @@ void zck_log_v(const char *function, zck_log_type lt, const char *format,
     if (callback) {
         callback(function, lt, format, args);
     } else {
+#ifdef _WIN32
+        if (log_fd == 2)
+        {
+            fprintf(stderr, "%s: ", function);
+            vfprintf(stderr, format, args);
+            fprintf(stderr, "\n");
+        }
+        else
+        {
+            FILE *fstream = _fdopen(log_fd, "a+");
+            fprintf(fstream, "%s: ", function);
+            vfprintf(fstream, format, args);
+            fprintf(fstream, "\n");
+            _close(fstream);
+        }
+#else
         dprintf(log_fd, "%s: ", function);
         vdprintf(log_fd, format, args);
         dprintf(log_fd, "\n");
+#endif
     }
 }
 

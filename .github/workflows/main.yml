@@ -13,23 +13,53 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
     name: Compile and Run Tests
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
+        with:
+          repository: wolfv/argp-standalone
+          path: argp-standalone
+
       - name: install mamba
         uses: mamba-org/provision-with-micromamba@main
         with:
           environment-file: .github/environment.yml
       - name: Compile zchunk
         shell: bash -l {0}
+        if: runner.os != 'Windows'
         run: |
-          meson builddir
+          meson builddir --prefix=$CONDA_PREFIX
           cd builddir
           ninja
       - name: Run zchunk tests
         shell: bash -l {0}
+        if: runner.os != 'Windows'
         run: |
+          cd builddir
+          ninja test
+      - name: Compile argp-standalone
+        shell: cmd /C CALL {0}
+        if: runner.os == 'Windows'
+        run: |
+          CALL micromamba activate zchunk_test_env
+          cd argp-standalone
+          meson setup builddir
+          meson compile -C builddir --prefix=%CONDA_PREFIX%\Library
+          meson install -C builddir
+      - name: Compile zchunk
+        shell: cmd /C CALL {0}
+        if: runner.os == 'Windows'
+        run: |
+          CALL micromamba activate zchunk_test_env
+          meson setup builddir
+          meson compile -C builddir
+      - name: Run zchunk tests
+        shell: cmd /C CALL {0}
+        if: runner.os == 'Windows'
+        run: |
+          CALL micromamba activate zchunk_test_env
           cd builddir
           ninja test

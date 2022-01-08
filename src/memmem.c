@@ -37,7 +37,11 @@ void *memmem(const void *haystack, size_t n, const void *needle, size_t m)
     if (m > n || !m || !n)
         return NULL;
 
+#ifndef _WIN32
     if (__builtin_expect((m > 1), 1)) {
+#else
+    if (m > 1) {
+#endif
         const unsigned char*  y = (const unsigned char*) haystack;
         const unsigned char*  x = (const unsigned char*) needle;
         size_t                j = 0;

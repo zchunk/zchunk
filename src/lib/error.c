@@ -81,14 +81,14 @@ void set_error_wf(zckCtx *zck, int fatal, const char *function,
 
 }
 
-int PUBLIC zck_is_error(zckCtx *zck) {
+int ZCK_PUBLIC_API zck_is_error(zckCtx *zck) {
     if(zck == NULL)
         zck = &zck_none;
 
     return zck->error_state;
 }
 
-const char PUBLIC *zck_get_error(zckCtx *zck) {
+const char ZCK_PUBLIC_API *zck_get_error(zckCtx *zck) {
     if(zck == NULL)
         zck = &zck_none;
 
@@ -97,7 +97,7 @@ const char PUBLIC *zck_get_error(zckCtx *zck) {
     return zck->msg;
 }
 
-bool PUBLIC zck_clear_error(zckCtx *zck) {
+bool ZCK_PUBLIC_API zck_clear_error(zckCtx *zck) {
     if(zck != NULL && zck->error_state > 1)
         return false;
 

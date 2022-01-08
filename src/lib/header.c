@@ -553,13 +553,13 @@ static bool read_lead(zckCtx *zck) {
     return true;
 }
 
-bool PUBLIC zck_read_lead(zckCtx *zck) {
+bool ZCK_PUBLIC_API zck_read_lead(zckCtx *zck) {
     VALIDATE_BOOL(zck);
 
     return read_lead(zck);
 }
 
-bool PUBLIC zck_validate_lead(zckCtx *zck) {
+bool ZCK_PUBLIC_API zck_validate_lead(zckCtx *zck) {
     VALIDATE_BOOL(zck);
 
     int retval = read_lead(zck);
@@ -581,7 +581,7 @@ bool PUBLIC zck_validate_lead(zckCtx *zck) {
     return retval;
 }
 
-bool PUBLIC zck_read_header(zckCtx *zck) {
+bool ZCK_PUBLIC_API zck_read_header(zckCtx *zck) {
     VALIDATE_READ_BOOL(zck);
 
     if(!read_header_from_file(zck))
@@ -595,17 +595,17 @@ bool PUBLIC zck_read_header(zckCtx *zck) {
     return true;
 }
 
-ssize_t PUBLIC zck_get_header_length(zckCtx *zck) {
+ssize_t ZCK_PUBLIC_API zck_get_header_length(zckCtx *zck) {
     VALIDATE_INT(zck);
     return zck->lead_size + zck->header_length;
 }
 
-ssize_t PUBLIC zck_get_lead_length(zckCtx *zck) {
+ssize_t ZCK_PUBLIC_API zck_get_lead_length(zckCtx *zck) {
     VALIDATE_INT(zck);
     return zck->lead_size;
 }
 
-ssize_t PUBLIC zck_get_data_length(zckCtx *zck) {
+ssize_t ZCK_PUBLIC_API zck_get_data_length(zckCtx *zck) {
     VALIDATE_INT(zck);
     zckChunk *idx = zck->index.first;
     while(idx->next != NULL)
@@ -613,7 +613,7 @@ ssize_t PUBLIC zck_get_data_length(zckCtx *zck) {
     return idx->start + idx->comp_length;
 }
 
-ssize_t PUBLIC zck_get_length(zckCtx *zck) {
+ssize_t ZCK_PUBLIC_API zck_get_length(zckCtx *zck) {
     VALIDATE_INT(zck);
     return zck_get_header_length(zck) + zck_get_data_length(zck);
 }

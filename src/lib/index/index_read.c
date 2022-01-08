@@ -32,6 +32,8 @@
 #include <sys/endian.h>
 #elif __APPLE__
 #include <machine/endian.h>
+#elif defined(_WIN32)
+// no endian.h available
 #else
 #include <endian.h>
 #endif
@@ -149,13 +151,13 @@ bool index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
     return true;
 }
 
-ssize_t PUBLIC zck_get_chunk_count(zckCtx *zck) {
+ssize_t ZCK_PUBLIC_API zck_get_chunk_count(zckCtx *zck) {
     VALIDATE_INT(zck);
 
     return zck->index.count;
 }
 
-zckChunk PUBLIC *zck_get_chunk(zckCtx *zck, size_t number) {
+zckChunk ZCK_PUBLIC_API *zck_get_chunk(zckCtx *zck, size_t number) {
     VALIDATE_PTR(zck);
 
     for(zckChunk *idx=zck->index.first; idx!=NULL; idx=idx->next) {
@@ -166,13 +168,13 @@ zckChunk PUBLIC *zck_get_chunk(zckCtx *zck, size_t number) {
     return NULL;
 }
 
-zckChunk PUBLIC *zck_get_first_chunk(zckCtx *zck) {
+zckChunk ZCK_PUBLIC_API *zck_get_first_chunk(zckCtx *zck) {
     VALIDATE_PTR(zck);
 
     return zck->index.first;
 }
 
-zckChunk PUBLIC *zck_get_next_chunk(zckChunk *idx) {
+zckChunk ZCK_PUBLIC_API *zck_get_next_chunk(zckChunk *idx) {
     if(idx && idx->zck) {
         VALIDATE_PTR(idx->zck);
         ALLOCD_PTR(idx->zck, idx);
@@ -183,7 +185,7 @@ zckChunk PUBLIC *zck_get_next_chunk(zckChunk *idx) {
     return idx->next;
 }
 
-zckChunk PUBLIC *zck_get_src_chunk(zckChunk *idx) {
+zckChunk ZCK_PUBLIC_API *zck_get_src_chunk(zckChunk *idx) {
     if(idx && idx->zck) {
         VALIDATE_PTR(idx->zck);
         ALLOCD_PTR(idx->zck, idx);
@@ -194,7 +196,7 @@ zckChunk PUBLIC *zck_get_src_chunk(zckChunk *idx) {
     return idx->src;
 }
 
-ssize_t PUBLIC zck_get_chunk_start(zckChunk *idx) {
+ssize_t ZCK_PUBLIC_API zck_get_chunk_start(zckChunk *idx) {
     if(idx && idx->zck) {
         VALIDATE_INT(idx->zck);
         ALLOCD_INT(idx->zck, idx);
@@ -208,7 +210,7 @@ ssize_t PUBLIC zck_get_chunk_start(zckChunk *idx) {
         return idx->start;
 }
 
-ssize_t PUBLIC zck_get_chunk_size(zckChunk *idx) {
+ssize_t ZCK_PUBLIC_API zck_get_chunk_size(zckChunk *idx) {
     if(idx && idx->zck) {
         VALIDATE_INT(idx->zck);
         ALLOCD_INT(idx->zck, idx);
@@ -219,7 +221,7 @@ ssize_t PUBLIC zck_get_chunk_size(zckChunk *idx) {
     return idx->length;
 }
 
-ssize_t PUBLIC zck_get_chunk_comp_size(zckChunk *idx) {
+ssize_t ZCK_PUBLIC_API zck_get_chunk_comp_size(zckChunk *idx) {
     if(idx && idx->zck) {
         VALIDATE_INT(idx->zck);
         ALLOCD_INT(idx->zck, idx);
@@ -230,7 +232,7 @@ ssize_t PUBLIC zck_get_chunk_comp_size(zckChunk *idx) {
     return idx->comp_length;
 }
 
-ssize_t PUBLIC zck_get_chunk_number(zckChunk *idx) {
+ssize_t ZCK_PUBLIC_API zck_get_chunk_number(zckChunk *idx) {
     if(idx && idx->zck) {
         VALIDATE_INT(idx->zck);
         ALLOCD_INT(idx->zck, idx);
@@ -241,7 +243,7 @@ ssize_t PUBLIC zck_get_chunk_number(zckChunk *idx) {
     return idx->number;
 }
 
-int PUBLIC zck_get_chunk_valid(zckChunk *idx) {
+int ZCK_PUBLIC_API zck_get_chunk_valid(zckChunk *idx) {
     if(idx && idx->zck) {
         VALIDATE_INT(idx->zck);
         ALLOCD_INT(idx->zck, idx);
@@ -252,7 +254,7 @@ int PUBLIC zck_get_chunk_valid(zckChunk *idx) {
     return idx->valid;
 }
 
-bool PUBLIC zck_compare_chunk_digest(zckChunk *a, zckChunk *b) {
+bool ZCK_PUBLIC_API zck_compare_chunk_digest(zckChunk *a, zckChunk *b) {
     if(a && a->zck) {
         VALIDATE_BOOL(a->zck);
         ALLOCD_BOOL(a->zck, a);
@@ -273,7 +275,7 @@ bool PUBLIC zck_compare_chunk_digest(zckChunk *a, zckChunk *b) {
     return true;
 }
 
-int PUBLIC zck_missing_chunks(zckCtx *zck) {
+int ZCK_PUBLIC_API zck_missing_chunks(zckCtx *zck) {
     VALIDATE_READ_INT(zck);
 
     int missing = 0;
@@ -283,7 +285,7 @@ int PUBLIC zck_missing_chunks(zckCtx *zck) {
     return missing;
 }
 
-int PUBLIC zck_failed_chunks(zckCtx *zck) {
+int ZCK_PUBLIC_API zck_failed_chunks(zckCtx *zck) {
     VALIDATE_READ_INT(zck);
 
     int failed = 0;
@@ -293,7 +295,7 @@ int PUBLIC zck_failed_chunks(zckCtx *zck) {
     return failed;
 }
 
-void PUBLIC zck_reset_failed_chunks(zckCtx *zck) {
+void ZCK_PUBLIC_API zck_reset_failed_chunks(zckCtx *zck) {
     if(!zck)
         return;
 
@@ -303,7 +305,7 @@ void PUBLIC zck_reset_failed_chunks(zckCtx *zck) {
     return;
 }
 
-bool PUBLIC zck_generate_hashdb(zckCtx *zck) {
+bool ZCK_PUBLIC_API zck_generate_hashdb(zckCtx *zck) {
     if (zck->index.ht || zck->index.htuncomp) {
         zck_log(ZCK_LOG_ERROR, "Hash DB already present, it could not be created");
         return false;

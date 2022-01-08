@@ -10,3 +10,4 @@ dependencies:
 - pkg-config
 - openssl
 - sel(osx): argp-standalone
+- sel(win): cmake

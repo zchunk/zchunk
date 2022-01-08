@@ -32,12 +32,17 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#ifndef _WIN32
 #include <libgen.h>
+#endif
 #include <errno.h>
 #include <zck.h>
-#include <libgen.h>
 #include "zck_private.h"
 #include "util.h"
+
+#ifdef _WIN32
+char* basename(char*);
+#endif
 
 int main (int argc, char *argv[]) {
     zck_set_log_level(ZCK_LOG_DEBUG);
@@ -45,12 +50,12 @@ int main (int argc, char *argv[]) {
     strcpy(path, argv[1]);
 
     char *base_name = basename(path);
-    int in = open(argv[1], O_RDONLY);
+    int in = open(argv[1], O_RDONLY | O_BINARY);
     if(in < 0) {
         perror("Unable to open LICENSE.header.new.nodict.fodt.zck for reading");
         exit(1);
     }
-    int tgt = open(base_name, O_RDWR | O_CREAT, 0666);
+    int tgt = open(base_name, O_RDWR | O_CREAT | O_BINARY, 0666);
     if(tgt < 0) {
         perror("Unable to open LICENSE.header.new.nodict.fodt.zck for writing");
         exit(1);
@@ -75,7 +80,7 @@ int main (int argc, char *argv[]) {
     }
 
     /* Open source zchunk file and read header */
-    int src = open(argv[2], O_RDONLY);
+    int src = open(argv[2], O_RDONLY | O_BINARY);
     if(src < 0) {
         perror("Unable to open LICENSE.nodict.fodt.zck for reading");
         exit(1);

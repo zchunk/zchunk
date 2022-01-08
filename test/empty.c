@@ -41,7 +41,7 @@ static char *checksum="8efaeb8e7b3d51a943353f7e6ca4a22266f18c3ef10478b20d50040f4
 
 int main (int argc, char *argv[]) {
     /* Create empty zchunk file */
-    int out = open("empty.zck", O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    int out = open("empty.zck", O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0666);
     if(out < 0) {
         perror("Unable to open empty.zck for writing");
         exit(1);
@@ -60,7 +60,7 @@ int main (int argc, char *argv[]) {
     zck_free(&zck);
 
     /* Open zchunk file and check that checksum matches */
-    int in = open("empty.zck", O_RDONLY);
+    int in = open("empty.zck", O_RDONLY | O_BINARY);
     if(in < 0) {
         perror("Unable to open empty.zck for reading");
         exit(1);

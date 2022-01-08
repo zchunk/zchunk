@@ -140,7 +140,7 @@ static bool range_add(zckRange *info, zckChunk *chk, zckCtx *zck) {
     return true;
 }
 
-void PUBLIC zck_range_free(zckRange **info) {
+void ZCK_PUBLIC_API zck_range_free(zckRange **info) {
     zckRangeItem *next = (*info)->first;
     while(next) {
         zckRangeItem *tmp = next;
@@ -152,7 +152,7 @@ void PUBLIC zck_range_free(zckRange **info) {
     *info = NULL;
 }
 
-char PUBLIC *zck_get_range_char(zckCtx *zck, zckRange *range) {
+char ZCK_PUBLIC_API *zck_get_range_char(zckCtx *zck, zckRange *range) {
     int buf_size = BUF_SIZE;
     char *output = zmalloc(buf_size);
     if (!output) {
@@ -189,7 +189,7 @@ char PUBLIC *zck_get_range_char(zckCtx *zck, zckRange *range) {
     return output;
 }
 
-zckRange PUBLIC *zck_get_missing_range(zckCtx *zck, int max_ranges) {
+zckRange ZCK_PUBLIC_API *zck_get_missing_range(zckCtx *zck, int max_ranges) {
     VALIDATE_PTR(zck);
 
     zckRange *range = zmalloc(sizeof(zckRange));
@@ -211,7 +211,7 @@ zckRange PUBLIC *zck_get_missing_range(zckCtx *zck, int max_ranges) {
     return range;
 }
 
-char PUBLIC *zck_get_range(size_t start, size_t end) {
+char ZCK_PUBLIC_API *zck_get_range(size_t start, size_t end) {
     zckRange range = {0};
     zckRangeItem ri = {0};
     zckCtx *zck = zck_create();
@@ -223,7 +223,7 @@ char PUBLIC *zck_get_range(size_t start, size_t end) {
     return ret;
 }
 
-int PUBLIC zck_get_range_count(zckRange *range) {
+int ZCK_PUBLIC_API zck_get_range_count(zckRange *range) {
     ALLOCD_INT(NULL, range);
 
     return range->count;

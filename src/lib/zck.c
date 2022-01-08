@@ -35,13 +35,16 @@
 #include <unistd.h>
 #include <errno.h>
 #include <zck.h>
+#ifdef _WIN32
+#include <fcntl.h>
+#endif
 
 #include "zck_private.h"
 
 
 
 /* If lead format changes, this needs to be changed */
-int PUBLIC zck_get_min_download_size() {
+int ZCK_PUBLIC_API zck_get_min_download_size() {
     /* Magic + hash type + hash digest + header size */
     return 5 + MAX_COMP_SIZE*2 + get_max_hash_size();
 }
@@ -97,6 +100,7 @@ static int hex_to_int (char c) {
     return result;
 }
 
+
 static char *ascii_checksum_to_bin (zckCtx *zck, char *checksum,
                                     int checksum_length) {
     char *raw_checksum = zmalloc(checksum_length/2);
@@ -146,7 +150,12 @@ int get_tmp_fd(zckCtx *zck) {
     int temp_fd;
     char *fname = NULL;
     char template[] = "zcktempXXXXXX";
+
+    #ifdef _WIN32
+    char *tmpdir = getenv("TEMP");
+    #else
     char *tmpdir = getenv("TMPDIR");
+    #endif
 
     if(tmpdir == NULL) {
         tmpdir = "/tmp/";
@@ -164,27 +173,44 @@ int get_tmp_fd(zckCtx *zck) {
     for(i=0; i<strlen(tmpdir); i++)
         fname[i] = tmpdir[i];
     int offset = i;
+    #ifdef _WIN32
+    fname[offset] = '\\';
+    #else
     fname[offset] = '/';
+    #endif
     offset++;
     for(i=0; i<strlen(template); i++)
         fname[offset + i] = template[i];
     offset += i;
     fname[offset] = '\0';
 
+    typedef int mode_t;
     mode_t old_mode_mask;
+
+    #ifdef _WIN32
+    errno_t out = _mktemp_s(
+        fname,
+        offset + 1
+    );
+    temp_fd = open(fname, O_CREAT | O_EXCL | O_RDWR | O_BINARY);
+    #else
     old_mode_mask = umask (S_IXUSR | S_IRWXG | S_IRWXO);
     temp_fd = mkstemp(fname);
     umask(old_mode_mask);
+    #endif
     if(temp_fd < 0) {
         free(fname);
         set_error(zck, "Unable to create temporary file");
         return -1;
     }
+#ifndef _WIN32
+    // Files with open file handle cannot be removed on Windows
     if(unlink(fname) < 0) {
         free(fname);
         set_error(zck, "Unable to delete temporary file");
         return -1;
     }
+#endif
     free(fname);
     return temp_fd;
 }
@@ -220,7 +246,7 @@ bool import_dict(zckCtx *zck) {
     return true;
 }
 
-bool PUBLIC zck_set_soption(zckCtx *zck, zck_soption option, const char *value,
+bool ZCK_PUBLIC_API zck_set_soption(zckCtx *zck, zck_soption option, const char *value,
                             size_t length) {
     VALIDATE_BOOL(zck);
     char *data = zmalloc(length);
@@ -275,7 +301,7 @@ bool PUBLIC zck_set_soption(zckCtx *zck, zck_soption option, const char *value,
     return true;
 }
 
-bool PUBLIC zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t value) {
+bool ZCK_PUBLIC_API zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t value) {
     VALIDATE_BOOL(zck);
 
     /* Set hash type */
@@ -333,7 +359,7 @@ bool PUBLIC zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t value) {
     return true;
 }
 
-bool PUBLIC zck_close(zckCtx *zck) {
+bool ZCK_PUBLIC_API zck_close(zckCtx *zck) {
     VALIDATE_BOOL(zck);
 
     if(zck->mode == ZCK_MODE_WRITE) {
@@ -361,7 +387,7 @@ bool PUBLIC zck_close(zckCtx *zck) {
     return true;
 }
 
-void PUBLIC zck_free(zckCtx **zck) {
+void ZCK_PUBLIC_API zck_free(zckCtx **zck) {
     if(zck == NULL || *zck == NULL)
         return;
     zck_clear(*zck);
@@ -369,7 +395,7 @@ void PUBLIC zck_free(zckCtx **zck) {
     *zck = NULL;
 }
 
-zckCtx PUBLIC *zck_create() {
+zckCtx ZCK_PUBLIC_API *zck_create() {
     zckCtx *zck = zmalloc(sizeof(zckCtx));
     if (!zck) {
        zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
@@ -381,7 +407,7 @@ zckCtx PUBLIC *zck_create() {
     return zck;
 }
 
-bool PUBLIC zck_init_adv_read (zckCtx *zck, int src_fd) {
+bool ZCK_PUBLIC_API zck_init_adv_read (zckCtx *zck, int src_fd) {
     VALIDATE_BOOL(zck);
 
     zck->mode = ZCK_MODE_READ;
@@ -389,7 +415,7 @@ bool PUBLIC zck_init_adv_read (zckCtx *zck, int src_fd) {
     return true;
 }
 
-bool PUBLIC zck_init_read (zckCtx *zck, int src_fd) {
+bool ZCK_PUBLIC_API zck_init_read (zckCtx *zck, int src_fd) {
     VALIDATE_BOOL(zck);
 
     if(!zck_init_adv_read(zck, src_fd)) {
@@ -410,7 +436,7 @@ bool PUBLIC zck_init_read (zckCtx *zck, int src_fd) {
     return true;
 }
 
-bool PUBLIC zck_init_write (zckCtx *zck, int dst_fd) {
+bool ZCK_PUBLIC_API zck_init_write (zckCtx *zck, int dst_fd) {
     VALIDATE_BOOL(zck);
 
     zck->mode = ZCK_MODE_WRITE;
@@ -435,12 +461,12 @@ bool PUBLIC zck_init_write (zckCtx *zck, int dst_fd) {
     return true;
 }
 
-int PUBLIC zck_get_fd(zckCtx *zck) {
+int ZCK_PUBLIC_API zck_get_fd(zckCtx *zck) {
     VALIDATE_BOOL(zck);
     return zck->fd;
 }
 
-bool PUBLIC zck_set_fd(zckCtx *zck, int fd) {
+bool ZCK_PUBLIC_API zck_set_fd(zckCtx *zck, int fd) {
     VALIDATE_BOOL(zck);
     zck->fd = fd;
     return true;

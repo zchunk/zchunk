@@ -1,7 +1,7 @@
 project(
     'zck', 'c',
     version : '1.1.16',
-    meson_version : '>=0.44.0',
+    meson_version : '>=0.53.0',
     default_options : ['c_std=gnu99']
 )
 
@@ -10,6 +10,7 @@ so_version = '1'
 common_cflags = [
     '-Wunused-result',
 ]
+fs = import('fs')
 cc = meson.get_compiler('c')
 add_project_arguments(cc.get_supported_arguments(common_cflags), language : 'c')
 
@@ -60,7 +61,9 @@ if host_machine.system() == 'windows'
 endif
 
 if build_machine.system() == 'windows' or build_machine.system() == 'darwin' or build_machine.system() == 'freebsd' or not cc.links('#include <argp.h>\nstatic error_t parse_opt (int key, char *arg, struct argp_state *state) { argp_usage(state); return 0; }; void main() {}')
-    inc += include_directories(join_paths([get_option('prefix'), 'include']))
+    if fs.is_dir(join_paths([get_option('prefix'), 'include']))
+        inc += include_directories(join_paths([get_option('prefix'), 'include']))
+    endif
     argplib = cc.find_library('argp', dirs : join_paths([get_option('prefix'), 'lib']))
 else
     argplib = dependency('', required : false)

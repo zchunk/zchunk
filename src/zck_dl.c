@@ -34,7 +34,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#ifndef _WIN32
 #include <libgen.h>
+#endif
 #include <unistd.h>
 #include <errno.h>
 #include <argp.h>

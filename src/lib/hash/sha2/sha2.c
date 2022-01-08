@@ -946,4 +946,3 @@ int main(void)
 }
 
 #endif /* TEST_VECTORS */
-

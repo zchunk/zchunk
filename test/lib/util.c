@@ -49,4 +49,3 @@ char *get_hash(char *data, size_t length, int type) {
     free(digest);
     return digest_string;
 }
-

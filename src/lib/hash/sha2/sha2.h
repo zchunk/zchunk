@@ -105,4 +105,3 @@ void sha512(const unsigned char *message, unsigned int len,
 #endif
 
 #endif /* !SHA2_H */
-

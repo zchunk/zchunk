@@ -154,4 +154,3 @@ void SHA1_Final(sha1_byte digest[SHA1_DIGEST_LENGTH], SHA_CTX *context) {
         memset(context->count, 0, 8);
         memset(&finalcount, 0, 8);
 }
-

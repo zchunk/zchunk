@@ -1,7 +1,7 @@
 # zchunk
 
 [![Coverity Scan Build Status](https://img.shields.io/coverity/scan/16509.svg)](https://scan.coverity.com/projects/zchunk-zchunk)<br>
-[![Jenkins Build Status](https://jenkins.zchunk.net/buildStatus/icon?job=zchunk)](https://jenkins.zchunk.net)
+[![GitHub Actions Test Status](https://github.com/zchunk/zchunk/actions/workflows/main.yml/badge.svg)](https://github.com/zchunk/zchunk/actions)
 
 zchunk is a compressed file format that splits the file into independent chunks.
 This allows you to only download changed chunks when downloading a new version

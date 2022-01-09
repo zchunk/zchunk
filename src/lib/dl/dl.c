@@ -28,7 +28,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
-#include <curl/curl.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <errno.h>

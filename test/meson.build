@@ -77,13 +77,15 @@ test(
         '-V'
     ]
 )
-test(
-    'check version info in zckdl',
-    zckdl,
-    args: [
-        '-V'
-    ]
-)
+if curl_dep.found()
+    test(
+        'check version info in zckdl',
+        zckdl,
+        args: [
+            '-V'
+        ]
+    )
+endif
 test(
     'check version info in zck_read_header',
     zck_read_header,
@@ -149,15 +151,17 @@ test(
     ],
     is_parallel: false
 )
-test(
-    'check verbosity in zckdl',
-    zckdl,
-    args: [
-        '-vvvvv',
-        'file:///empty'
-    ],
-    should_fail: true
-)
+if curl_dep.found()
+    test(
+        'check verbosity in zckdl',
+        zckdl,
+        args: [
+            '-vvvvv',
+            'file:///empty'
+        ],
+        should_fail: true
+    )
+endif
 test(
     'check verbosity in zck_read_header',
     zck_read_header,

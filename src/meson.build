@@ -22,14 +22,6 @@ unzck = executable(
     link_with: zcklib,
     install: true
 )
-zckdl = executable(
-    'zckdl',
-    ['zck_dl.c', 'util_common.c'] + extra_win_src,
-    include_directories: inc,
-    dependencies: [argplib, curl_dep],
-    link_with: zcklib,
-    install: true
-)
 zck_gen_zdict = executable(
     'zck_gen_zdict',
     ['zck_gen_zdict.c', 'util_common.c'] + extra_win_src,
@@ -54,3 +46,13 @@ zck_delta_size = executable(
     link_with: zcklib,
     install: true
 )
+if curl_dep.found()
+    zckdl = executable(
+        'zckdl',
+        ['zck_dl.c', 'util_common.c'] + extra_win_src,
+        include_directories: inc,
+        dependencies: [argplib, curl_dep],
+        link_with: zcklib,
+        install: true
+    )
+endif

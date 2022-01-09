@@ -91,15 +91,14 @@ jobs:
         shell: cmd /C CALL {0}
         run: |
           cd argp-standalone
-          meson setup --vsenv builddir
+          meson setup builddir
           meson compile -C builddir
           meson install -C builddir
 
       - name: Compile zchunk
         shell: cmd /C CALL {0}
         run: |
-          meson wrap install zstd
-          meson setup --vsenv builddir
+          meson setup builddir
           meson compile -C builddir
 
       - name: Run zchunk tests

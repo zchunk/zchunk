@@ -34,12 +34,9 @@ endif
 
 # curl dependency
 if build_machine.system() == 'windows'
-    curl_dep = dependency('curl', modules: 'CURL::libcurl', required : get_option('with-curl'))
+    curl_dep = dependency('curl', modules : 'CURL::libcurl', required : get_option('with-curl'), disabler : true)
 else
-    curl_dep = dependency('libcurl', required : get_option('with-curl'))
-endif
-if not curl_dep.found()
-    curl_dep = disabler()
+    curl_dep = dependency('libcurl', required : get_option('with-curl'), disabler : true)
 endif
 
 # openssl dependency

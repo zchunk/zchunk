@@ -46,13 +46,11 @@ zck_delta_size = executable(
     link_with: zcklib,
     install: true
 )
-if curl_dep.found()
-    zckdl = executable(
-        'zckdl',
-        ['zck_dl.c', 'util_common.c'] + extra_win_src,
-        include_directories: inc,
-        dependencies: [argplib, curl_dep],
-        link_with: zcklib,
-        install: true
-    )
-endif
+zckdl = executable(
+    'zckdl',
+    ['zck_dl.c', 'util_common.c'] + extra_win_src,
+    include_directories: inc,
+    dependencies: [argplib, curl_dep],
+    link_with: zcklib,
+    install: true
+)

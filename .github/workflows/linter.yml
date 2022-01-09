@@ -1,0 +1,23 @@
+name: Run Linters
+
+on:
+  push:
+   branches:
+     - main
+  pull_request:
+    branches:
+     - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: install mamba
+      uses: mamba-org/provision-with-micromamba@v11
+      with:
+        environment-file: .github/lint_environment.yml
+    - name: Run all linters
+      shell: bash -l {0}
+      run: |
+        pre-commit run --all-files --verbose

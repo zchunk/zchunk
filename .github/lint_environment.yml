@@ -1,0 +1,7 @@
+name: lint
+channels:
+  - conda-forge
+dependencies:
+  - pre-commit
+  - pip
+  # - clang-format ==X.X

@@ -89,3 +89,5 @@ install_man([
     'doc/zck_read_header.1',
     'doc/zckdl.1',
 ])
+
+libzck_dep = declare_dependency(link_with: zcklib, include_directories: 'include')

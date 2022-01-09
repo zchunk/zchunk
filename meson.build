@@ -20,7 +20,7 @@ endif
 
 # zstd dependency
 if build_machine.system() == 'windows'
-    zstd_dep = dependency('zstd', modules: 'zstd::libzstd_shared', required : get_option('with-zstd'), fallback: 'zstd')
+    zstd_dep = dependency('zstd', modules: 'zstd::libzstd_shared', required : get_option('with-zstd'), fallback: ['zstd', 'libzstd_dep'])
 else
     zstd_dep = dependency('libzstd', required : get_option('with-zstd'), fallback: 'zstd',
                           default_options: ['bin_programs=false', 'zlib=disabled', 'lzma=disabled', 'lz4=disabled'])

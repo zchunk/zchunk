@@ -74,7 +74,7 @@ endif
 
 pkg_mod = import('pkgconfig')
 pkg_mod.generate(
-    libraries : zcklib,
+    zcklib,
     version : meson.project_version(),
     name : 'libzck',
     filebase : 'zck',

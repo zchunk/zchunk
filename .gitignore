@@ -1,4 +1,6 @@
 cov-int
 /build
+/subprojects/packagecache
+/subprojects/zstd-*
 test/abi/new
 test/abi/stable/ABI.dump

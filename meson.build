@@ -18,20 +18,17 @@ if build_machine.system() == 'freebsd'
     add_project_arguments('-DFREEBSD', language : 'c')
 endif
 
-if get_option('with-zstd') == 'disabled'
-    zstd_dep = dependency('', required : false)
+
+if build_machine.system() == 'windows'
+    zstd_dep = dependency('zstd', modules: 'zstd::libzstd_shared', required : get_option('with-zstd'), fallback: 'zstd')
 else
-    if build_machine.system() == 'windows'
-        zstd_dep = dependency('zstd', modules: 'zstd::libzstd_shared', required : get_option('with-zstd') == 'enabled')
-    else
-        zstd_dep = dependency('libzstd', required : get_option('with-zstd') == 'enabled',
-                              default_options: ['bin_programs=false', 'zlib=disabled', 'lzma=disabled', 'lz4=disabled'])
-    endif
-    if zstd_dep.found()
-        add_project_arguments('-DZCHUNK_ZSTD', language : 'c')
-        if zstd_dep.version().version_compare('<=1.4.9')
-            add_project_arguments('-DOLD_ZSTD', language : 'c')
-        endif
+    zstd_dep = dependency('libzstd', required : get_option('with-zstd'), fallback: 'zstd',
+                          default_options: ['bin_programs=false', 'zlib=disabled', 'lzma=disabled', 'lz4=disabled'])
+endif
+if zstd_dep.found()
+    add_project_arguments('-DZCHUNK_ZSTD', language : 'c')
+    if zstd_dep.version().version_compare('<=1.4.9')
+        add_project_arguments('-DOLD_ZSTD', language : 'c')
     endif
 endif
 
@@ -41,17 +38,14 @@ else
     curl_dep = dependency('libcurl')
 endif
 
-if get_option('with-openssl') == 'disabled'
-    openssl_dep = dependency('', required : false)
+
+if build_machine.system() == 'windows'
+    openssl_dep = dependency('openssl', modules : ['OpenSSL::SSL', 'OpenSSL::Crypto'], required : get_option('with-openssl'))
 else
-    if build_machine.system() == 'windows'
-        openssl_dep = dependency('openssl', modules : ['OpenSSL::SSL', 'OpenSSL::Crypto'], required : get_option('with-openssl') == 'enabled')
-    else
-        openssl_dep = dependency('openssl', required : get_option('with-openssl') == 'enabled')
-    endif
-    if openssl_dep.found()
-        add_project_arguments('-DZCHUNK_OPENSSL', language : 'c')
-    endif
+    openssl_dep = dependency('openssl', required : get_option('with-openssl'))
+endif
+if openssl_dep.found()
+    add_project_arguments('-DZCHUNK_OPENSSL', language : 'c')
 endif
 
 inc = []

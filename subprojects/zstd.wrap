@@ -8,4 +8,4 @@ patch_filename = zstd-1.4.5-1-wrap.zip
 patch_hash = fd9cb7b9c8f7092ef1597ff68f170beef65fcf33e575a621955cf405a41db1cc
 
 [provide]
-zstd = zstd_dep
+libzstd = libzstd_dep

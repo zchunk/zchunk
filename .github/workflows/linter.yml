@@ -1,0 +1,26 @@
+name: Run Linters
+
+on:
+  push:
+   branches:
+     - main
+  pull_request:
+    branches:
+     - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.x' # Version range or exact version of a Python version to use, using SemVer's version range syntax
+    - name: Install pre-commit
+      shell: bash -l {0}
+      run: |
+        pip install pre-commit
+    - name: Run all linters
+      shell: bash -l {0}
+      run: |
+        pre-commit run --all-files --verbose

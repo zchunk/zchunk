@@ -13,10 +13,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - name: install mamba
-      uses: mamba-org/provision-with-micromamba@v11
+    - uses: actions/setup-python@v2
       with:
-        environment-file: .github/lint_environment.yml
+        python-version: '3.x' # Version range or exact version of a Python version to use, using SemVer's version range syntax
+    - name: Install pre-commit
+      shell: bash -l {0}
+      run: |
+        pip install pre-commit
     - name: Run all linters
       shell: bash -l {0}
       run: |

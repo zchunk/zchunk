@@ -28,10 +28,10 @@ jobs:
       - name: Run zchunk tests
         run: ./autotest/${{ matrix.container_directory }}/test.sh
 
-  windows:
+  windows-mamba:
     runs-on: windows-latest
 
-    name: Compile and run tests (windows-latest)
+    name: Compile and run tests (windows-latest-mamba)
     steps:
       - uses: actions/checkout@v2
 
@@ -65,6 +65,45 @@ jobs:
         shell: cmd /C CALL {0}
         run: |
           CALL micromamba activate zchunk_test_env
+          cd builddir
+          ninja test
+
+  windows-meson-wrap:
+    runs-on: windows-latest
+
+    name: Compile and run tests (windows-latest-meson-wrap)
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/checkout@v2
+        with:
+          repository: wolfv/argp-standalone
+          path: argp-standalone
+
+      - uses: actions/setup-python@v1
+        with:
+          python-version: '3.x'
+
+      - name: Install meson and ninja
+        run: pip install meson ninja
+
+      - name: Compile argp-standalone
+        shell: cmd /C CALL {0}
+        run: |
+          cd argp-standalone
+          meson setup builddir
+          meson compile -C builddir
+          meson install -C builddir
+
+      - name: Compile zchunk
+        shell: cmd /C CALL {0}
+        run: |
+          meson setup builddir
+          meson compile -C builddir
+
+      - name: Run zchunk tests
+        shell: cmd /C CALL {0}
+        run: |
           cd builddir
           ninja test
 

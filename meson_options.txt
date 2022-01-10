@@ -1,3 +1,4 @@
-option('with-zstd', type : 'combo', choices : ['enabled', 'disabled', 'auto'], value : 'auto')
-option('with-openssl', type : 'combo', choices : ['enabled', 'disabled', 'auto'], value : 'auto')
+option('with-zstd', type : 'feature', value : 'auto')
+option('with-openssl', type : 'feature', value : 'auto')
+option('with-curl', type : 'feature', value : 'auto')
 option('coverity', type : 'boolean', value : false)

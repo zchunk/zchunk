@@ -306,7 +306,7 @@ int main (int argc, char *argv[]) {
 #else
     int pid = fork();
     if(pid == 0) {
-        execl("/usr/bin/zstd", "zstd", "--train", dir, "-r", "-o", out_name, NULL);
+        execl("zstd", "zstd", "--train", dir, "-r", "-o", out_name, NULL);
         LOG_ERROR("Unable to find /usr/bin/zstd\n");
         exit(1);
     }

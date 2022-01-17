@@ -278,8 +278,8 @@ bool ZCK_PUBLIC_API zck_set_soption(zckCtx *zck, zck_soption option, const char 
                                  chk_type.digest_size*2, length);
             return false;
         }
-        zck_log(ZCK_LOG_DEBUG, "Setting expected hash to (%s)%s",
-                zck_hash_name_from_type(zck->prep_hash_type), data);
+        zck_log(ZCK_LOG_DEBUG, "Setting expected hash to (%s)%.*s",
+                zck_hash_name_from_type(zck->prep_hash_type), length, data);
         zck->prep_digest = ascii_checksum_to_bin(zck, data, length);
         free(data);
         if(zck->prep_digest == NULL) {

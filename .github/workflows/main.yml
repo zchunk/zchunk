@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        container_directory: [fedora-latest, centos-7, alpine-edge, opensuse-leap, debian-latest, ubuntu-rolling]
+        container_directory: [fedora-latest, centos-7, alpine-edge, opensuse-leap, debian-latest, ubuntu-rolling, ubuntu-lts]
 
     name: Compile and run tests
     steps:

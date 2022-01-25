@@ -301,7 +301,7 @@ int main (int argc, char *argv[]) {
     /* Create dictionary */
 #ifdef _WIN32
     char buf[5000];
-    sprintf(buf, "%s --train '%s' -r -o '%s'", args.zstd_program, dir, out_name);
+    sprintf(buf, "%s --train '%s' -r -o '%s'", arguments.zstd_program, dir, out_name);
     int w = system(buf);
     if (w < 0)
     {

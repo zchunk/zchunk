@@ -36,6 +36,11 @@ Checksum type
    0 = SHA-1
    1 = SHA-256
 
+ Note: if the file has flag 2 (uncompressed source) set, the total data
+       checksum must not be checked and should not be generated.  Also, the
+       chunk checksum must not be SHA-1 or SHA-512/128, since there is no total
+       data checksum.
+
 Header size:
  This is an integer containing the size of the header, not including the lead
 
@@ -74,7 +79,7 @@ Flags
  Current flags are:
   bit 0: File has data streams
   bit 1: File has optional elements
-  bit 2: EXPERIMENTAL: File may be applied against an uncompressed source
+  bit 2: File may be applied against an uncompressed source
 
 Compression type
  This is an integer containing the type of compression used to compress dict and
@@ -174,8 +179,7 @@ Chunk checksum
  This is the checksum of the compressed chunk, used to detect whether any two
  chunks are identical.
 
-EXPERIMENTAL: NOTE: Uncompressed chunk checksum will only exist if flag 2 is set
-                    to 1
+NOTE: Uncompressed chunk checksum will only exist if flag 2 is set to 1
 Uncompressed chunk checksum
  This is the checksum of the uncompressed chunk, used to detect whether a chunk
  from an uncompressed source is identical to the compressed chunk

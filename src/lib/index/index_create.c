@@ -103,6 +103,10 @@ bool index_create(zckCtx *zck) {
     if(zck->full_hash_digest == NULL)
         return false;
 
+    /* Set hash to 0s if has_uncompressed_source is set */
+    if(zck->has_uncompressed_source)
+        memset(zck->full_hash_digest, 0, zck->hash_type.digest_size);
+
     /* Set initial malloc size */
     index_malloc  = MAX_COMP_SIZE * 2;
 
@@ -197,8 +201,10 @@ bool index_add_to_chunk(zckCtx *zck, char *data, size_t comp_size,
     if(comp_size == 0)
         return true;
 
-    if(!hash_update(zck, &(zck->full_hash), data, comp_size))
-        return false;
+    if(!zck->has_uncompressed_source) {
+        if(!hash_update(zck, &(zck->full_hash), data, comp_size))
+            return false;
+    }
     if(!hash_update(zck, &(zck->work_index_hash), data, comp_size))
         return false;
 

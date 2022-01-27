@@ -108,8 +108,10 @@ static int validate_checksums(zckCtx *zck, zck_log_type bad_checksums) {
                 zck_log(ZCK_LOG_DEBUG, "No more data");
             if(!hash_update(zck, &(zck->check_chunk_hash), buf, rsize))
                 return 0;
-            if(!hash_update(zck, &(zck->check_full_hash), buf, rsize))
-                return 0;
+            if(!zck->has_uncompressed_source) {
+                if(!hash_update(zck, &(zck->check_full_hash), buf, rsize))
+                    return 0;
+            }
             rlen += rsize;
         }
         int valid_chunk = validate_chunk(idx, bad_checksums);
@@ -411,6 +413,13 @@ int validate_current_chunk(zckCtx *zck) {
 
 int validate_file(zckCtx *zck, zck_log_type bad_checksums) {
     VALIDATE_BOOL(zck);
+    if(zck->has_uncompressed_source) {
+        zck_log(
+            ZCK_LOG_DEBUG,
+            "Skipping full file validation since uncompressed source flag is set"
+        );
+        return 1;
+    }
     char *digest = hash_finalize(zck, &(zck->check_full_hash));
     if(digest == NULL) {
         set_error(zck, "Unable to calculate full file checksum");
@@ -467,6 +476,14 @@ int validate_header(zckCtx *zck) {
 /* Returns 1 if data hash matches, -1 if it doesn't and 0 if error */
 int ZCK_PUBLIC_API zck_validate_data_checksum(zckCtx *zck) {
     VALIDATE_READ_BOOL(zck);
+
+    if(zck->has_uncompressed_source) {
+        zck_log(
+            ZCK_LOG_DEBUG,
+            "Skipping full file validation since uncompressed source flag is set"
+        );
+        return 1;
+    }
 
     if(!seek_data(zck, zck->data_offset, SEEK_SET))
         return 0;

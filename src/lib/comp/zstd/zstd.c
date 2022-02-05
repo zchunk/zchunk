@@ -218,8 +218,10 @@ static bool end_dchunk(zckCtx *zck, zckComp *comp, const bool use_dict,
         return false;
     }
     size_t retval = 0;
-    zck_log(ZCK_LOG_DEBUG, "Decompressing %lu bytes to %lu bytes", src_size,
-            fd_size);
+    zck_log(ZCK_LOG_DEBUG, "Decompressing %llu bytes to %llu bytes",
+            (long long unsigned) src_size,
+            (long long unsigned) fd_size
+    );
     if(use_dict && comp->ddict_ctx) {
         zck_log(ZCK_LOG_DEBUG, "Running decompression using dict");
         retval = ZSTD_decompress_usingDDict(comp->dctx, dst, fd_size, src,

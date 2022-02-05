@@ -164,7 +164,11 @@ zckChunk ZCK_PUBLIC_API *zck_get_chunk(zckCtx *zck, size_t number) {
         if(idx->number == number)
             return idx;
     }
-    zck_log(ZCK_LOG_WARNING, "Chunk %lu not found", number);
+    zck_log(
+        ZCK_LOG_WARNING,
+        "Chunk %llu not found",
+        (long long unsigned) number
+    );
     return NULL;
 }
 

@@ -344,10 +344,11 @@ int main (int argc, char *argv[]) {
         exit(1);
     }
     if(arguments.log_level <= ZCK_LOG_INFO) {
-        LOG_ERROR("Wrote %lu bytes in %lu chunks\n",
-                (unsigned long)(zck_get_data_length(zck) +
-                                zck_get_header_length(zck)),
-                (long)zck_get_chunk_count(zck));
+        LOG_ERROR(
+            "Wrote %llu bytes in %llu chunks\n",
+            (long long unsigned) (zck_get_data_length(zck) + zck_get_header_length(zck)),
+            (long long unsigned) zck_get_chunk_count(zck)
+        );
     }
 
     zck_free(&zck);

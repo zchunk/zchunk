@@ -163,9 +163,10 @@ char ZCK_PUBLIC_API *zck_get_range_char(zckCtx *zck, zckRange *range) {
     int count = 0;
     zckRangeItem *ri = range->first;
     while(ri) {
-        int length = snprintf(output+loc, buf_size-loc, "%lu-%lu,",
-                              (long unsigned)ri->start,
-                              (long unsigned)ri->end);
+        int length = snprintf(output+loc, buf_size-loc, "%llu-%llu,",
+                              (long long unsigned)ri->start,
+                              (long long unsigned)ri->end
+        );
         if(length < 0) {
             set_fatal_error(zck, "Unable to get range: %s", strerror(errno));
             free(output);

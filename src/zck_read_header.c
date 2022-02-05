@@ -155,15 +155,15 @@ int main (int argc, char *argv[]) {
     if(!arguments.quiet) {
         printf("Overall checksum type: %s\n",
                zck_hash_name_from_type(zck_get_full_hash_type(zck)));
-        printf("Header size: %lu\n", zck_get_header_length(zck));
+        printf("Header size: %llu\n", (long long unsigned) zck_get_header_length(zck));
         char *digest = zck_get_header_digest(zck);
         printf("Header checksum: %s\n", digest);
-        free(digest);
-        printf("Data size: %lu\n", zck_get_data_length(zck));
+        free(digest); 
+        printf("Data size: %llu\n", (long long unsigned) zck_get_data_length(zck));
         digest = zck_get_data_digest(zck);
         printf("Data checksum: %s\n", digest);
         free(digest);
-        printf("Chunk count: %lu\n", (long unsigned)zck_get_chunk_count(zck));
+        printf("Chunk count: %llu\n", (long long unsigned) zck_get_chunk_count(zck));
         printf("Chunk checksum type: %s\n", zck_hash_name_from_type(zck_get_chunk_hash_type(zck)));
     }
     if(!arguments.quiet && arguments.show_chunks)
@@ -191,13 +191,13 @@ int main (int argc, char *argv[]) {
                               (((int)zck_get_chunk_digest_size(zck) * 2) - (int)strlen("Checksum")), ' ');
 
             }
-            printf("%12lu %s %s %12lu %12lu %12lu",
-                   (long unsigned)zck_get_chunk_number(chk),
+            printf("%12llu %s %s %12llu %12llu %12llu",
+                   (long long unsigned)zck_get_chunk_number(chk),
                    digest,
                    digest_uncompressed,
-                   (long unsigned)zck_get_chunk_start(chk),
-                   (long unsigned)zck_get_chunk_comp_size(chk),
-                   (long unsigned)zck_get_chunk_size(chk));
+                   (long long unsigned)zck_get_chunk_start(chk),
+                   (long long unsigned)zck_get_chunk_comp_size(chk),
+                   (long long unsigned)zck_get_chunk_size(chk));
             if(arguments.verify) {
                 if(zck_get_chunk_valid(chk) == 1)
                     printf("  +");

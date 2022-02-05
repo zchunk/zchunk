@@ -272,10 +272,13 @@ bool ZCK_PUBLIC_API zck_set_soption(zckCtx *zck, zck_soption option, const char 
         }
         if(chk_type.digest_size*2 != length) {
             free(data);
-            set_fatal_error(zck, "Hash digest size mismatch for header "
-                                 "validation\n"
-                                 "Expected: %i\nProvided: %lu",
-                                 chk_type.digest_size*2, length);
+            set_fatal_error(
+                zck,
+                "Hash digest size mismatch for header validation\n"
+                "Expected: %i\nProvided: %llu",
+                chk_type.digest_size*2,
+                (long long unsigned) length
+            );
             return false;
         }
         zck_log(ZCK_LOG_DEBUG, "Setting expected hash to (%s)%.*s",
@@ -316,8 +319,8 @@ bool ZCK_PUBLIC_API zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t val
     } else if(option == ZCK_VAL_HEADER_HASH_TYPE) {
         VALIDATE_READ_BOOL(zck);
         if(value < 0) {
-            set_error(zck, "Header hash type can't be less than zero: %li",
-                      value);
+            set_error(zck, "Header hash type can't be less than zero: %lli",
+                      (long long) value);
             return false;
         }
         /* Make sure that header hash type is set before the header digest,
@@ -332,8 +335,8 @@ bool ZCK_PUBLIC_API zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t val
         VALIDATE_READ_BOOL(zck);
         if(value < 0) {
             set_error(zck,
-                      "Header size validation can't be less than zero: %li",
-                      value);
+                      "Header size validation can't be less than zero: %lli",
+                      (long long) value);
             return false;
         }
         zck->prep_hdr_size = value;
@@ -343,7 +346,11 @@ bool ZCK_PUBLIC_API zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t val
     /* Hash options */
     } else if(option < 100) {
         /* Currently no hash options other than setting hash type, so bail */
-        set_error(zck, "Unknown option %lu", value);
+        set_error(
+            zck,
+            "Unknown option %llu",
+            (long long unsigned) value
+        );
         return false;
 
     /* Compression options */

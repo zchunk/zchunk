@@ -68,19 +68,19 @@ int main (int argc, char *argv[]) {
         zck_free(&zck);
         exit(1);
     }
-    ssize_t chunk_size = zck_get_chunk_comp_size(chunk);
+    long long chunk_size = (long long) zck_get_chunk_comp_size(chunk);
     if(chunk_size < 0) {
         printf("%s", zck_get_error(zck));
         zck_free(&zck);
         exit(1);
     }
     char *data = calloc(chunk_size, 1);
-    ssize_t read_size = zck_get_chunk_comp_data(chunk, data, chunk_size);
+    long long read_size = (long long) zck_get_chunk_comp_data(chunk, data, chunk_size);
     if(read_size != chunk_size) {
         if(read_size < 0)
             printf("%s", zck_get_error(zck));
         else
-            printf("chunk size didn't match expected size: %li != %li\n",
+            printf("chunk size didn't match expected size: %lli != %lli\n",
                    read_size, chunk_size);
         free(data);
         zck_free(&zck);

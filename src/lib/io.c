@@ -94,8 +94,13 @@ int seek_data(zckCtx *zck, off_t offset, int whence) {
         } else {
             wh_str = "using unknown measurement";
         }
-        set_error(zck, "Unable to seek to %lu %s: %s", offset, wh_str,
-                  strerror(errno));
+        set_error(
+            zck,
+            "Unable to seek to %llu %s: %s",
+            (long long unsigned) offset,
+            wh_str,
+            strerror(errno)
+        );
         return false;
     }
     return true;

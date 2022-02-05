@@ -188,8 +188,8 @@ int main (int argc, char *argv[]) {
                 LOG_ERROR("%s", zck_get_error(zck));
             else
                 LOG_ERROR(
-                        "Dict size doesn't match expected size: %li != %li\n",
-                        read_size, dict_size);
+                        "Dict size doesn't match expected size: %lli != %lli\n",
+                        (long long) read_size, (long long) dict_size);
             goto error2;
         }
         if(write(dst_fd, data, dict_size) != dict_size) {
@@ -238,7 +238,10 @@ int main (int argc, char *argv[]) {
         goto error2;
     }
     if(arguments.log_level <= ZCK_LOG_INFO)
-        LOG_ERROR("Decompressed %lu bytes\n", (unsigned long)total);
+        LOG_ERROR(
+            "Decompressed %llu bytes\n",
+            (long long unsigned) total
+        );
     good_exit = true;
 error2:
     free(data);

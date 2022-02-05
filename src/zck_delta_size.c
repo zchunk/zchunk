@@ -191,10 +191,10 @@ int main (int argc, char *argv[]) {
         }
         total_size += zck_get_chunk_comp_size(tgt_idx);
     }
-    printf("Would download %li of %li bytes\n", (long)dl_size,
-           (long)total_size);
-    printf("Matched %li of %lu chunks\n", (long)matched_chunks,
-           (long unsigned)zck_get_chunk_count(zck_tgt));
+    printf("Would download %lli of %lli bytes\n", (long long) dl_size,
+           (long long) total_size);
+    printf("Matched %lli of %llu chunks\n", (long long) matched_chunks,
+           (long long unsigned) zck_get_chunk_count(zck_tgt));
     zck_free(&zck_tgt);
     zck_free(&zck_src);
 }

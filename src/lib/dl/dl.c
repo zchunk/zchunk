@@ -108,7 +108,7 @@ static int dl_write(zckDL *dl, const char *at, size_t length) {
         dl->write_in_chunk -= wb;
         if(!hash_update(dl->zck, &(dl->zck->check_chunk_hash), at, wb))
             return -1;
-        zck_log(ZCK_LOG_DEBUG, "Writing %lu bytes", wb);
+        zck_log(ZCK_LOG_DEBUG, "Writing %llu bytes", (long long unsigned) wb);
         dl->dl_chunk_data += wb;
     }
     return wb;
@@ -158,8 +158,10 @@ static bool write_and_verify_chunk(zckCtx *src, zckCtx *tgt,
         tgt_idx->valid = -1;
     } else {
         tgt_idx->valid = 1;
-        zck_log(ZCK_LOG_DEBUG, "Wrote %lu bytes at %lu",
-                tgt_idx->comp_length, tgt_idx->start);
+        zck_log(ZCK_LOG_DEBUG, "Wrote %llu bytes at %llu",
+                (long long unsigned) tgt_idx->comp_length,
+                (long long unsigned) tgt_idx->start
+        );
     }
     free(digest);
     return true;
@@ -429,7 +431,10 @@ size_t ZCK_PUBLIC_API zck_write_zck_header_cb(void *ptr, size_t l, size_t c,
     size_t wb = 0;
     dl->dl += l*c;
     size_t loc = tell_data(dl->zck);
-    zck_log(ZCK_LOG_DEBUG, "Downloading %lu bytes to position %lu", l*c, loc);
+    zck_log(ZCK_LOG_DEBUG, "Downloading %llu bytes to position %llu",
+            (long long unsigned) l*c,
+            (long long unsigned) loc
+    );
     wb = write(dl->zck->fd, ptr, l*c);
     if(dl->write_cb)
         return dl->write_cb(ptr, l, c, dl->write_data);

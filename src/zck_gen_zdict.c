@@ -261,15 +261,18 @@ int main (int argc, char *argv[]) {
                 LOG_ERROR("%s", zck_get_error(zck));
             else
                 LOG_ERROR(
-                        "Chunk %li size doesn't match expected size: %li != %li\n",
-                        zck_get_chunk_number(idx), read_size, chunk_size);
+                        "Chunk %lli size doesn't match expected size: %lli != %lli\n",
+                        (long long) zck_get_chunk_number(idx),
+                        (long long) read_size,
+                        (long long) chunk_size
+                );
             goto error2;
         }
 
         char *dict_block = calloc(strlen(dir) + strlen(out_name) + 12, 1);
         assert(dict_block);
-        snprintf(dict_block, strlen(dir) + strlen(out_name) + 12, "%s/%s.%li",
-                 dir, out_name, zck_get_chunk_number(idx));
+        snprintf(dict_block, strlen(dir) + strlen(out_name) + 12, "%s/%s.%lli",
+                 dir, out_name, (long long) zck_get_chunk_number(idx));
         int dst_fd = open(dict_block, O_TRUNC | O_WRONLY | O_CREAT | O_BINARY, 0666);
         if(dst_fd < 0) {
             LOG_ERROR("Unable to open %s", dict_block);

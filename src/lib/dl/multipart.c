@@ -216,7 +216,10 @@ size_t multipart_extract(zckDL *dl, char *b, size_t l) {
             rend = rend*10 + (size_t)(c[0] - 48);
 
         i = j;
-        zck_log(ZCK_LOG_DEBUG, "Download range: %lu-%lu", rstart, rend);
+        zck_log(ZCK_LOG_DEBUG, "Download range: %llu-%llu",
+                (long long unsigned) rstart,
+                (long long unsigned) rend
+        );
         mp->length = rend-rstart+1;
         mp->state = 1;
     }

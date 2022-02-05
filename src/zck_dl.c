@@ -228,13 +228,18 @@ int dl_bytes(dlCtx *dl_ctx, char *url, size_t bytes, size_t start,
             return retval;
 
         if(log_level <= ZCK_LOG_DEBUG)
-            LOG_ERROR("Downloading %lu bytes at position %lu\n",
-                      (unsigned long)start+bytes-*buffer_len,
-                      (unsigned long)*buffer_len);
+            LOG_ERROR(
+                "Downloading %llu bytes at position %llu\n",
+                (long long unsigned) start+bytes-*buffer_len,
+                (long long unsigned) *buffer_len
+            );
         *buffer_len += start + bytes - *buffer_len;
         if(lseek(fd, start, SEEK_SET) == -1) {
-            LOG_ERROR("Seek to byte %lu of temporary file failed: %s\n",
-                      (unsigned long)start, strerror(errno));
+            LOG_ERROR(
+                "Seek to byte %llu of temporary file failed: %s\n",
+                (long long unsigned) start,
+                strerror(errno)
+            );
             return 0;
         }
     }
@@ -310,8 +315,10 @@ int main (int argc, char *argv[]) {
 
     CURL *curl_ctx = curl_easy_init();
     if(!curl_ctx) {
-        LOG_ERROR("Unable to allocate %lu bytes for curl context\n",
-                  (unsigned long)sizeof(CURL));
+        LOG_ERROR(
+            "Unable to allocate %llu bytes for curl context\n",
+            (long long unsigned)sizeof(CURL)
+        );
         exit(10);
     }
 
@@ -386,8 +393,10 @@ int main (int argc, char *argv[]) {
         }
         if(retval == 1) {
             printf("Missing chunks: 0\n");
-            printf("Downloaded %lu bytes\n",
-                (long unsigned)zck_dl_get_bytes_downloaded(dl));
+            printf(
+                "Downloaded %llu bytes\n",
+                (long long unsigned) zck_dl_get_bytes_downloaded(dl)
+            );
             if(ftruncate(dst_fd, zck_get_length(zck_tgt)) < 0) {
                 perror(NULL);
                 exit_val = 10;
@@ -444,8 +453,8 @@ int main (int argc, char *argv[]) {
             }
         }
     }
-    printf("Downloaded %lu bytes\n",
-           (long unsigned)zck_dl_get_bytes_downloaded(dl));
+    printf("Downloaded %llu bytes\n",
+           (long long unsigned) zck_dl_get_bytes_downloaded(dl));
     if(ftruncate(dst_fd, zck_get_length(zck_tgt)) < 0) {
         perror(NULL);
         exit_val = 10;

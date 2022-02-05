@@ -256,7 +256,9 @@ bool hash_update(zckCtx *zck, zckHash *hash, const char *message,
         return true;
     if(message == NULL) {
         set_error(zck,
-                  "Hash data is supposed to have %lu bytes, but is NULL", size);
+                  "Hash data is supposed to have %llu bytes, but is NULL",
+                  (long long unsigned) size
+        );
         return false;
     }
     if(size == 0) {

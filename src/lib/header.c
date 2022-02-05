@@ -81,8 +81,8 @@ static bool read_header_from_file(zckCtx *zck) {
         loaded = zck->header_size - zck->lead_size;
 
     /* Read header from file */
-    zck_log(ZCK_LOG_DEBUG, "Reading the rest of the header: %lu bytes",
-            zck->header_length);
+    zck_log(ZCK_LOG_DEBUG, "Reading the rest of the header: %llu bytes",
+            (long long unsigned) zck->header_length);
     if(loaded < zck->header_length) {
         if(!read_data(zck, header + loaded, zck->header_length - loaded))
             return false;
@@ -233,7 +233,7 @@ static bool read_sig(zckCtx *zck) {
 
     if(zck->header_size >
        zck->lead_size + zck->preface_size + zck->index_size + length)
-        zck_log(ZCK_LOG_WARNING, "There are %lu unused bytes in the header");
+        zck_log(ZCK_LOG_WARNING, "There are unused bytes in the header");
 
     zck->sig_size = length;
     zck->sig_string = header;
@@ -280,7 +280,11 @@ static bool preface_create(zckCtx *zck) {
 
     zck->preface_string = header;
     zck->preface_size = length;
-    zck_log(ZCK_LOG_DEBUG, "Generated preface: %lu bytes", zck->preface_size);
+    zck_log(
+        ZCK_LOG_DEBUG,
+        "Generated preface: %llu bytes",
+        (long long unsigned) zck->preface_size
+    );
     return true;
 }
 
@@ -304,7 +308,11 @@ static bool sig_create(zckCtx *zck) {
     }
     zck->sig_string = header;
     zck->sig_size = length;
-    zck_log(ZCK_LOG_DEBUG, "Generated signatures: %lu bytes", zck->sig_size);
+    zck_log(
+        ZCK_LOG_DEBUG,
+        "Generated signatures: %llu bytes",
+        (long long unsigned) zck->sig_size
+    );
     return true;
 }
 
@@ -336,7 +344,11 @@ static bool lead_create(zckCtx *zck) {
 
     zck->lead_string = header;
     zck->lead_size = length;
-    zck_log(ZCK_LOG_DEBUG, "Generated lead: %lu bytes", zck->lead_size);
+    zck_log(
+        ZCK_LOG_DEBUG,
+        "Generated lead: %llu bytes",
+        (long long unsigned) zck->lead_size
+    );
     return true;
 }
 
@@ -370,8 +382,11 @@ bool header_create(zckCtx *zck) {
                        zck->index_size + zck->sig_size;
 
     /* Merge everything into one large string */
-    zck_log(ZCK_LOG_DEBUG, "Merging into header: %lu bytes",
-            zck->data_offset);
+    zck_log(
+        ZCK_LOG_DEBUG,
+        "Merging into header: %llu bytes",
+        (long long unsigned) zck->data_offset
+    );
     zck->header = zmalloc(zck->data_offset);
     if (!zck->header) {
 	    zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
@@ -423,8 +438,11 @@ bool header_create(zckCtx *zck) {
 bool write_header(zckCtx *zck) {
     VALIDATE_WRITE_BOOL(zck);
 
-    zck_log(ZCK_LOG_DEBUG, "Writing header: %lu bytes",
-            zck->lead_size);
+    zck_log(
+        ZCK_LOG_DEBUG,
+        "Writing header: %llu bytes",
+        (long long unsigned) zck->lead_size
+    );
     if(!write_data(zck, zck->fd, zck->header, zck->header_size))
         return false;
     return true;
@@ -538,10 +556,12 @@ static bool read_lead(zckCtx *zck) {
         hash_reset(&(zck->hash_type));
         free(zck->header_digest);
         zck->header_digest = NULL;
-        set_error(zck,
-                  "Header length (%lu) doesn't match requested header length "
-                  "(%lu)", zck->header_length + length,
-                  zck->prep_hdr_size);
+        set_error(
+            zck,
+            "Header length (%llu) doesn't match requested header length (%llu)",
+            (long long unsigned) zck->header_length + length,
+            (long long unsigned) zck->prep_hdr_size
+        );
         return false;
     }
     /* Store pre-header */
@@ -549,7 +569,11 @@ static bool read_lead(zckCtx *zck) {
     zck->header_size = lead;
     zck->lead_string = header;
     zck->lead_size = length;
-    zck_log(ZCK_LOG_DEBUG, "Parsed lead: %lu bytes", length);
+    zck_log(
+        ZCK_LOG_DEBUG,
+        "Parsed lead: %llu bytes",
+        (long long unsigned) length
+    );
     return true;
 }
 

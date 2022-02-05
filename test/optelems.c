@@ -62,7 +62,7 @@ int main (int argc, char *argv[]) {
     memset(data, 0, 1000);
     ssize_t len = zck_read(zck, data, 1000);
     if(len > 0) {
-        printf("%li bytes read, but file should be empty\n", (long)len);
+        printf("%lli bytes read, but file should be empty\n", (long long) len);
         exit(1);
     }
     if(!zck_close(zck))

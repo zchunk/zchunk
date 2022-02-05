@@ -153,7 +153,11 @@ bool index_create(zckCtx *zck) {
     }
     zck->index_string = index;
     zck->index_size = index_size;
-    zck_log(ZCK_LOG_DEBUG, "Generated index: %lu bytes", zck->index_size);
+    zck_log(
+        ZCK_LOG_DEBUG,
+        "Generated index: %llu bytes",
+        (long long unsigned) zck->index_size
+    );
     return true;
 }
 

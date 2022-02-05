@@ -40,7 +40,7 @@ static int log_fd = 2;
 static int log_fd = STDERR_FILENO;
 #endif
 
-static logcallback callback = NULL; 
+static logcallback callback = NULL;
 
 void ZCK_PUBLIC_API zck_set_log_level(zck_log_type ll) {
     log_level = ll;

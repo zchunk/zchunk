@@ -159,6 +159,10 @@ int main (int argc, char *argv[]) {
             LOG_ERROR("%s", zck_get_error(zck));
             exit(1);
         }
+        if(zck_is_detached_header(zck))
+            printf("zchunk detached header\n\n");
+        else
+            printf("zchunk file\n\n");
         printf("Overall checksum type: %s\n",
                zck_hash_name_from_type(zck_get_full_hash_type(zck)));
         printf("Header size: %llu\n", (long long unsigned) zck_get_header_length(zck));
@@ -221,6 +225,8 @@ int main (int argc, char *argv[]) {
             if(arguments.verify) {
                 if(zck_get_chunk_valid(chk) == 1)
                     printf("  +");
+                else if(zck_is_detached_header(zck) && zck_get_chunk_valid(chk) == 0)
+                    ;
                 else
                     printf("  !");
             }

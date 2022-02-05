@@ -245,6 +245,7 @@ struct zckCtx {
     size_t data_offset;
     size_t header_length;
 
+    bool header_only;
     char *header;
     size_t header_size;
     size_t hdr_digest_loc;
@@ -256,7 +257,6 @@ struct zckCtx {
     size_t index_size;
     char *sig_string;
     size_t sig_size;
-
 
     char *prep_digest;
     int prep_hash_type;

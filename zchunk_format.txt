@@ -27,6 +27,8 @@ The lead:
 
 ID
  '\0ZCK1', identifies file as zchunk version 1 file
+ OR
+ '\0ZHR1', identifies file as zchunk detached header version 1 file
 
 Checksum type
  This is an integer containing the type of checksum used to generate the header
@@ -46,7 +48,9 @@ Header size:
 
 Header checksum
  This is the checksum of everything from the beginning of the file until the end
- of the signatures, ignoring the header checksum.
+ of the signatures, ignoring the header checksum.  For detached headers,
+ libraries should use '\0ZCK1' for the ID when calculating the checksum so it
+ matches the full zchunk file
 
 
 The preface:
@@ -119,13 +123,13 @@ The index:
 +=================+==========================+==================+
 
 (Dict stream will only exist if flag 0 is set to 1)
-+======================+===============+==================+
-| Dict stream (ci) [0] | Dict checksum | Dict length (ci) |
-+======================+===============+==================+
++======================+===============+================================+
+| Dict stream (ci) [0] | Dict checksum | Uncompressed dict checksum [2] |
++======================+===============+================================+
 
-+===============================+
-| Uncompressed dict length (ci) |
-+===============================+
++==================+===============================+
+| Dict length (ci) | Uncompressed dict length (ci) |
++==================+===============================+
 
 [+=======================+================+=================================+
 [| Chunk stream (ci) [0] | Chunk checksum | Uncompressed chunk checksum [2] |
@@ -160,6 +164,11 @@ Dict stream
 Dict checksum
  This is the checksum of the compressed dict, used to detect whether two dicts
  are identical.  If there is no dict, the checksum must be all zeros.
+
+NOTE: Uncompressed dict checksum will only exist if flag 2 is set to 1
+Uncompressed dict checksum
+ This is the checksum of the uncompressed dictionary, but really has no use as
+ the uncompressed source won't have a dictionary
 
 Dict length
  This is an integer containing the length of the dict.  If there is no dict,
@@ -227,8 +236,11 @@ Signature size
  This is an integer containing the size of the signature.
 
 Signature
- The actual signature.  The signature MUST only apply to the header, excluding
- the header size, the header checksum, the signature count and the signatures.
+ The actual signature.  The signature MUST only apply to the header, excluding:
+  * The header size
+  * The header checksum
+  * The signature count
+  * The signatures
  The excluded data MUST be omitted when calculating the signature.
 
 Signatures are designed so that anyone can add a new signature to a file

@@ -226,6 +226,9 @@ char ZCK_PUBLIC_API *zck_get_header_digest(zckCtx *zck)
 /* Get data digest */
 char ZCK_PUBLIC_API *zck_get_data_digest(zckCtx *zck)
     ZCK_WARN_UNUSED;
+/* Get whether this context is pointing to a detached header */
+bool ZCK_PUBLIC_API zck_is_detached_header(zckCtx *zck)
+    ZCK_WARN_UNUSED;
 
 
 /*******************************************************************

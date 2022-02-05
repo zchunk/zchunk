@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Jonathan Dieter <jdieter@gmail.com>
+ * Copyright 2018-2022 Jonathan Dieter <jdieter@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -441,6 +441,28 @@ bool ZCK_PUBLIC_API zck_init_read (zckCtx *zck, int src_fd) {
         set_fatal_error(zck, "Unable to read lead");
         return false;
     }
+
+    if(!zck_read_header(zck)) {
+        set_fatal_error(zck, "Unable to read header");
+        return false;
+    }
+
+    return true;
+}
+
+bool ZCK_PUBLIC_API zck_init_uncompressed_read (zckCtx *zck, int hdr_fd, int src_fd) {
+    if(!zck_init_adv_read(zck, hdr_fd)) {
+        set_fatal_error(zck, "Unable to read file");
+        return false;
+    }
+
+    if(!zck_read_lead(zck)) {
+        set_fatal_error(zck, "Unable to read lead");
+        return false;
+    }
+
+    zck->only_uncompressed_source = true;
+    zck->uncompressed_source_fd = src_fd;
 
     if(!zck_read_header(zck)) {
         set_fatal_error(zck, "Unable to read header");

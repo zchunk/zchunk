@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Jonathan Dieter <jdieter@gmail.com>
+ * Copyright 2018-2022 Jonathan Dieter <jdieter@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -85,8 +85,13 @@ static int validate_checksums(zckCtx *zck, zck_log_type bad_checksums) {
     if(!hash_init(zck, &(zck->check_full_hash), &(zck->hash_type)))
         return 0;
 
-    if(!seek_data(zck, zck->data_offset, SEEK_SET))
-        return 0;
+    if(zck->only_uncompressed_source) {
+        if(!seek_data(zck, 0, SEEK_SET, true))
+            return 0;
+    } else {
+        if(!seek_data(zck, zck->data_offset, SEEK_SET, false))
+            return 0;
+    }
 
     /* Check each chunk checksum */
     bool all_good = true;
@@ -106,7 +111,7 @@ static int validate_checksums(zckCtx *zck, zck_log_type bad_checksums) {
             size_t rsize = BUF_SIZE;
             if(BUF_SIZE > idx->comp_length - rlen)
                 rsize = idx->comp_length - rlen;
-            if(read_data(zck, buf, rsize) != rsize)
+            if(read_data(zck, buf, rsize, zck->only_uncompressed_source) != rsize)
                 zck_log(ZCK_LOG_DEBUG, "No more data");
             if(!hash_update(zck, &(zck->check_chunk_hash), buf, rsize))
                 return 0;
@@ -147,8 +152,13 @@ static int validate_checksums(zckCtx *zck, zck_log_type bad_checksums) {
     }
 
     /* Go back to beginning of data section */
-    if(!seek_data(zck, zck->data_offset, SEEK_SET))
-        return 0;
+    if(zck->only_uncompressed_source) {
+        if(!seek_data(zck, 0, SEEK_SET, true))
+            return 0;
+    } else {
+        if(!seek_data(zck, zck->data_offset, SEEK_SET, false))
+            return 0;
+    }
 
     /* Reinitialize data checksum */
     if(!hash_init(zck, &(zck->check_full_hash), &(zck->hash_type)))
@@ -496,7 +506,7 @@ int ZCK_PUBLIC_API zck_validate_data_checksum(zckCtx *zck) {
         return validate_checksums(zck, ZCK_LOG_WARNING);
     }
 
-    if(!seek_data(zck, zck->data_offset, SEEK_SET))
+    if(!seek_data(zck, zck->data_offset, SEEK_SET, false))
         return 0;
     if(!hash_init(zck, &(zck->check_full_hash), &(zck->hash_type)))
         return 0;
@@ -509,7 +519,7 @@ int ZCK_PUBLIC_API zck_validate_data_checksum(zckCtx *zck) {
             size_t rb = BUF_SIZE;
             if(rb > to_read)
                 rb = to_read;
-            if(!read_data(zck, buf, rb))
+            if(!read_data(zck, buf, rb, false))
                 return 0;
             if(!hash_update(zck, &(zck->check_full_hash), buf, rb))
                 return 0;
@@ -518,7 +528,7 @@ int ZCK_PUBLIC_API zck_validate_data_checksum(zckCtx *zck) {
         idx = idx->next;
     }
     int ret = validate_file(zck, ZCK_LOG_WARNING);
-    if(!seek_data(zck, zck->data_offset, SEEK_SET))
+    if(!seek_data(zck, zck->data_offset, SEEK_SET, false))
         return 0;
     if(!hash_init(zck, &(zck->check_full_hash), &(zck->hash_type)))
         return 0;

@@ -141,7 +141,7 @@ int main (int argc, char *argv[]) {
                 zck_get_error(zckSrc));
         exit(1);
     }
-   
+
     int in_fd = open(arguments.args[0], O_RDONLY | O_BINARY);
     off_t in_size = 0;
     if(in_fd < 0) {
@@ -208,7 +208,7 @@ int main (int argc, char *argv[]) {
      */
     printf("Compare original image with chunks in zck\n");
     printf("-----------------------------------------\n");
-    
+
     zck_generate_hashdb(zckSrc);
     zck_find_matching_chunks(zckSrc, zckDst);
 

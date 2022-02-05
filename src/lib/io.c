@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Jonathan Dieter <jdieter@gmail.com>
+ * Copyright 2018-2022 Jonathan Dieter <jdieter@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -34,7 +34,7 @@
 
 #include "zck_private.h"
 
-ssize_t read_data(zckCtx *zck, char *data, size_t length) {
+ssize_t read_data(zckCtx *zck, char *data, size_t length, bool use_uncompressed_fd) {
     VALIDATE_READ_INT(zck);
 
     if(length == 0)
@@ -43,7 +43,11 @@ ssize_t read_data(zckCtx *zck, char *data, size_t length) {
         set_error(zck, "Unable to read to NULL data pointer");
         return -1;
     }
-    ssize_t read_bytes = read(zck->fd, data, length);
+    int fd = zck->fd;
+    if(use_uncompressed_fd)
+        fd = zck->uncompressed_source_fd;
+
+    ssize_t read_bytes = read(fd, data, length);
     if(read_bytes == -1) {
         set_error(zck, "Error reading data: %s", strerror(errno));
         return -1;
@@ -79,10 +83,13 @@ int write_data(zckCtx *zck, int fd, const char *data, size_t length) {
     return true;
 }
 
-int seek_data(zckCtx *zck, off_t offset, int whence) {
+int seek_data(zckCtx *zck, off_t offset, int whence, bool use_uncompressed_fd) {
     VALIDATE_INT(zck);
 
-    if(lseek(zck->fd, offset, whence) == -1) {
+    int fd = zck->fd;
+    if(use_uncompressed_fd)
+        fd = zck->uncompressed_source_fd;
+    if(lseek(fd, offset, whence) == -1) {
         char *wh_str = NULL;
 
         if(whence == SEEK_CUR) {

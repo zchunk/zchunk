@@ -240,6 +240,9 @@ struct zckCtx {
     int fd;
     int mode;
 
+    bool only_uncompressed_source;
+    int uncompressed_source_fd;
+
     char *full_hash_digest;
     char *header_digest;
     size_t data_offset;
@@ -361,11 +364,11 @@ bool write_index(zckCtx *zck)
 
 
 /* io.c */
-int seek_data(zckCtx *zck, off_t offset, int whence)
+int seek_data(zckCtx *zck, off_t offset, int whence, bool use_uncompressed_fd)
     ZCK_WARN_UNUSED;
 ssize_t tell_data(zckCtx *zck)
     ZCK_WARN_UNUSED;
-ssize_t read_data(zckCtx *zck, char *data, size_t length)
+ssize_t read_data(zckCtx *zck, char *data, size_t length, bool use_uncompressed_fd)
     ZCK_WARN_UNUSED;
 int write_data(zckCtx *zck, int fd, const char *data, size_t length)
     ZCK_WARN_UNUSED;

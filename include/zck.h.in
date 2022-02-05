@@ -87,6 +87,9 @@ bool ZCK_PUBLIC_API zck_init_read (zckCtx *zck, int src_fd)
 /* Decompress dst_size bytes from zchunk file to dst, while verifying hashes */
 ssize_t ZCK_PUBLIC_API zck_read(zckCtx *zck, char *dst, size_t dst_size)
     ZCK_WARN_UNUSED;
+/* Get zchunk flags */
+ssize_t ZCK_PUBLIC_API zck_get_flags (zckCtx *zck)
+    ZCK_WARN_UNUSED;
 
 
 /*******************************************************************

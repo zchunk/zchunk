@@ -56,6 +56,17 @@ static bool check_flags(zckCtx *zck, size_t flags) {
     return true;
 }
 
+static ssize_t get_flags(zckCtx *zck) {
+    size_t flags = 0;
+    if(zck->has_streams)
+        flags |= 1;
+    if(zck->has_optional_elems)
+        flags |= 2;
+    if(zck->has_uncompressed_source)
+        flags |= 4;
+    return flags;
+}
+
 static bool read_optional_element(zckCtx *zck, size_t id, size_t data_size,
                                   char *data) {
     zck_log(ZCK_LOG_WARNING, "Unknown optional element id %i set", id);
@@ -257,12 +268,7 @@ static bool preface_create(zckCtx *zck) {
     length += zck->hash_type.digest_size;
 
     /* Write out flags */
-    size_t flags = 0;
-    if(zck->has_streams)
-        flags &= 1;
-    if(zck->has_uncompressed_source)
-        flags |= 4;
-    compint_from_size(header+length, flags, &length);
+    compint_from_size(header+length, get_flags(zck), &length);
 
     /* Write out compression type and index size */
     if(!compint_from_int(zck, header+length, zck->comp.type, &length)) {
@@ -640,4 +646,9 @@ ssize_t ZCK_PUBLIC_API zck_get_data_length(zckCtx *zck) {
 ssize_t ZCK_PUBLIC_API zck_get_length(zckCtx *zck) {
     VALIDATE_INT(zck);
     return zck_get_header_length(zck) + zck_get_data_length(zck);
+}
+
+ssize_t ZCK_PUBLIC_API zck_get_flags(zckCtx *zck) {
+    VALIDATE_INT(zck);
+    return get_flags(zck);
 }

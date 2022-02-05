@@ -200,7 +200,7 @@ int main (int argc, char *argv[]) {
             int ret = zck_get_chunk_valid(dict);
             if(ret < 1) {
                 if(ret == -1)
-                    LOG_ERROR("Data checksum failed verification\n");
+                    LOG_ERROR("Dictionary checksum failed verification\n");
                 else
                     LOG_ERROR("%s", zck_get_error(zck));
                 goto error2;

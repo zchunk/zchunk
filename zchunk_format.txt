@@ -179,6 +179,9 @@ Chunk checksum
  This is the checksum of the compressed chunk, used to detect whether any two
  chunks are identical.
 
+ NOTE: If flag 2 is set, this checksum must be set to 0s if and only if this
+ particular chunk is stored uncompressed in the file.
+
 NOTE: Uncompressed chunk checksum will only exist if flag 2 is set to 1
 Uncompressed chunk checksum
  This is the checksum of the uncompressed chunk, used to detect whether a chunk
@@ -187,7 +190,10 @@ Uncompressed chunk checksum
 Chunk length
  This is an integer containing the length of the chunk.
 
-Uncompressed dict length
+ NOTE: If flag 2 is set and this particular chunk is stored uncompressed, this
+ must be the same as the uncompressed chunk length
+
+Uncompressed chunk length
  This is an integer containing the length of the chunk after it has been
  decompressed.
 

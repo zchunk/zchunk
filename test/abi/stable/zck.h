@@ -1,10 +1,11 @@
 #ifndef ZCK_H
 #define ZCK_H
 
-#define ZCK_VERSION "1.1.16"
+#define ZCK_VERSION "1.2.0"
 
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdarg.h>
 #include <sys/types.h>
 
 typedef enum zck_hash {
@@ -26,6 +27,7 @@ typedef enum zck_ioption {
     ZCK_HASH_CHUNK_TYPE,        /* Set chunk hash type using zck_hash */
     ZCK_VAL_HEADER_HASH_TYPE,   /* Set what the header hash type *should* be */
     ZCK_VAL_HEADER_LENGTH,      /* Set what the header length *should* be */
+    ZCK_UNCOMP_HEADER,          /* Header should contain uncompressed size, too */
     ZCK_COMP_TYPE = 100,        /* Set compression type using zck_comp */
     ZCK_MANUAL_CHUNK,           /* Disable auto-chunking */
     ZCK_CHUNK_MIN,              /* Minimum chunk size when manual chunking */
@@ -56,120 +58,145 @@ typedef struct zckDL zckDL;
 
 typedef size_t (*zck_wcb)(void *ptr, size_t l, size_t c, void *dl_v);
 
+#ifdef _WIN32
+    #define ZCK_WARN_UNUSED
+    typedef ptrdiff_t ssize_t;
+    #ifdef ZCHUNK_STATIC_LIB
+        #define ZCK_PUBLIC_API
+    #else
+        #ifdef ZCHUNK_EXPORTS
+            #define ZCK_PUBLIC_API __declspec(dllexport)
+        #else
+            #define ZCK_PUBLIC_API __declspec(dllimport)
+        #endif
+    #endif
+#else
+    #define ZCK_WARN_UNUSED __attribute__ ((warn_unused_result))
+    #define ZCK_PUBLIC_API __attribute__((visibility("default")))
+#endif
+
 /*******************************************************************
  * Reading a zchunk file
  *******************************************************************/
 /* Initialize zchunk context */
-zckCtx *zck_create()
-    __attribute__ ((warn_unused_result));
+zckCtx ZCK_PUBLIC_API *zck_create(void)
+    ZCK_WARN_UNUSED;
 /* Initialize zchunk for reading */
-bool zck_init_read (zckCtx *zck, int src_fd)
-    __attribute__ ((warn_unused_result));
+bool ZCK_PUBLIC_API zck_init_read (zckCtx *zck, int src_fd)
+    ZCK_WARN_UNUSED;
 /* Decompress dst_size bytes from zchunk file to dst, while verifying hashes */
-ssize_t zck_read(zckCtx *zck, char *dst, size_t dst_size)
-    __attribute__ ((warn_unused_result));
+ssize_t ZCK_PUBLIC_API zck_read(zckCtx *zck, char *dst, size_t dst_size)
+    ZCK_WARN_UNUSED;
+/* Get zchunk flags */
+ssize_t ZCK_PUBLIC_API zck_get_flags (zckCtx *zck)
+    ZCK_WARN_UNUSED;
 
 
 /*******************************************************************
  * Writing a zchunk file
  *******************************************************************/
 /* Initialize zchunk for writing */
-bool zck_init_write (zckCtx *zck, int dst_fd)
-    __attribute__ ((warn_unused_result));
+bool ZCK_PUBLIC_API zck_init_write (zckCtx *zck, int dst_fd)
+    ZCK_WARN_UNUSED;
 /* Compress data src of size src_size, and write to zchunk file
  * Due to the nature of zchunk files and how they are built, no data will
  * actually appear in the zchunk file until zck_close() is called */
-ssize_t zck_write(zckCtx *zck, const char *src, const size_t src_size)
-    __attribute__ ((warn_unused_result));
+ssize_t ZCK_PUBLIC_API zck_write(zckCtx *zck, const char *src, const size_t src_size)
+    ZCK_WARN_UNUSED;
 /* Create a chunk boundary */
-ssize_t zck_end_chunk(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
-
+ssize_t ZCK_PUBLIC_API zck_end_chunk(zckCtx *zck)
+    ZCK_WARN_UNUSED;
+/* Create the database for uthash if not present (done automatically by read */
+bool ZCK_PUBLIC_API zck_generate_hashdb(zckCtx *zck);
 
 /*******************************************************************
  * Common functions for finishing a zchunk file
  *******************************************************************/
 /* Close a zchunk file so it may no longer be read from or written to. The
  * context still contains information about the file */
-bool zck_close(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+bool ZCK_PUBLIC_API zck_close(zckCtx *zck)
+    ZCK_WARN_UNUSED;
 /* Free a zchunk context.  You must pass the address of the context, and the
  * context will automatically be set to NULL after it is freed */
-void zck_free(zckCtx **zck);
+void ZCK_PUBLIC_API zck_free(zckCtx **zck);
 
 
 /*******************************************************************
  * Options
  *******************************************************************/
 /* Set string option */
-bool zck_set_soption(zckCtx *zck, zck_soption option, const char *value,
+bool ZCK_PUBLIC_API zck_set_soption(zckCtx *zck, zck_soption option, const char *value,
                      size_t length)
-    __attribute__ ((warn_unused_result));
+    ZCK_WARN_UNUSED;
 /* Set integer option */
-bool zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t value)
-    __attribute__ ((warn_unused_result));
+bool ZCK_PUBLIC_API zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t value)
+    ZCK_WARN_UNUSED;
 
 
 /*******************************************************************
  * Error handling
  *******************************************************************/
 /* Set logging level */
-void zck_set_log_level(zck_log_type ll);
+void ZCK_PUBLIC_API zck_set_log_level(zck_log_type ll);
 /* Set logging fd */
-void zck_set_log_fd(int fd);
+void ZCK_PUBLIC_API zck_set_log_fd(int fd);
 /* Check whether zck is in error state
  * Returns 0 if not, 1 if recoverable error, 2 if fatal error */
-int zck_is_error(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+int ZCK_PUBLIC_API zck_is_error(zckCtx *zck)
+    ZCK_WARN_UNUSED;
 /* Get error message
  * Returns char* containing error message.  char* will contain empty string if
  * there is no error message */
-const char *zck_get_error(zckCtx *zck);
+const ZCK_PUBLIC_API char *zck_get_error(zckCtx *zck);
 /* Clear error message
  * Returns 1 if message was cleared, 0 if error is fatal and can't be cleared */
-bool zck_clear_error(zckCtx *zck);
+bool ZCK_PUBLIC_API zck_clear_error(zckCtx *zck);
+/* Set a callback for logs instead to write into a fd */
+typedef void (*logcallback)(const char *function, zck_log_type lt, const char *format, va_list args);
+void ZCK_PUBLIC_API zck_set_log_callback(logcallback function);
 
 /*******************************************************************
  * Miscellaneous utilities
  *******************************************************************/
 /* Validate the chunk and data checksums for the current file.
  * Returns 0 for error, -1 for invalid checksum and 1 for valid checksum */
-int zck_validate_checksums(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+int ZCK_PUBLIC_API zck_validate_checksums(zckCtx *zck)
+    ZCK_WARN_UNUSED;
 /* Validate just the data checksum for the current file
  * Returns 0 for error, -1 for invalid checksum and 1 for valid checksum */
-int zck_validate_data_checksum(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+int ZCK_PUBLIC_API zck_validate_data_checksum(zckCtx *zck)
+    ZCK_WARN_UNUSED;
 /* Go through file and mark valid chunks as valid
  * Returns 0 for error, -1 for invalid checksum and 1 for valid checksum */
-int zck_find_valid_chunks(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+int ZCK_PUBLIC_API zck_find_valid_chunks(zckCtx *zck)
+    ZCK_WARN_UNUSED;
 
 /* Get a zckRange of ranges that need to still be downloaded.
  * max_ranges is the maximum number of ranges supported in a single request
  *     by the server.  If the server supports unlimited ranges, set this to -1
  * Returns NULL if there's an error */
-zckRange *zck_get_missing_range(zckCtx *zck, int max_ranges)
-    __attribute__ ((warn_unused_result));
+zckRange ZCK_PUBLIC_API *zck_get_missing_range(zckCtx *zck, int max_ranges)
+    ZCK_WARN_UNUSED;
 /* Get a string representation of a zckRange */
-char *zck_get_range_char(zckCtx *zck, zckRange *range)
-    __attribute__ ((warn_unused_result));
+char ZCK_PUBLIC_API *zck_get_range_char(zckCtx *zck, zckRange *range)
+    ZCK_WARN_UNUSED;
 /* Get file descriptor attached to zchunk context */
-int zck_get_fd(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+int ZCK_PUBLIC_API zck_get_fd(zckCtx *zck)
+    ZCK_WARN_UNUSED;
 /* Set file descriptor attached to zchunk context */
-bool zck_set_fd(zckCtx *zck, int fd)
-    __attribute__ ((warn_unused_result));
+bool ZCK_PUBLIC_API zck_set_fd(zckCtx *zck, int fd)
+    ZCK_WARN_UNUSED;
 
 /* Return number of missing chunks (-1 if error) */
-int zck_missing_chunks(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+int ZCK_PUBLIC_API zck_missing_chunks(zckCtx *zck)
+    ZCK_WARN_UNUSED;
 /* Return number of failed chunks (-1 if error) */
-int zck_failed_chunks(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+int ZCK_PUBLIC_API zck_failed_chunks(zckCtx *zck)
+    ZCK_WARN_UNUSED;
 /* Reset failed chunks to become missing */
-void zck_reset_failed_chunks(zckCtx *zck);
-
+void ZCK_PUBLIC_API zck_reset_failed_chunks(zckCtx *zck);
+/* Find chunks from a source */
+bool ZCK_PUBLIC_API zck_find_matching_chunks(zckCtx *src, zckCtx *tgt);
 
 /*******************************************************************
  * The functions should be all you need to read and write a zchunk
@@ -182,31 +209,34 @@ void zck_reset_failed_chunks(zckCtx *zck);
  * Advanced miscellaneous zchunk functions
  *******************************************************************/
 /* Get lead length */
-ssize_t zck_get_lead_length(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+ssize_t ZCK_PUBLIC_API zck_get_lead_length(zckCtx *zck)
+    ZCK_WARN_UNUSED;
 /* Get header length (lead + preface + index + sigs) */
-ssize_t zck_get_header_length(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+ssize_t ZCK_PUBLIC_API zck_get_header_length(zckCtx *zck)
+    ZCK_WARN_UNUSED;
 /* Get data length */
-ssize_t zck_get_data_length(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+ssize_t ZCK_PUBLIC_API zck_get_data_length(zckCtx *zck)
+    ZCK_WARN_UNUSED;
 /* Get file length */
-ssize_t zck_get_length(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+ssize_t ZCK_PUBLIC_API zck_get_length(zckCtx *zck)
+    ZCK_WARN_UNUSED;
 /* Get index digest */
-char *zck_get_header_digest(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+char ZCK_PUBLIC_API *zck_get_header_digest(zckCtx *zck)
+    ZCK_WARN_UNUSED;
 /* Get data digest */
-char *zck_get_data_digest(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+char ZCK_PUBLIC_API *zck_get_data_digest(zckCtx *zck)
+    ZCK_WARN_UNUSED;
+/* Get whether this context is pointing to a detached header */
+bool ZCK_PUBLIC_API zck_is_detached_header(zckCtx *zck)
+    ZCK_WARN_UNUSED;
 
 
 /*******************************************************************
  * Advanced compression functions
  *******************************************************************/
 /* Get name of compression type */
-const char *zck_comp_name_from_type(int comp_type)
-    __attribute__ ((warn_unused_result));
+const ZCK_PUBLIC_API char *zck_comp_name_from_type(int comp_type)
+    ZCK_WARN_UNUSED;
 /* Initialize compression.  Compression type and parameters *must* be done
  * before this is called */
 
@@ -215,80 +245,85 @@ const char *zck_comp_name_from_type(int comp_type)
  * Advanced zchunk reading functions
  *******************************************************************/
 /* Initialize zchunk for reading using advanced options */
-bool zck_init_adv_read (zckCtx *zck, int src_fd)
-    __attribute__ ((warn_unused_result));
+bool ZCK_PUBLIC_API zck_init_adv_read (zckCtx *zck, int src_fd)
+    ZCK_WARN_UNUSED;
 /* Read zchunk lead */
-bool zck_read_lead(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+bool ZCK_PUBLIC_API zck_read_lead(zckCtx *zck)
+    ZCK_WARN_UNUSED;
 /* Read zchunk header */
-bool zck_read_header(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+bool ZCK_PUBLIC_API zck_read_header(zckCtx *zck)
+    ZCK_WARN_UNUSED;
 /* Validate lead */
-bool zck_validate_lead(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+bool ZCK_PUBLIC_API zck_validate_lead(zckCtx *zck)
+    ZCK_WARN_UNUSED;
 
 /*******************************************************************
  * Indexes
  *******************************************************************/
 /* Get chunk count */
-ssize_t zck_get_chunk_count(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+ssize_t ZCK_PUBLIC_API zck_get_chunk_count(zckCtx *zck)
+    ZCK_WARN_UNUSED;
 /* Get chunk by number */
-zckChunk *zck_get_chunk(zckCtx *zck, size_t number)
-    __attribute__ ((warn_unused_result));
+zckChunk ZCK_PUBLIC_API *zck_get_chunk(zckCtx *zck, size_t number)
+    ZCK_WARN_UNUSED;
 /* Get first chunk */
-zckChunk *zck_get_first_chunk(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+zckChunk ZCK_PUBLIC_API *zck_get_first_chunk(zckCtx *zck)
+    ZCK_WARN_UNUSED;
 /* Get next chunk */
-zckChunk *zck_get_next_chunk(zckChunk *idx)
-    __attribute__ ((warn_unused_result));
+zckChunk ZCK_PUBLIC_API *zck_get_next_chunk(zckChunk *idx)
+    ZCK_WARN_UNUSED;
 /* Get chunk starting location */
-ssize_t zck_get_chunk_start(zckChunk *idx)
-    __attribute__ ((warn_unused_result));
+ssize_t ZCK_PUBLIC_API zck_get_chunk_start(zckChunk *idx)
+    ZCK_WARN_UNUSED;
 /* Get uncompressed chunk size */
-ssize_t zck_get_chunk_size(zckChunk *idx)
-    __attribute__ ((warn_unused_result));
+ssize_t ZCK_PUBLIC_API zck_get_chunk_size(zckChunk *idx)
+    ZCK_WARN_UNUSED;
 /* Get compressed chunk size */
-ssize_t zck_get_chunk_comp_size(zckChunk *idx)
-    __attribute__ ((warn_unused_result));
+ssize_t ZCK_PUBLIC_API zck_get_chunk_comp_size(zckChunk *idx)
+    ZCK_WARN_UNUSED;
 /* Get chunk number */
-ssize_t zck_get_chunk_number(zckChunk *idx)
-    __attribute__ ((warn_unused_result));
+ssize_t ZCK_PUBLIC_API zck_get_chunk_number(zckChunk *idx)
+    ZCK_WARN_UNUSED;
 /* Get validity of current chunk - 1 = valid, 0 = missing, -1 = invalid */
-int zck_get_chunk_valid(zckChunk *idx)
-    __attribute__ ((warn_unused_result));
+int ZCK_PUBLIC_API zck_get_chunk_valid(zckChunk *idx)
+    ZCK_WARN_UNUSED;
 /* Get chunk digest */
-char *zck_get_chunk_digest(zckChunk *item)
-    __attribute__ ((warn_unused_result));
+char ZCK_PUBLIC_API *zck_get_chunk_digest(zckChunk *item)
+    ZCK_WARN_UNUSED;
 /* Get digest size of chunk hash type */
-ssize_t zck_get_chunk_digest_size(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+ssize_t ZCK_PUBLIC_API zck_get_chunk_digest_size(zckCtx *zck)
+    ZCK_WARN_UNUSED;
+/* Get uncompressed chunk digest */
+char ZCK_PUBLIC_API *zck_get_chunk_digest_uncompressed(zckChunk *item)
+    ZCK_WARN_UNUSED;
 /* Get chunk data */
-ssize_t zck_get_chunk_data(zckChunk *idx, char *dst, size_t dst_size)
-    __attribute__ ((warn_unused_result));
+ssize_t ZCK_PUBLIC_API zck_get_chunk_data(zckChunk *idx, char *dst, size_t dst_size)
+    ZCK_WARN_UNUSED;
 /* Get compressed chunk data */
-ssize_t zck_get_chunk_comp_data(zckChunk *idx, char *dst, size_t dst_size)
-    __attribute__ ((warn_unused_result));
+ssize_t ZCK_PUBLIC_API zck_get_chunk_comp_data(zckChunk *idx, char *dst, size_t dst_size)
+    ZCK_WARN_UNUSED;
 /* Find out if two chunk digests are the same */
-bool zck_compare_chunk_digest(zckChunk *a, zckChunk *b)
-    __attribute__ ((warn_unused_result));
-
+bool ZCK_PUBLIC_API zck_compare_chunk_digest(zckChunk *a, zckChunk *b)
+    ZCK_WARN_UNUSED;
+/* Get associate src chunk if any */
+zckChunk ZCK_PUBLIC_API *zck_get_src_chunk(zckChunk *idx)
+    ZCK_WARN_UNUSED;
 
 /*******************************************************************
  * Advanced hash functions
  *******************************************************************/
 /* Get overall hash type */
-int zck_get_full_hash_type(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+int ZCK_PUBLIC_API zck_get_full_hash_type(zckCtx *zck)
+    ZCK_WARN_UNUSED;
 /* Get digest size of overall hash type */
-ssize_t zck_get_full_digest_size(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+ssize_t ZCK_PUBLIC_API zck_get_full_digest_size(zckCtx *zck)
+    ZCK_WARN_UNUSED;
 /* Get chunk hash type */
-int zck_get_chunk_hash_type(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+int ZCK_PUBLIC_API zck_get_chunk_hash_type(zckCtx *zck)
+    ZCK_WARN_UNUSED;
 /* Get name of hash type */
-const char *zck_hash_name_from_type(int hash_type)
-    __attribute__ ((warn_unused_result));
+const ZCK_PUBLIC_API char *zck_hash_name_from_type(int hash_type)
+    ZCK_WARN_UNUSED;
 
 
 
@@ -300,74 +335,74 @@ const char *zck_hash_name_from_type(int hash_type)
  * Ranges
  *******************************************************************/
 /* Get any matching chunks from src and put them in the right place in tgt */
-bool zck_copy_chunks(zckCtx *src, zckCtx *tgt)
-    __attribute__ ((warn_unused_result));
+bool ZCK_PUBLIC_API zck_copy_chunks(zckCtx *src, zckCtx *tgt)
+    ZCK_WARN_UNUSED;
 /* Free zckRange */
-void zck_range_free(zckRange **info);
+void ZCK_PUBLIC_API zck_range_free(zckRange **info);
 /* Get range string from start and end location */
-char *zck_get_range(size_t start, size_t end)
-    __attribute__ ((warn_unused_result));
+char ZCK_PUBLIC_API *zck_get_range(size_t start, size_t end)
+    ZCK_WARN_UNUSED;
 /* Get the minimum size needed to download in order to know how large the header
  * is */
-int zck_get_min_download_size()
-    __attribute__ ((warn_unused_result));
+int ZCK_PUBLIC_API zck_get_min_download_size(void)
+    ZCK_WARN_UNUSED;
 /* Get the number of separate range items in the range */
-int zck_get_range_count(zckRange *range)
-    __attribute__ ((warn_unused_result));
+int ZCK_PUBLIC_API zck_get_range_count(zckRange *range)
+    ZCK_WARN_UNUSED;
 
 /*******************************************************************
  * Downloading
  *******************************************************************/
 /* Initialize zchunk download context */
-zckDL *zck_dl_init(zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+zckDL ZCK_PUBLIC_API *zck_dl_init(zckCtx *zck)
+    ZCK_WARN_UNUSED;
 /* Reset zchunk download context for reuse */
-void zck_dl_reset(zckDL *dl);
+void ZCK_PUBLIC_API zck_dl_reset(zckDL *dl);
 /* Free zchunk download context */
-void zck_dl_free(zckDL **dl);
+void ZCK_PUBLIC_API zck_dl_free(zckDL **dl);
 /* Get zchunk context from download context */
-zckCtx *zck_dl_get_zck(zckDL *dl)
-    __attribute__ ((warn_unused_result));
+zckCtx ZCK_PUBLIC_API *zck_dl_get_zck(zckDL *dl)
+    ZCK_WARN_UNUSED;
 /* Set zchunk context in download context */
-bool zck_dl_set_zck(zckDL *dl, zckCtx *zck)
-    __attribute__ ((warn_unused_result));
+bool ZCK_PUBLIC_API zck_dl_set_zck(zckDL *dl, zckCtx *zck)
+    ZCK_WARN_UNUSED;
 /* Clear regex used for extracting download ranges from multipart download */
-void zck_dl_clear_regex(zckDL *dl);
+void ZCK_PUBLIC_API zck_dl_clear_regex(zckDL *dl);
 /* Download and process the header from url */
-bool zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url)
-    __attribute__ ((warn_unused_result));
+bool ZCK_PUBLIC_API zck_dl_get_header(zckCtx *zck, zckDL *dl, char *url)
+    ZCK_WARN_UNUSED;
 /* Get number of bytes downloaded using download context */
-ssize_t zck_dl_get_bytes_downloaded(zckDL *dl)
-    __attribute__ ((warn_unused_result));
+ssize_t ZCK_PUBLIC_API zck_dl_get_bytes_downloaded(zckDL *dl)
+    ZCK_WARN_UNUSED;
 /* Get number of bytes uploaded using download context */
-ssize_t zck_dl_get_bytes_uploaded(zckDL *dl)
-    __attribute__ ((warn_unused_result));
+ssize_t ZCK_PUBLIC_API zck_dl_get_bytes_uploaded(zckDL *dl)
+    ZCK_WARN_UNUSED;
 /* Set download ranges for zchunk download context */
-bool zck_dl_set_range(zckDL *dl, zckRange *range)
-    __attribute__ ((warn_unused_result));
+bool ZCK_PUBLIC_API zck_dl_set_range(zckDL *dl, zckRange *range)
+    ZCK_WARN_UNUSED;
 /* Get download ranges from zchunk download context */
-zckRange *zck_dl_get_range(zckDL *dl)
-    __attribute__ ((warn_unused_result));
+zckRange ZCK_PUBLIC_API *zck_dl_get_range(zckDL *dl)
+    ZCK_WARN_UNUSED;
 
 /* Set header callback function */
-bool zck_dl_set_header_cb(zckDL *dl, zck_wcb func)
-    __attribute__ ((warn_unused_result));
+bool ZCK_PUBLIC_API zck_dl_set_header_cb(zckDL *dl, zck_wcb func)
+    ZCK_WARN_UNUSED;
 /* Set header userdata */
-bool zck_dl_set_header_data(zckDL *dl, void *data)
-    __attribute__ ((warn_unused_result));
+bool ZCK_PUBLIC_API zck_dl_set_header_data(zckDL *dl, void *data)
+    ZCK_WARN_UNUSED;
 /* Set write callback function */
-bool zck_dl_set_write_cb(zckDL *dl, zck_wcb func)
-    __attribute__ ((warn_unused_result));
+bool ZCK_PUBLIC_API zck_dl_set_write_cb(zckDL *dl, zck_wcb func)
+    ZCK_WARN_UNUSED;
 /* Set write userdata */
-bool zck_dl_set_write_data(zckDL *dl, void *data)
-    __attribute__ ((warn_unused_result));
+bool ZCK_PUBLIC_API zck_dl_set_write_data(zckDL *dl, void *data)
+    ZCK_WARN_UNUSED;
 
 /* Write callback.  You *must* pass this and your initialized zchunk download
  * context to the downloader when downloading a zchunk file.  If you have your
  * own callback, set dl->write_cb to your callback and dl->wdata to your
  * callback data. */
-size_t zck_write_chunk_cb(void *ptr, size_t l, size_t c, void *dl_v);
-size_t zck_write_zck_header_cb(void *ptr, size_t l, size_t c, void *dl_v);
-size_t zck_header_cb(char *b, size_t l, size_t c, void *dl_v);
+size_t ZCK_PUBLIC_API zck_write_chunk_cb(void *ptr, size_t l, size_t c, void *dl_v);
+size_t ZCK_PUBLIC_API zck_write_zck_header_cb(void *ptr, size_t l, size_t c, void *dl_v);
+size_t ZCK_PUBLIC_API zck_header_cb(char *b, size_t l, size_t c, void *dl_v);
 
 #endif

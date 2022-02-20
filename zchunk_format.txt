@@ -27,6 +27,8 @@ The lead:
 
 ID
  '\0ZCK1', identifies file as zchunk version 1 file
+ OR
+ '\0ZHR1', identifies file as zchunk detached header version 1 file
 
 Checksum type
  This is an integer containing the type of checksum used to generate the header
@@ -36,12 +38,19 @@ Checksum type
    0 = SHA-1
    1 = SHA-256
 
+ Note: if the file has flag 2 (uncompressed source) set, the total data
+       checksum must not be checked and should not be generated.  Also, the
+       chunk checksum must not be SHA-1 or SHA-512/128, since there is no total
+       data checksum.
+
 Header size:
  This is an integer containing the size of the header, not including the lead
 
 Header checksum
  This is the checksum of everything from the beginning of the file until the end
- of the signatures, ignoring the header checksum.
+ of the signatures, ignoring the header checksum.  For detached headers,
+ libraries should use '\0ZCK1' for the ID when calculating the checksum so it
+ matches the full zchunk file
 
 
 The preface:
@@ -74,7 +83,7 @@ Flags
  Current flags are:
   bit 0: File has data streams
   bit 1: File has optional elements
-  bit 2: EXPERIMENTAL: File may be applied against an uncompressed source
+  bit 2: File may be applied against an uncompressed source
 
 Compression type
  This is an integer containing the type of compression used to compress dict and
@@ -114,13 +123,13 @@ The index:
 +=================+==========================+==================+
 
 (Dict stream will only exist if flag 0 is set to 1)
-+======================+===============+==================+
-| Dict stream (ci) [0] | Dict checksum | Dict length (ci) |
-+======================+===============+==================+
++======================+===============+================================+
+| Dict stream (ci) [0] | Dict checksum | Uncompressed dict checksum [2] |
++======================+===============+================================+
 
-+===============================+
-| Uncompressed dict length (ci) |
-+===============================+
++==================+===============================+
+| Dict length (ci) | Uncompressed dict length (ci) |
++==================+===============================+
 
 [+=======================+================+=================================+
 [| Chunk stream (ci) [0] | Chunk checksum | Uncompressed chunk checksum [2] |
@@ -156,6 +165,11 @@ Dict checksum
  This is the checksum of the compressed dict, used to detect whether two dicts
  are identical.  If there is no dict, the checksum must be all zeros.
 
+NOTE: Uncompressed dict checksum will only exist if flag 2 is set to 1
+Uncompressed dict checksum
+ This is the checksum of the uncompressed dictionary, but really has no use as
+ the uncompressed source won't have a dictionary
+
 Dict length
  This is an integer containing the length of the dict.  If there is no dict,
  this must be a zero.
@@ -174,8 +188,10 @@ Chunk checksum
  This is the checksum of the compressed chunk, used to detect whether any two
  chunks are identical.
 
-EXPERIMENTAL: NOTE: Uncompressed chunk checksum will only exist if flag 2 is set
-                    to 1
+ NOTE: If flag 2 is set, this checksum must be set to 0s if and only if this
+ particular chunk is stored uncompressed in the file.
+
+NOTE: Uncompressed chunk checksum will only exist if flag 2 is set to 1
 Uncompressed chunk checksum
  This is the checksum of the uncompressed chunk, used to detect whether a chunk
  from an uncompressed source is identical to the compressed chunk
@@ -183,7 +199,10 @@ Uncompressed chunk checksum
 Chunk length
  This is an integer containing the length of the chunk.
 
-Uncompressed dict length
+ NOTE: If flag 2 is set and this particular chunk is stored uncompressed, this
+ must be the same as the uncompressed chunk length
+
+Uncompressed chunk length
  This is an integer containing the length of the chunk after it has been
  decompressed.
 
@@ -217,8 +236,11 @@ Signature size
  This is an integer containing the size of the signature.
 
 Signature
- The actual signature.  The signature MUST only apply to the header, excluding
- the header size, the header checksum, the signature count and the signatures.
+ The actual signature.  The signature MUST only apply to the header, excluding:
+  * The header size
+  * The header checksum
+  * The signature count
+  * The signatures
  The excluded data MUST be omitted when calculating the signature.
 
 Signatures are designed so that anyone can add a new signature to a file

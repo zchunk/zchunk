@@ -343,6 +343,13 @@ bool ZCK_PUBLIC_API zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t val
 
     } else if(option == ZCK_UNCOMP_HEADER) {
         zck->has_uncompressed_source = 1;
+        /* Uncompressed source requires chunk checksums to be a minimum of SHA-256 */
+        if(zck->chunk_hash_type.type == ZCK_HASH_SHA1 ||
+           zck->chunk_hash_type.type == ZCK_HASH_SHA512_128) {
+            if(!set_chunk_hash_type(zck, ZCK_HASH_SHA256))
+                return false;
+        }
+
     /* Hash options */
     } else if(option < 100) {
         /* Currently no hash options other than setting hash type, so bail */

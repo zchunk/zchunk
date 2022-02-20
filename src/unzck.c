@@ -53,7 +53,8 @@ static struct argp_option options[] = {
     {"verbose", 'v', 0,        0,
      "Increase verbosity (can be specified more than once for debugging)"},
     {"stdout",  'c', 0,        0, "Direct output to stdout"},
-    {"dict",   1000, 0,        0, "Only extract the dictionary"},
+    {"dict",   1000, 0,        0, "Only extract the dictionary (can't be run with --header)"},
+    {"header", 1001, 0,        0, "Only extract the header (can't be run with --dict)"},
     {"version", 'V', 0,        0, "Show program version"},
     { 0 }
 };
@@ -62,6 +63,7 @@ struct arguments {
   char *args[1];
   zck_log_type log_level;
   bool dict;
+  bool header;
   bool std_out;
   bool exit;
 };
@@ -85,8 +87,13 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
             version();
             arguments->exit = true;
             break;
-        case 1000:
+        case 1000: // Header and dict can't both be set
             arguments->dict = true;
+            arguments->header = false;
+            break;
+        case 1001: // Header and dict can't both be set
+            arguments->header = true;
+            arguments->dict = false;
             break;
         case ARGP_KEY_ARG:
             if (state->arg_num >= 1) {
@@ -126,8 +133,9 @@ int main (int argc, char *argv[]) {
 
     if(!arguments.std_out) {
         if(strlen(arguments.args[0]) < 5 ||
-           strcmp(arguments.args[0] + strlen(arguments.args[0]) - 4, ".zck") != 0) {
-            LOG_ERROR("Not a *.zck file: %s\n", arguments.args[0]);
+           (strcmp(arguments.args[0] + strlen(arguments.args[0]) - 4, ".zck") != 0 &&
+            strcmp(arguments.args[0] + strlen(arguments.args[0]) - 4, ".zhr") != 0)) {
+            LOG_ERROR("Not a *.zck or *.zhr file: %s\n", arguments.args[0]);
             exit(1);
         }
     }
@@ -141,12 +149,16 @@ int main (int argc, char *argv[]) {
     char *out_name = NULL;
     if(arguments.dict)
         out_name = calloc(strlen(base_name) + 3, 1); // len .zck -> .zdict = +2
+    else if(arguments.header)
+        out_name = calloc(strlen(base_name), 1); // .zck -> zhr
     else
-        out_name = calloc(strlen(base_name) - 2, 1);
+        out_name = calloc(strlen(base_name) - 2, 1); // strip .zck
     assert(out_name);
     snprintf(out_name, strlen(base_name) - 3, "%s", base_name); //Strip off .zck
     if(arguments.dict)
         snprintf(out_name + strlen(base_name) - 4, 7, ".zdict");
+    else if(arguments.header)
+        snprintf(out_name + strlen(base_name) - 4, 5, ".zhr");
 
 #ifdef _WIN32
     int dst_fd = _fileno(stdout);
@@ -179,6 +191,9 @@ int main (int argc, char *argv[]) {
         if(dict_size < 0) {
             LOG_ERROR("%s", zck_get_error(zck));
             goto error2;
+        } else if(dict_size == 0) {
+            LOG_ERROR("%s doesn't contain a dictionary\n", arguments.args[0]);
+            goto error2;
         }
         data = calloc(dict_size, 1);
         assert(data);
@@ -200,7 +215,7 @@ int main (int argc, char *argv[]) {
             int ret = zck_get_chunk_valid(dict);
             if(ret < 1) {
                 if(ret == -1)
-                    LOG_ERROR("Data checksum failed verification\n");
+                    LOG_ERROR("Dictionary checksum failed verification\n");
                 else
                     LOG_ERROR("%s", zck_get_error(zck));
                 goto error2;
@@ -208,7 +223,58 @@ int main (int argc, char *argv[]) {
         }
         good_exit = true;
         goto error2;
+    } else if(arguments.header) {
+        if(zck_is_detached_header(zck)) {
+            LOG_ERROR("%s is already a detached header\n", arguments.args[0]);
+            goto error2;
+        }
+
+        ssize_t header_size = zck_get_header_length(zck);
+        if(header_size == -1) {
+            LOG_ERROR("%s", zck_get_error(zck));
+            goto error2;
+        }
+
+        zckChunk *dict = zck_get_first_chunk(zck);
+        ssize_t dict_size = zck_get_chunk_comp_size(dict);
+        if(dict_size < 0) {
+            LOG_ERROR("%s", zck_get_error(zck));
+            goto error2;
+        }
+
+        data = calloc(BUF_SIZE, 1);
+        if(data == NULL) {
+            LOG_ERROR("Unable to allocate %i bytes\n", BUF_SIZE);
+            goto error2;
+        }
+
+        if(lseek(src_fd, 5, SEEK_SET) < 0) {
+            perror("Unable to seek to beginning of source file");
+            exit(1);
+        }
+        write(dst_fd, "\0ZHR1", 5);
+        for(ssize_t i=5; i<header_size + dict_size; i+=BUF_SIZE) {
+            ssize_t write_size = i + BUF_SIZE < header_size + dict_size ? BUF_SIZE : header_size + dict_size - i;
+            ssize_t read_size = read(src_fd, data, write_size);
+            if(read_size < write_size) {
+                LOG_ERROR("Unable to read %llu bytes from source\n", (long long unsigned) write_size);
+                goto error2;
+            }
+            if(write(dst_fd, data, write_size) != write_size) {
+                LOG_ERROR("Error writing to %s\n", out_name);
+                goto error2;
+            }
+        }
+        good_exit = true;
+        goto error2;
     }
+
+    if(zck_is_detached_header(zck)) {
+        LOG_ERROR("%s is a detached header, not a full zchunk file.  The only operation unzck\n"
+                  "can run on a detached header is --dict\n", arguments.args[0]);
+        goto error2;
+    }
+
     int ret = zck_validate_data_checksum(zck);
     if(ret < 1) {
         if(ret == -1)
@@ -220,18 +286,18 @@ int main (int argc, char *argv[]) {
     assert(data);
     size_t total = 0;
     while(true) {
-        ssize_t read = zck_read(zck, data, BUF_SIZE);
-        if(read < 0) {
+        ssize_t read_size = zck_read(zck, data, BUF_SIZE);
+        if(read_size < 0) {
             LOG_ERROR("%s", zck_get_error(zck));
             goto error2;
         }
-        if(read == 0)
+        if(read_size == 0)
             break;
-        if(write(dst_fd, data, read) != read) {
+        if(write(dst_fd, data, read_size) != read_size) {
             LOG_ERROR("Error writing to %s\n", out_name);
             goto error2;
         }
-        total += read;
+        total += read_size;
     }
     if(!zck_close(zck)) {
         LOG_ERROR("%s", zck_get_error(zck));

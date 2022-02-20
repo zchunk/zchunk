@@ -93,6 +93,8 @@ static int validate_checksums(zckCtx *zck, zck_log_type bad_checksums) {
     for(zckChunk *idx = zck->index.first; idx; idx = idx->next) {
         if(idx == zck->index.first && idx->length == 0) {
             idx->valid = 1;
+            if(zck->header_only)
+                break;
             continue;
         }
 
@@ -108,8 +110,10 @@ static int validate_checksums(zckCtx *zck, zck_log_type bad_checksums) {
                 zck_log(ZCK_LOG_DEBUG, "No more data");
             if(!hash_update(zck, &(zck->check_chunk_hash), buf, rsize))
                 return 0;
-            if(!hash_update(zck, &(zck->check_full_hash), buf, rsize))
-                return 0;
+            if(!zck->has_uncompressed_source) {
+                if(!hash_update(zck, &(zck->check_full_hash), buf, rsize))
+                    return 0;
+            }
             rlen += rsize;
         }
         int valid_chunk = validate_chunk(idx, bad_checksums);
@@ -118,18 +122,28 @@ static int validate_checksums(zckCtx *zck, zck_log_type bad_checksums) {
         idx->valid = valid_chunk;
         if(all_good && valid_chunk != 1)
             all_good = false;
+        if(zck->header_only)
+            break;
     }
     int valid_file = -1;
-    if(all_good) {
-        /* Check data checksum */
-        valid_file = validate_file(zck, bad_checksums);
-        if(!valid_file)
-            return 0;
+    if(zck->has_uncompressed_source || zck->header_only) {
+        /* If we have an uncompressed source or are a detached header,
+         * skip meaningless full data checksum, and just set valid_file
+         * if the chunks (or dictionary, if we're a header) was good */
+        if(all_good)
+            valid_file = 1;
+    } else {
+        if(all_good) {
+            /* Check data checksum */
+            valid_file = validate_file(zck, bad_checksums);
+            if(!valid_file)
+                return 0;
 
-        /* If data checksum failed, invalidate *all* chunks */
-        if(valid_file == -1)
-            for(zckChunk *idx = zck->index.first; idx; idx = idx->next)
-                idx->valid = -1;
+            /* If data checksum failed, invalidate *all* chunks */
+            if(valid_file == -1)
+                for(zckChunk *idx = zck->index.first; idx; idx = idx->next)
+                    idx->valid = -1;
+        }
     }
 
     /* Go back to beginning of data section */
@@ -411,6 +425,13 @@ int validate_current_chunk(zckCtx *zck) {
 
 int validate_file(zckCtx *zck, zck_log_type bad_checksums) {
     VALIDATE_BOOL(zck);
+    if(zck->has_uncompressed_source) {
+        zck_log(
+            ZCK_LOG_DEBUG,
+            "Skipping full file validation since uncompressed source flag is set"
+        );
+        return 1;
+    }
     char *digest = hash_finalize(zck, &(zck->check_full_hash));
     if(digest == NULL) {
         set_error(zck, "Unable to calculate full file checksum");
@@ -464,9 +485,16 @@ int validate_header(zckCtx *zck) {
     return 1;
 }
 
-/* Returns 1 if data hash matches, -1 if it doesn't and 0 if error */
+/* Returns 1 if data hash matches, -1 if it doesn't and 0 if error
+ *
+ * For a zchunk file with both compressed and uncompressed checksums, validate
+ * each chunk checksum independently, since there is no data hash */
 int ZCK_PUBLIC_API zck_validate_data_checksum(zckCtx *zck) {
     VALIDATE_READ_BOOL(zck);
+
+    if(zck->has_uncompressed_source) {
+        return validate_checksums(zck, ZCK_LOG_WARNING);
+    }
 
     if(!seek_data(zck, zck->data_offset, SEEK_SET))
         return 0;

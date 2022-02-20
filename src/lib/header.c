@@ -56,6 +56,17 @@ static bool check_flags(zckCtx *zck, size_t flags) {
     return true;
 }
 
+static ssize_t get_flags(zckCtx *zck) {
+    size_t flags = 0;
+    if(zck->has_streams)
+        flags |= 1;
+    if(zck->has_optional_elems)
+        flags |= 2;
+    if(zck->has_uncompressed_source)
+        flags |= 4;
+    return flags;
+}
+
 static bool read_optional_element(zckCtx *zck, size_t id, size_t data_size,
                                   char *data) {
     zck_log(ZCK_LOG_WARNING, "Unknown optional element id %i set", id);
@@ -63,6 +74,12 @@ static bool read_optional_element(zckCtx *zck, size_t id, size_t data_size,
 }
 
 static bool read_header_from_file(zckCtx *zck) {
+    /* Verify that lead_size and header_length have been set */
+    if(zck->lead_size == 0 || zck->header_length == 0) {
+        set_error(zck, "Lead and header sizes are both 0.  Have you run zck_read_lead() yet?");
+        return false;
+    }
+
     /* Allocate header and store any extra bytes at beginning of header */
     zck->header = zrealloc(zck->header, zck->lead_size + zck->header_length);
     if (!zck->header) {
@@ -91,9 +108,16 @@ static bool read_header_from_file(zckCtx *zck) {
 
     if(!hash_init(zck, &(zck->check_full_hash), &(zck->hash_type)))
         return false;
-    if(!hash_update(zck, &(zck->check_full_hash), zck->header,
-                    zck->hdr_digest_loc))
+    /* If we're reading a detached zchunk header, first five bytes will be
+     * different, breaking the header digest, so let's make things simple
+     * by forcing the first five bytes to be static */
+    if(!hash_update(zck, &(zck->check_full_hash), "\0ZCK1", 5))
         return false;
+    /* Now hash the remaining lead */
+    if(!hash_update(zck, &(zck->check_full_hash), zck->header+5,
+                    zck->hdr_digest_loc-5))
+        return false;
+    /* And the remaining header */
     if(!hash_update(zck, &(zck->check_full_hash), header, zck->header_length))
         return false;
     int ret = validate_header(zck);
@@ -257,12 +281,7 @@ static bool preface_create(zckCtx *zck) {
     length += zck->hash_type.digest_size;
 
     /* Write out flags */
-    size_t flags = 0;
-    if(zck->has_streams)
-        flags &= 1;
-    if(zck->has_uncompressed_source)
-        flags |= 4;
-    compint_from_size(header+length, flags, &length);
+    compint_from_size(header+length, get_flags(zck), &length);
 
     /* Write out compression type and index size */
     if(!compint_from_int(zck, header+length, zck->comp.type, &length)) {
@@ -466,7 +485,9 @@ static bool read_lead(zckCtx *zck) {
         return false;
     }
 
-    if(memcmp(header, "\0ZCK1", 5) != 0) {
+    if(memcmp(header, "\0ZHR1", 5) == 0) {
+        zck->header_only = true;
+    } else if(memcmp(header, "\0ZCK1", 5) != 0) {
         free(header);
         set_error(zck, "Invalid lead, perhaps this is not a zck file?");
         return false;
@@ -640,4 +661,14 @@ ssize_t ZCK_PUBLIC_API zck_get_data_length(zckCtx *zck) {
 ssize_t ZCK_PUBLIC_API zck_get_length(zckCtx *zck) {
     VALIDATE_INT(zck);
     return zck_get_header_length(zck) + zck_get_data_length(zck);
+}
+
+ssize_t ZCK_PUBLIC_API zck_get_flags(zckCtx *zck) {
+    VALIDATE_INT(zck);
+    return get_flags(zck);
+}
+
+bool ZCK_PUBLIC_API zck_is_detached_header(zckCtx *zck) {
+    VALIDATE_BOOL(zck);
+    return zck->header_only;
 }

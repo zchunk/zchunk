@@ -153,18 +153,42 @@ int main (int argc, char *argv[]) {
     close(src_fd);
 
     if(!arguments.quiet) {
+        zckChunk *dict = zck_get_first_chunk(zck);
+        char *dict_digest = zck_get_chunk_digest(dict);
+        if(dict_digest == NULL) {
+            LOG_ERROR("%s", zck_get_error(zck));
+            exit(1);
+        }
+        if(zck_is_detached_header(zck))
+            printf("zchunk detached header\n\n");
+        else
+            printf("zchunk file\n\n");
         printf("Overall checksum type: %s\n",
                zck_hash_name_from_type(zck_get_full_hash_type(zck)));
         printf("Header size: %llu\n", (long long unsigned) zck_get_header_length(zck));
         char *digest = zck_get_header_digest(zck);
         printf("Header checksum: %s\n", digest);
-        free(digest); 
+        free(digest);
+        ssize_t flags = zck_get_flags(zck);
+        if(flags > 0) {
+            printf("Flags:\n");
+            if(flags & 1)
+                printf("    Has streams\n");
+            if(flags & 2)
+                printf("    Has optional header elements\n");
+            if(flags & 4)
+                printf("    Has uncompressed checksums\n");
+        }
         printf("Data size: %llu\n", (long long unsigned) zck_get_data_length(zck));
         digest = zck_get_data_digest(zck);
         printf("Data checksum: %s\n", digest);
         free(digest);
         printf("Chunk count: %llu\n", (long long unsigned) zck_get_chunk_count(zck));
         printf("Chunk checksum type: %s\n", zck_hash_name_from_type(zck_get_chunk_hash_type(zck)));
+        if(zck_get_chunk_size(dict) == 0)
+            printf("No dictionary\n");
+        else
+            printf("Dictionary: %s\n", dict_digest);
     }
     if(!arguments.quiet && arguments.show_chunks)
         printf("\n");
@@ -183,7 +207,7 @@ int main (int argc, char *argv[]) {
             if (chk == zck_get_first_chunk(zck)) {
                 bool has_uncompressed = (strlen(digest_uncompressed) > 0);
                 if (has_uncompressed)
-                        printf("       Chunk Checksum %*cChecksum uncompressed %*c       Start    Comp size         Size\n",
+                        printf("       Chunk Checksum %*cUncompressed Checksum %*c       Start    Comp size         Size\n",
                            (((int)zck_get_chunk_digest_size(zck) * 2) - (int)strlen("Checksum")), ' ',
                            ((int)zck_get_chunk_digest_size(zck) * 2) - (int)strlen("Uncompressed Checksum"), ' ');
                     else
@@ -201,6 +225,8 @@ int main (int argc, char *argv[]) {
             if(arguments.verify) {
                 if(zck_get_chunk_valid(chk) == 1)
                     printf("  +");
+                else if(zck_is_detached_header(zck) && zck_get_chunk_valid(chk) == 0)
+                    ;
                 else
                     printf("  !");
             }

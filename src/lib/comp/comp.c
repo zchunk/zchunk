@@ -481,9 +481,11 @@ ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, bool use_dict) {
                           &(zck->chunk_hash_type)))
                 goto hash_error;
             if(zck->comp.data_loc > 0) {
-                if(!hash_update(zck, &(zck->check_full_hash), zck->comp.data,
-                                zck->comp.data_loc))
-                    goto hash_error;
+                if(!zck->has_uncompressed_source) {
+                    if(!hash_update(zck, &(zck->check_full_hash), zck->comp.data,
+                                    zck->comp.data_loc))
+                        goto hash_error;
+                }
                 if(!hash_update(zck, &(zck->check_chunk_hash), zck->comp.data,
                                 zck->comp.data_loc))
                     goto hash_error;
@@ -528,8 +530,11 @@ ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, bool use_dict) {
             if(!hash_init(zck, &(zck->check_chunk_hash),
                           &(zck->chunk_hash_type)))
                 goto hash_error;
-        if(!hash_update(zck, &(zck->check_full_hash), src, rb) ||
-           !hash_update(zck, &(zck->check_chunk_hash), src, rb) ||
+        if(!zck->has_uncompressed_source) {
+            if(!hash_update(zck, &(zck->check_full_hash), src, rb))
+                goto read_error;
+        }
+        if(!hash_update(zck, &(zck->check_chunk_hash), src, rb) ||
            !comp_add_to_data(zck, &(zck->comp), src, rb))
             goto read_error;
     }

@@ -38,6 +38,8 @@ static void index_free_item(zckChunk **item) {
 
     if((*item)->digest)
         free((*item)->digest);
+    if((*item)->digest_uncompressed)
+        free((*item)->digest_uncompressed);
     free(*item);
     *item = NULL;
     return;

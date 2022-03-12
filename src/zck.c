@@ -96,6 +96,10 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
             break;
         case 's':
             arguments->split_string = arg;
+            if (strlen(arg) >= BUF_SIZE) {
+                LOG_ERROR("Split string size must be less than %i\n", BUF_SIZE);
+                return -EINVAL;
+            }
             break;
         case 'm':
             arguments->manual_chunk = true;
@@ -154,6 +158,13 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
 }
 
 static struct argp argp = {options, parse_opt, args_doc, doc};
+
+void write_data(zckCtx *zck, char *data, ssize_t in_size) {
+    if(zck_write(zck, data, in_size) < 0) {
+        LOG_ERROR("%s", zck_get_error(zck));
+        exit(1);
+    }
+}
 
 int main (int argc, char *argv[]) {
     struct arguments arguments = {0};
@@ -279,66 +290,56 @@ int main (int argc, char *argv[]) {
             exit(1);
         }
     }
-    char *data;
+    char data[BUF_SIZE] = {0};
     int in_fd = open(arguments.args[0], O_RDONLY | O_BINARY);
-    off_t in_size = 0;
+    ssize_t in_size = 0;
     if(in_fd < 0) {
         LOG_ERROR("Unable to open %s for reading",
                 arguments.args[0]);
         perror("");
         exit(1);
     }
-    in_size = lseek(in_fd, 0, SEEK_END);
-    if(in_size < 0) {
-        LOG_ERROR("Unable to seek to end of input file");
-        exit(1);
-    }
-    if(lseek(in_fd, 0, SEEK_SET) < 0) {
-        perror("Unable to seek to beginning of input file");
-        exit(1);
-    }
-    if(in_size > 0) {
-        data = malloc(in_size);
-        assert(data);
-        if(read(in_fd, data, in_size) < in_size) {
-            LOG_ERROR("Unable to read from input file\n");
-            exit(1);
-        }
-        close(in_fd);
 
-        if(arguments.split_string) {
-            char *found = data;
-            char *search = found;
-            while(search) {
-                char *next = memmem(search, in_size - (search-data),
-                                    arguments.split_string,
-                                    strlen(arguments.split_string));
-                if(next) {
-                    if(zck_write(zck, found, next-found) < 0)
-                        exit(1);
-                    if(zck_end_chunk(zck) < 0)
-                        exit(1);
-                    found = next;
-                    search = next + 1;
-                    if(search > data + in_size)
-                        search = data + in_size;
-                } else {
-                    if(zck_write(zck, found, data+in_size-found) < 0)
-                        exit(1);
-                    if(zck_end_chunk(zck) < 0)
-                        exit(1);
-                    search = NULL;
+    int split_size = 0;
+    int matched = 0;
+    if(arguments.split_string)
+        split_size = strlen(arguments.split_string);
+
+    while((in_size = read(in_fd, data, BUF_SIZE)) > 0) {
+        ssize_t start = 0;
+        if(split_size > 0) {
+            /* If we're doing split strings, things get a bit hairy */
+            for(int l=0; l<in_size; l++) {
+                if(data[l] == arguments.split_string[matched]) {
+                    /* Check each byte to see if it matches the next byte in the
+                     * split string.  If the we match the whole split string,
+                     * write out all queued data, end the chunk, and then write
+                     * out the split string */
+                    matched++;
+                    if(matched == split_size) {
+                        if(l > matched)
+                            write_data(zck, data + start, l - (start + matched - 1));
+                        if(zck_end_chunk(zck) < 0)
+                            exit(1);
+                        write_data(zck, arguments.split_string, split_size);
+                        start = l+1;
+                        matched = 0;
+                    }
+                } else if(matched > 0) {
+                    /* If we're at the start of a data block with no more match,
+                     * and some data had matched in the previous block, write
+                     * out previously matched data */
+                    if(l < matched)
+                        write_data(zck, arguments.split_string, matched - l);
+                    matched = 0;
                 }
             }
-        /* Buzhash rolling window */
-        } else {
-            if(zck_write(zck, data, in_size) < 0) {
-                LOG_ERROR("%s", zck_get_error(zck));
-                exit(1);
-            }
         }
-        free(data);
+        write_data(zck, data + start, in_size - (start + matched));
     }
+
+    close(in_fd);
+
     if(!zck_close(zck)) {
         printf("%s", zck_get_error(zck));
         exit(1);

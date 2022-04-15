@@ -250,6 +250,9 @@ if build_machine.endian() != 'big'
     if zstd_dep.found() and zstd_dep.version().version_compare('<=1.5.0')
         check_sha = '4f07f865bb15624cf854aa369e14a3538ad9e9bf98e233036d37d2568e60b7cc'
     endif
+    if zstd_dep.found() and zstd_dep.version().version_compare('<=1.4.10')
+        check_sha = 'c8c14ae369c341753e634b94fe1d071d3551f2b69469c2196e6dc657d613b975'
+    endif
     if zstd_dep.found() and zstd_dep.version().version_compare('<=1.4.9')
         check_sha = 'eff3098803ba80f0c446d49f48188f89167d7f29cdc8a98c19f0ecfb4e2ee3c9'
     endif

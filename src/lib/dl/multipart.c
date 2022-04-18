@@ -169,8 +169,9 @@ size_t multipart_extract(zckDL *dl, char *b, size_t l) {
             if(size > 0) {
                 mp->buffer = zmalloc(size);
                 if (!mp->buffer) {
-                   zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
-                   return 0;
+                    free(buf);
+                    zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+                    return 0;
                 }
                 memcpy(mp->buffer, header_start, size);
                 mp->buffer_len = size;

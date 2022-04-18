@@ -165,16 +165,41 @@ int dl_range(dlCtx *dl_ctx, char *url, char *range, int is_chunk) {
     CURL *curl = dl_ctx->curl;
     CURLcode res;
 
-    curl_easy_setopt(curl, CURLOPT_URL, url);
-    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, dl_header_cb);
-    curl_easy_setopt(curl, CURLOPT_HEADERDATA, dl_ctx);
-    if(is_chunk)
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, zck_write_chunk_cb);
-    else
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, zck_write_zck_header_cb);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, dl_ctx->dl);
-    curl_easy_setopt(curl, CURLOPT_RANGE, range);
+    if(curl_easy_setopt(curl, CURLOPT_URL, url) != CURLE_OK) {
+        LOG_ERROR("Unable to set URL\n");
+        return 0;
+    }
+    if(curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L) != CURLE_OK) {
+        LOG_ERROR("Unable to enable option to follow redirects\n");
+        return 0;
+    }
+    if(curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, dl_header_cb) != CURLE_OK) {
+        LOG_ERROR("Unable to set header callback\n");
+        return 0;
+    }
+    if(curl_easy_setopt(curl, CURLOPT_HEADERDATA, dl_ctx) != CURLE_OK) {
+        LOG_ERROR("Unable to set header callback data\n");
+        return 0;
+    }
+    if(is_chunk) {
+        if(curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, zck_write_chunk_cb) != CURLE_OK) {
+            LOG_ERROR("Unable to set write callback\n");
+            return 0;
+        }
+    } else {
+        if(curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, zck_write_zck_header_cb) != CURLE_OK) {
+            LOG_ERROR("Unable to set write callback\n");
+            return 0;
+        }
+    }
+    if(curl_easy_setopt(curl, CURLOPT_WRITEDATA, dl_ctx->dl) != CURLE_OK) {
+        LOG_ERROR("Unable to set write callback data\n");
+        return 0;
+    }
+    if(curl_easy_setopt(curl, CURLOPT_RANGE, range) != CURLE_OK) {
+        LOG_ERROR("Unable to set download range\n");
+        return 0;
+    }
     res = curl_easy_perform(curl);
     free(range);
 
@@ -187,8 +212,11 @@ int dl_range(dlCtx *dl_ctx, char *url, char *range, int is_chunk) {
         return 0;
     }
     long code;
-    curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &code);
-    if (code != 206 && code != 200) {
+    if(curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &code) != CURLE_OK) {
+        LOG_ERROR("Unable to get response code\n");
+        return 0;
+    }
+    if(code != 206 && code != 200) {
         LOG_ERROR("HTTP Error: %li when downloading %s\n", code,
                   url);
         return 0;

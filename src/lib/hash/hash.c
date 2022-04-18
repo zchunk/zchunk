@@ -165,7 +165,10 @@ char *get_digest_string(const char *digest, int size) {
        return NULL;
     }
     for(int i=0; i<size; i++)
-        snprintf(str + i*2, 3, "%02x", (unsigned char)digest[i]);
+        if(!digest)
+            snprintf(str + i*2, 3, "00");
+        else
+            snprintf(str + i*2, 3, "%02x", (unsigned char)digest[i]);
     return str;
 }
 

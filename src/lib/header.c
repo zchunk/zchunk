@@ -50,7 +50,7 @@ static bool check_flags(zckCtx *zck, size_t flags) {
 
     flags = flags & (SIZE_MAX - 1);
     if(flags != 0) {
-        set_fatal_error(zck, "Unknown flags(s) set: %i", flags);
+        set_fatal_error(zck, "Unknown flags(s) set: %lu", flags);
         return false;
     }
     return true;
@@ -517,6 +517,12 @@ static bool read_lead(zckCtx *zck) {
     size_t header_length = 0;
     if(!compint_to_size(zck, &header_length, header+length, &length, lead)) {
         free(header);
+        hash_reset(&(zck->hash_type));
+        return false;
+    }
+    if(header_length > SIZE_MAX) {
+        free(header);
+        set_error(zck, "Header length of %li invalid", header_length);
         hash_reset(&(zck->hash_type));
         return false;
     }

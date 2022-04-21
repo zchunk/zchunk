@@ -58,10 +58,7 @@ endif
 
 # argp-standalone dependency (if required)
 if build_machine.system() == 'windows' or build_machine.system() == 'darwin' or build_machine.system() == 'freebsd' or not cc.links('#include <argp.h>\nstatic error_t parse_opt (int key, char *arg, struct argp_state *state) { argp_usage(state); return 0; }; void main() {}')
-    if fs.is_dir(join_paths([get_option('prefix'), 'include']))
-        inc += include_directories(join_paths([get_option('prefix'), 'include']))
-    endif
-    argplib = cc.find_library('argp', dirs : join_paths([get_option('prefix'), 'lib']))
+    argplib = cc.find_library('argp', has_headers : ['argp.h'])
 else
     argplib = dependency('', required : false)
 endif

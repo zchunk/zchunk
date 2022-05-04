@@ -81,13 +81,15 @@ pkg_mod.generate(
     description : 'A library for generating easy-to-delta files.'
 )
 
-install_man([
-    'doc/unzck.1',
-    'doc/zck.1',
-    'doc/zck_delta_size.1',
-    'doc/zck_gen_zdict.1',
-    'doc/zck_read_header.1',
-    'doc/zckdl.1',
-])
+if get_option('docs')
+    install_man([
+        'doc/unzck.1',
+        'doc/zck.1',
+        'doc/zck_delta_size.1',
+        'doc/zck_gen_zdict.1',
+        'doc/zck_read_header.1',
+        'doc/zckdl.1',
+    ])
+endif
 
 libzck_dep = declare_dependency(link_with: zcklib, include_directories: 'include')

@@ -1,7 +1,7 @@
 [wrap-git]
-directory = argp-standalone-1.4.1
+directory = argp-standalone-1.5.0
 url = https://github.com/argp-standalone/argp-standalone.git
-revision = 21855f34ec9997c37e1a08cd69497336513a5800
+revision = 1.5.0
 
 [provide]
 dependency_names = argp-standalone

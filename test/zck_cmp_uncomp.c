@@ -216,7 +216,7 @@ int main (int argc, char *argv[]) {
     size_t todwl = 0;
     size_t reuse = 0;
     while (iter) {
-        printf("%12lu %s %s %12lu %12lu\n",
+        printf("%zd %s %s %zd %zd\n",
                 zck_get_chunk_number(iter),
                 zck_get_chunk_valid(iter) ? "SRC" : "DST",
                 zck_get_chunk_digest_uncompressed(iter),
@@ -232,8 +232,8 @@ int main (int argc, char *argv[]) {
         iter = zck_get_next_chunk(iter);
     }
 
-    printf("\n\nTotal to be reused : %12lu\n", reuse);
-    printf("Total to be downloaded : %12lu\n", todwl);
+    printf("\n\nTotal to be reused : %zu\n", reuse);
+    printf("Total to be downloaded : %zu\n", todwl);
 
     close(in_fd);
     close(zck_fd);

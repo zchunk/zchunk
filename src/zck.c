@@ -159,7 +159,7 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
 
 static struct argp argp = {options, parse_opt, args_doc, doc};
 
-void write_data(zckCtx *zck, char *data, ssize_t in_size) {
+static void write_data(zckCtx *zck, char *data, ssize_t in_size) {
     if(zck_write(zck, data, in_size) < 0) {
         LOG_ERROR("%s", zck_get_error(zck));
         exit(1);

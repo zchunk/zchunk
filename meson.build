@@ -68,7 +68,7 @@ endif
 
 subdir('include')
 subdir('src')
-if not get_option('coverity')
+if not get_option('coverity') and get_option('tests')
     subdir('test')
 endif
 

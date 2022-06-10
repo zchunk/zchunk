@@ -1,6 +1,7 @@
 # zchunk
 
-[![Coverity Scan Build Status](https://img.shields.io/coverity/scan/16509.svg)](https://scan.coverity.com/projects/zchunk-zchunk)<br>
+[![Coverity Scan Build Status](https://img.shields.io/coverity/scan/16509.svg)](https://scan.coverity.com/projects/zchunk-zchunk)[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fzchunk%2Fzchunk.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fzchunk%2Fzchunk?ref=badge_shield)
+<br>
 [![GitHub Actions Test Status](https://github.com/zchunk/zchunk/actions/workflows/main.yml/badge.svg)](https://github.com/zchunk/zchunk/actions)
 
 zchunk is a compressed file format that splits the file into independent chunks.
@@ -87,3 +88,7 @@ your system.
 - [Format definition](zchunk_format.txt)
 - [Initial announcement](https://www.jdieter.net/posts/2018/04/30/introducing-zchunk)
 - [How zchunk works (with pretty pictures)](https://www.jdieter.net/posts/2018/05/31/what-is-zchunk)
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fzchunk%2Fzchunk.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fzchunk%2Fzchunk?ref=badge_large)

@@ -56,7 +56,12 @@ zck_cmp_uncomp = executable(
     c_args: preprocessor_defines,
     install: false
 )
-file_path = join_paths(meson.source_root(), 'test/files')
+
+if meson.version().version_compare('>=0.56.0')
+    file_path = join_paths(meson.project_source_root(), 'test/files')
+else
+    file_path = join_paths(meson.source_root(), 'test/files')
+endif
 
 test(
     'create and validate empty zchunk file',

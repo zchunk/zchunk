@@ -80,6 +80,33 @@ jobs:
           cd builddir
           ninja test
 
+  windows-static:
+    runs-on: windows-latest
+
+    name: Compile and run tests (windows-latest-static)
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-python@v1
+        with:
+          python-version: '3.x'
+
+      - name: Install meson and ninja
+        run: pip install meson ninja
+
+      - name: Compile zchunk
+        shell: cmd /C CALL {0}
+        run: |
+          meson setup builddir --default-library=static
+          meson compile -C builddir
+
+      - name: Run zchunk tests
+        shell: cmd /C CALL {0}
+        run: |
+          cd builddir
+          ninja test
+
+
   macos:
     runs-on: macos-latest
 

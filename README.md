@@ -6,7 +6,9 @@
 
 zchunk is a compressed file format that splits the file into independent chunks.
 This allows you to only download changed chunks when downloading a new version
-of the file, and also makes zchunk files efficient over rsync.
+of the file.  Files can hosted on any web server that supports HTTP ranged
+requests, with no special software required to serve the files (though to
+download only the changed chunks, your client must be zchunk-aware).
 
 zchunk files are protected with strong checksums to verify that the file you
 downloaded is, in fact, the file you wanted.

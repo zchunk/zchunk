@@ -271,6 +271,7 @@ struct zckCtx {
     int has_streams;
     int has_optional_elems;
     int has_uncompressed_source;
+    int no_write;
 
     char *read_buf;
     size_t read_buf_size;

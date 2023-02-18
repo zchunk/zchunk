@@ -114,6 +114,9 @@ ssize_t tell_data(zckCtx *zck) {
 int chunks_from_temp(zckCtx *zck) {
     int read_count;
 
+    if(zck->no_write == 1)
+        return true;
+
     if(lseek(zck->temp_fd, 0, SEEK_SET) == -1)
         return false;
 

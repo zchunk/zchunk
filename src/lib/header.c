@@ -462,7 +462,7 @@ bool write_header(zckCtx *zck) {
         "Writing header: %llu bytes",
         (long long unsigned) zck->lead_size
     );
-    if(!write_data(zck, zck->fd, zck->header, zck->header_size))
+    if(zck->no_write == 0 && !write_data(zck, zck->fd, zck->header, zck->header_size))
         return false;
     return true;
 }

@@ -154,7 +154,7 @@ static ssize_t comp_write(zckCtx *zck, const char *src, const size_t src_size) {
         return -1;
     zck->comp.dc_data_size += src_size;
 
-    if(dst_size > 0 && !write_data(zck, zck->temp_fd, dst, dst_size)) {
+    if(zck->no_write == 0 && dst_size > 0 && !write_data(zck, zck->temp_fd, dst, dst_size)) {
         free(dst);
         return -1;
     }
@@ -217,7 +217,7 @@ bool comp_init(zckCtx *zck) {
         }
     }
 
-    if(zck->temp_fd) {
+    if(zck->temp_fd || zck->no_write) {
         if(zck->comp.dict) {
             char *dst = NULL;
             size_t dst_size = 0;
@@ -226,7 +226,7 @@ bool comp_init(zckCtx *zck) {
                                   zck->comp.dict_size, &dst, &dst_size, 0) < 0)
                 return false;
             zck->comp.dc_data_size = zck->comp.dict_size;
-            if(!write_data(zck, zck->temp_fd, dst, dst_size)) {
+            if(zck->no_write == 0 && !write_data(zck, zck->temp_fd, dst, dst_size)) {
                 free(dst);
                 return false;
             }
@@ -242,7 +242,7 @@ bool comp_init(zckCtx *zck) {
             if(!zck->comp.end_cchunk(zck, comp, &dst, &dst_size, 0))
                 return false;
             zck->comp.dc_data_size = 0;
-            if(!write_data(zck, zck->temp_fd, dst, dst_size)) {
+            if(zck->no_write == 0 && !write_data(zck, zck->temp_fd, dst, dst_size)) {
                 free(dst);
                 return false;
             }
@@ -645,7 +645,7 @@ ssize_t ZCK_PUBLIC_API zck_end_chunk(zckCtx *zck) {
     if(!zck->comp.end_cchunk(zck, &(zck->comp), &dst, &dst_size, 1))
         return -1;
     zck->comp.dc_data_size = 0;
-    if(dst_size > 0 && !write_data(zck, zck->temp_fd, dst, dst_size)) {
+    if(zck->no_write == 0 && dst_size > 0 && !write_data(zck, zck->temp_fd, dst, dst_size)) {
         free(dst);
         return -1;
     }

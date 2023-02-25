@@ -349,6 +349,23 @@ bool ZCK_PUBLIC_API zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t val
             if(!set_chunk_hash_type(zck, ZCK_HASH_SHA256))
                 return false;
         }
+    } else if(option == ZCK_NO_WRITE) {
+        if(value == 0) {
+            if(zck->no_write == 1) {
+                set_error(zck, "Unable to enable write after it's been disabled");
+                return false;
+            }
+            zck->no_write = 0;
+        } else if(value == 1) {
+            zck->no_write = 1;
+            if(zck->temp_fd) {
+                close(zck->temp_fd);
+                zck->temp_fd = 0;
+            }
+        } else {
+            set_error(zck, "Unknown value %lli for ZCK_NO_WRITE", (long long) value);
+            return false;
+        }
 
     /* Hash options */
     } else if(option < 100) {

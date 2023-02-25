@@ -1,7 +1,7 @@
 #ifndef ZCK_H
 #define ZCK_H
 
-#define ZCK_VERSION "1.2.4"
+#define ZCK_VERSION "1.3.0"
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -28,6 +28,8 @@ typedef enum zck_ioption {
     ZCK_VAL_HEADER_HASH_TYPE,   /* Set what the header hash type *should* be */
     ZCK_VAL_HEADER_LENGTH,      /* Set what the header length *should* be */
     ZCK_UNCOMP_HEADER,          /* Header should contain uncompressed size, too */
+    ZCK_NO_WRITE,               /* Do not write to file when creating zck file -
+                                   Used to calculate header from existing umcompressed data */
     ZCK_COMP_TYPE = 100,        /* Set compression type using zck_comp */
     ZCK_MANUAL_CHUNK,           /* Disable auto-chunking */
     ZCK_CHUNK_MIN,              /* Minimum chunk size when manual chunking */

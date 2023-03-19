@@ -86,6 +86,10 @@ zckCtx ZCK_PUBLIC_API *zck_create(void)
 /* Initialize zchunk for reading */
 bool ZCK_PUBLIC_API zck_init_read (zckCtx *zck, int src_fd)
     ZCK_WARN_UNUSED;
+/* Initialize a combination of a detached zchunk header and an uncompressed source for reading */
+bool ZCK_PUBLIC_API zck_init_uncompressed_read (zckCtx *zck, int hdr_fd, int src_fd)
+    ZCK_WARN_UNUSED;
+
 /* Decompress dst_size bytes from zchunk file to dst, while verifying hashes */
 ssize_t ZCK_PUBLIC_API zck_read(zckCtx *zck, char *dst, size_t dst_size)
     ZCK_WARN_UNUSED;

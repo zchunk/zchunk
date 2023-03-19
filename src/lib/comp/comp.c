@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Jonathan Dieter <jdieter@gmail.com>
+ * Copyright 2018-2022 Jonathan Dieter <jdieter@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -519,7 +519,7 @@ ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, bool use_dict) {
 
         /* Decompressed buffer is empty, so read data from file and fill
          * compressed buffer */
-        rb = read_data(zck, src, rs);
+        rb = read_data(zck, src, rs, false);
         if(rb < 0)
             goto read_error;
         if(rb < rs) {
@@ -682,21 +682,28 @@ ssize_t ZCK_PUBLIC_API zck_get_chunk_comp_data(zckChunk *idx, char *dst,
     /* Make sure chunk size is valid */
     if(zck_get_chunk_size(idx) < 0)
         return -1;
-
     /* If the chunk is empty, we're done */
     if(zck_get_chunk_size(idx) == 0)
         return 0;
-
     /* Make sure requested chunk has a beginning */
     if(zck_get_chunk_start(idx) < 0)
         return -1;
 
+    /* If source is uncompressed already, return from correct fd */
+    if(zck->only_uncompressed_source) {
+        /* Seek to beginning of requested chunk */
+        if(!seek_data(zck, zck_get_chunk_start(idx), SEEK_SET, true))
+            return -1;
+
+        return read_data(zck, dst, dst_size, true);
+    }
+
     /* Seek to beginning of requested chunk */
-    if(!seek_data(zck, zck_get_chunk_start(idx), SEEK_SET))
+    if(!seek_data(zck, zck_get_chunk_start(idx), SEEK_SET, false))
         return -1;
 
-    /* Return read chunk */
-    return read_data(zck, dst, dst_size);
+    /* Return data */
+    return read_data(zck, dst, dst_size, false);
 }
 
 ssize_t ZCK_PUBLIC_API zck_get_chunk_data(zckChunk *idx, char *dst,
@@ -719,6 +726,15 @@ ssize_t ZCK_PUBLIC_API zck_get_chunk_data(zckChunk *idx, char *dst,
     if(zck_get_chunk_start(idx) < 0)
         return -1;
 
+     /* If source is uncompressed already, return from correct fd */
+    if(zck->only_uncompressed_source) {
+        /* Seek to beginning of requested chunk */
+        if(!seek_data(zck, zck_get_chunk_start(idx), SEEK_SET, true))
+            return -1;
+
+        return read_data(zck, dst, dst_size, true);
+    }
+
     /* Read dictionary if needed */
     zckChunk *dict = zck_get_first_chunk(zck);
     if(dict == NULL)
@@ -726,7 +742,7 @@ ssize_t ZCK_PUBLIC_API zck_get_chunk_data(zckChunk *idx, char *dst,
     if(zck_get_chunk_size(dict) > 0 && zck->comp.dict == NULL) {
         if(zck_get_chunk_start(dict) < 0)
             return -1;
-        if(!seek_data(zck, zck_get_chunk_start(dict), SEEK_SET))
+        if(!seek_data(zck, zck_get_chunk_start(dict), SEEK_SET, false))
             return -1;
         if(!comp_reset(zck))
             return -1;
@@ -743,7 +759,7 @@ ssize_t ZCK_PUBLIC_API zck_get_chunk_data(zckChunk *idx, char *dst,
         return -1;
     if(!comp_init(zck))
         return -1;
-    if(!seek_data(zck, zck_get_chunk_start(idx), SEEK_SET))
+    if(!seek_data(zck, zck_get_chunk_start(idx), SEEK_SET, false))
         return -1;
     zck->comp.data_idx = idx;
     return comp_read(zck, dst, dst_size, 1);

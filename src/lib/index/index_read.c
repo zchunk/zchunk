@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Jonathan Dieter <jdieter@gmail.com>
+ * Copyright 2018-2022 Jonathan Dieter <jdieter@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -80,20 +80,31 @@ bool index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
            zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
            return false;
         }
+        new->zck = zck;
 
-        /* Read index entry digest */
-        new->digest = zmalloc(zck->index.digest_size);
-        if (!new->digest) {
-           zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
-           free(new);
-           return false;
+        /* If this header is not for reading an uncompressed source, read compressed digest,
+         * otherwise just skip it */
+        if(!zck->only_uncompressed_source) {
+            /* Read index entry digest */
+            new->digest = zmalloc(zck->index.digest_size);
+            if (!new->digest) {
+               zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+               free(new);
+               return false;
+            }
+            memcpy(new->digest, data+length, zck->index.digest_size);
+            new->digest_size = zck->index.digest_size;
+            HASH_FIND(hh, zck->index.ht, new->digest, new->digest_size, tmp);
+            if(!tmp) {
+                zck_log(ZCK_LOG_DDEBUG, "Storing compressed checksum %s for chunk %i", zck_get_chunk_digest(new), count);
+                HASH_ADD_KEYPTR(hh, zck->index.ht, new->digest, new->digest_size,
+                                new);
+            }
+        } else {
+            new->digest = NULL;
+            new->digest_size = zck->index.digest_size;
+            zck_log(ZCK_LOG_DDEBUG, "Skipping compressed checksum for chunk %i", count);
         }
-        memcpy(new->digest, data+length, zck->index.digest_size);
-        new->digest_size = zck->index.digest_size;
-        HASH_FIND(hh, zck->index.ht, new->digest, new->digest_size, tmp);
-        if(!tmp)
-            HASH_ADD_KEYPTR(hh, zck->index.ht, new->digest, new->digest_size,
-                            new);
         length += zck->index.digest_size;
 
         /* Read uncompressed entry digest, if any */
@@ -108,11 +119,13 @@ bool index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
             }
             memcpy(new->digest_uncompressed, data+length, zck->index.digest_size);
             HASH_FIND(hhuncomp, zck->index.htuncomp, new->digest_uncompressed, new->digest_size, tmp);
-            if(!tmp)
-               HASH_ADD_KEYPTR(hhuncomp, zck->index.htuncomp, new->digest_uncompressed, new->digest_size,
+            if(!tmp) {
+                zck_log(ZCK_LOG_DDEBUG, "Storing uncompressed checksum %s for chunk %i", get_digest_string(new->digest_uncompressed, new->digest_size), count);
+                HASH_ADD_KEYPTR(hhuncomp, zck->index.htuncomp, new->digest_uncompressed, new->digest_size,
                                new);
+            }
             length += zck->index.digest_size;
-	}
+        }
         /* Read and store entry length */
         size_t chunk_length = 0;
         if(!compint_to_size(zck, &chunk_length, data+length, &length,
@@ -133,10 +146,12 @@ bool index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
             return false;
         }
         new->length = chunk_length;
-        new->zck = zck;
         new->valid = 0;
         new->number = count;
-        idx_loc += new->comp_length;
+        if(zck->only_uncompressed_source)
+            idx_loc += new->length;
+        else
+            idx_loc += new->comp_length;
         count++;
         zck->index.length = idx_loc;
 

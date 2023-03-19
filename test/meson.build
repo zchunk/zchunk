@@ -42,7 +42,7 @@ read_single_comp_chunk = executable('read_single_comp_chunk',
                                     include_directories: incdir,
                                     dependencies: [zstd_dep, openssl_dep],
                                     c_args: preprocessor_defines)
-shacheck = executable('shacheck', 
+shacheck = executable('shacheck',
                       ['shacheck.c'] + util_sources,
                       include_directories: incdir,
                       dependencies: [zstd_dep, openssl_dep],

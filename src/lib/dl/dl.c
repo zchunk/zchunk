@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Jonathan Dieter <jdieter@gmail.com>
+ * Copyright 2018-2022 Jonathan Dieter <jdieter@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -61,7 +61,7 @@ static void clear_dl_regex(zckDL *dl) {
 static bool zero_chunk(zckCtx *tgt, zckChunk *tgt_idx) {
     char buf[BUF_SIZE] = {0};
     size_t to_read = tgt_idx->comp_length;
-    if(!seek_data(tgt, tgt->data_offset + tgt_idx->start, SEEK_SET))
+    if(!seek_data(tgt, tgt->data_offset + tgt_idx->start, SEEK_SET, false))
         return false;
     while(to_read > 0) {
         int rb = BUF_SIZE;
@@ -117,17 +117,28 @@ static int dl_write(zckDL *dl, const char *at, size_t length) {
 /* Copy chunk identified by src_idx into location specified by tgt_idx */
 static bool write_and_verify_chunk(zckCtx *src, zckCtx *tgt,
                                    zckChunk *src_idx,
-                                   zckChunk *tgt_idx) {
+                                   zckChunk *tgt_idx,
+                                   bool compressed) {
     VALIDATE_READ_BOOL(src);
     VALIDATE_READ_BOOL(tgt);
 
     static char buf[BUF_SIZE] = {0};
 
-    size_t to_read = src_idx->comp_length;
-    if(!seek_data(src, src->data_offset + src_idx->start, SEEK_SET))
-        return false;
-    if(!seek_data(tgt, tgt->data_offset + tgt_idx->start, SEEK_SET))
-        return false;
+    size_t to_read;
+    if(compressed) {
+        to_read = src_idx->comp_length;
+        if(!seek_data(src, src->data_offset + src_idx->start, SEEK_SET, false))
+            return false;
+        if(!seek_data(tgt, tgt->data_offset + tgt_idx->start, SEEK_SET, false))
+            return false;
+    } else {
+        to_read = src_idx->length;
+        if(!seek_data(src, src_idx->start, SEEK_SET, true))
+            return false;
+        if(!seek_data(tgt, tgt->data_offset + tgt_idx->start, SEEK_SET, false))
+            return false;
+    }
+
     zckHash check_hash = {0};
     if(!hash_init(tgt, &check_hash, &(src->chunk_hash_type)))
         return false;
@@ -135,7 +146,7 @@ static bool write_and_verify_chunk(zckCtx *src, zckCtx *tgt,
         int rb = BUF_SIZE;
         if(rb > to_read)
             rb = to_read;
-        if(!read_data(src, buf, rb))
+        if(!read_data(src, buf, rb, src->only_uncompressed_source))
             return false;
         if(!hash_update(tgt, &check_hash, buf, rb))
             return false;
@@ -144,9 +155,12 @@ static bool write_and_verify_chunk(zckCtx *src, zckCtx *tgt,
         to_read -= rb;
     }
     char *digest = hash_finalize(tgt, &check_hash);
+    char *chk_digest = src_idx->digest;
+    if(src->only_uncompressed_source)
+        chk_digest = src_idx->digest_uncompressed;
     /* If chunk is invalid, overwrite with zeros and add to download range */
-    if(memcmp(digest, src_idx->digest, src_idx->digest_size) != 0) {
-        char *pdigest = zck_get_chunk_digest(src_idx);
+    if(memcmp(digest, chk_digest, src_idx->digest_size) != 0) {
+        char *pdigest = get_digest_string(chk_digest, src_idx->digest_size);
         zck_log(ZCK_LOG_INFO, "Corrupted chunk found in file, will redownload");
         zck_log(ZCK_LOG_INFO, "Source hash: %s", pdigest);
         free(pdigest);
@@ -214,7 +228,7 @@ int dl_write_range(zckDL *dl, const char *at, size_t length) {
                 dl->write_in_chunk = chk->comp_length;
                 if(!seek_data(dl->zck,
                               dl->zck->data_offset + tgt_chk->start,
-                              SEEK_SET))
+                              SEEK_SET, false))
                     return 0;
                 dl->range->index.current = chk->next;
                 chk = NULL;
@@ -248,10 +262,36 @@ bool ZCK_PUBLIC_API zck_copy_chunks(zckCtx *src, zckCtx *tgt) {
         }
         zckChunk *f = NULL;
 
-        HASH_FIND(hh, src_info->ht, tgt_idx->digest, tgt_idx->digest_size, f);
-        if(f && f->length == tgt_idx->length &&
-           f->comp_length == tgt_idx->comp_length)
-            write_and_verify_chunk(src, tgt, f, tgt_idx);
+        /* Uncompressed source */
+        if(src->only_uncompressed_source && tgt->has_uncompressed_source) {
+            zck_log(ZCK_LOG_DDEBUG, "Looking for hash %s", get_digest_string(tgt_idx->digest_uncompressed, tgt_idx->digest_size));
+            HASH_FIND(hhuncomp, src_info->htuncomp, tgt_idx->digest_uncompressed, tgt_idx->digest_size, f);
+            if(f && f->length == tgt_idx->length &&
+               f->comp_length == tgt_idx->comp_length) {
+                zck_log(ZCK_LOG_DDEBUG, "Found hash");
+                if(!write_and_verify_chunk(src, tgt, f, tgt_idx, false))
+                    zck_log(
+                        ZCK_LOG_WARNING,
+                        "Unable to copy chunk %s from source",
+                        get_digest_string(tgt_idx->digest_uncompressed, tgt_idx->digest_size)
+                    );
+            }
+
+        /* Normal zchunk source */
+        } else {
+            zck_log(ZCK_LOG_DDEBUG, "Looking for hash %s", get_digest_string(tgt_idx->digest, tgt_idx->digest_size));
+            HASH_FIND(hh, src_info->ht, tgt_idx->digest, tgt_idx->digest_size, f);
+            if(f && f->length == tgt_idx->length &&
+               f->comp_length == tgt_idx->comp_length) {
+                zck_log(ZCK_LOG_DDEBUG, "Found hash");
+                if(!write_and_verify_chunk(src, tgt, f, tgt_idx, true))
+                    zck_log(
+                        ZCK_LOG_WARNING,
+                        "Unable to copy chunk %s from source",
+                        get_digest_string(tgt_idx->digest_uncompressed, tgt_idx->digest_size)
+                    );
+            }
+        }
         tgt_idx = tgt_idx->next;
     }
     return true;

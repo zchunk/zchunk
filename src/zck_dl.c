@@ -1,5 +1,5 @@
 /*
- * Copyright 2018, 2020 Jonathan Dieter <jdieter@gmail.com>
+ * Copyright 2018-2022 Jonathan Dieter <jdieter@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -50,13 +50,15 @@ static char doc[] = "zckdl - Download zchunk file";
 static char args_doc[] = "<file>";
 
 static struct argp_option options[] = {
-    {"verbose",        'v',  0,        0, "Increase verbosity"},
-    {"quiet",          'q',  0,        0,
+    {"verbose",             'v',  0,      0, "Increase verbosity"},
+    {"quiet",               'q',  0,      0,
      "Only show warnings (can be specified twice to only show errors)"},
-    {"source",         's', "FILE",    0, "File to use as delta source"},
-    {"fail-no-ranges", 1000, 0,        0,
+    {"source",              's',  "FILE", 0, "File to use as delta source"},
+    {"uncompressed-source", 'u',  0,      0, "Source file isn't compressed"},
+    {"uncompressed-header", 1001, "FILE", 0, "Detached zchunk header that matches uncompressed source"},
+    {"fail-no-ranges",      1000, 0,      0,
      "If server doesn't support ranges, fail instead of downloading full file"},
-    {"version",        'V',  0,        0, "Show program version"},
+    {"version",             'V',  0,      0, "Show program version"},
     { 0 }
 };
 
@@ -72,12 +74,16 @@ struct arguments {
   char *args[1];
   zck_log_type log_level;
   char *source;
+  char *header;
+  bool uncompressed;
   int fail_no_ranges;
   bool exit;
 };
 
 static error_t parse_opt (int key, char *arg, struct argp_state *state) {
     struct arguments *arguments = state->input;
+
+    arguments->uncompressed = true;
 
     if(arguments->exit)
         return 0;
@@ -100,12 +106,18 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
         case 's':
             arguments->source = arg;
             break;
+        case 'u':
+            arguments->uncompressed = true;
+            break;
         case 'V':
             version();
             arguments->exit = true;
             break;
         case 1000:
             arguments->fail_no_ranges = 1;
+            break;
+        case 1001:
+            arguments->header = arg;
             break;
         case ARGP_KEY_ARG:
             if (state->arg_num >= 1) {
@@ -334,10 +346,28 @@ int main (int argc, char *argv[]) {
             zck_clear_error(NULL);
             exit(10);
         }
-        if(!zck_init_read(zck_src, src_fd)) {
-            LOG_ERROR("Unable to open %s: %s", arguments.source,
+        if(arguments.uncompressed) {
+            if(!arguments.header) {
+                LOG_ERROR("You must specify --uncompressed-header if you are using an uncommpressed source\n");
+                exit(10);
+            }
+            int hdr_fd = open(arguments.header, O_RDONLY);
+            if(hdr_fd < 0) {
+                LOG_ERROR("Unable to open %s\n", arguments.header);
+                perror("");
+                exit(10);
+            }
+            if(!zck_init_uncompressed_read(zck_src, hdr_fd, src_fd)) {
+                LOG_ERROR("Unable to open %s: %s", arguments.source,
                       zck_get_error(zck_src));
-            exit(10);
+                exit(10);
+            }
+        } else {
+            if(!zck_init_read(zck_src, src_fd)) {
+                LOG_ERROR("Unable to open %s: %s", arguments.source,
+                          zck_get_error(zck_src));
+                exit(10);
+            }
         }
     }
 

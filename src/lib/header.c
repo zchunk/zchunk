@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Jonathan Dieter <jdieter@gmail.com>
+ * Copyright 2018-2022 Jonathan Dieter <jdieter@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -101,7 +101,7 @@ static bool read_header_from_file(zckCtx *zck) {
     zck_log(ZCK_LOG_DEBUG, "Reading the rest of the header: %llu bytes",
             (long long unsigned) zck->header_length);
     if(loaded < zck->header_length) {
-        if(!read_data(zck, header + loaded, zck->header_length - loaded))
+        if(!read_data(zck, header + loaded, zck->header_length - loaded, false))
             return false;
         zck->header_size = zck->lead_size + zck->header_length;
     }
@@ -479,7 +479,7 @@ static bool read_lead(zckCtx *zck) {
     }
     size_t length = 0;
 
-    if(read_data(zck, header, lead) < lead) {
+    if(read_data(zck, header, lead, false) < lead) {
         free(header);
         set_error(zck, "Short read");
         return false;
@@ -541,7 +541,7 @@ static bool read_lead(zckCtx *zck) {
     size_t to_read = 0;
     if(lead < length + zck->hash_type.digest_size)
         to_read = length + zck->hash_type.digest_size - lead;
-    if(read_data(zck, header + lead, to_read) < to_read) {
+    if(read_data(zck, header + lead, to_read, false) < to_read) {
         free(header);
         zck->header_length = 0;
         zck->hdr_digest_loc = 0;
@@ -627,7 +627,7 @@ bool ZCK_PUBLIC_API zck_validate_lead(zckCtx *zck) {
     zck->header_digest = NULL;
     zck->hdr_digest_loc = 0;
     hash_reset(&(zck->hash_type));
-    if(!seek_data(zck, 0, SEEK_SET))
+    if(!seek_data(zck, 0, SEEK_SET, false))
         return false;
     return retval;
 }

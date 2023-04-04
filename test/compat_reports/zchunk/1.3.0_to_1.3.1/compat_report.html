@@ -1,13 +1,14 @@
-<!-- kind:binary;verdict:compatible;affected:0;added:0;removed:0;type_problems_high:0;type_problems_medium:0;type_problems_low:0;interface_problems_high:0;interface_problems_medium:0;interface_problems_low:0;changed_constants:0;type_changes_other:1;tool_version:2.3 -->
-<!-- kind:source;verdict:compatible;affected:0;added:0;removed:0;type_problems_high:0;type_problems_medium:0;type_problems_low:0;interface_problems_high:0;interface_problems_medium:0;interface_problems_low:0;changed_constants:0;type_changes_other:1;tool_version:2.3 -->
+<!-- kind:binary;verdict:compatible;affected:0;added:0;removed:0;type_problems_high:0;type_problems_medium:0;type_problems_low:0;interface_problems_high:0;interface_problems_medium:0;interface_problems_low:0;changed_constants:0;tool_version:2.3 -->
+<!-- kind:source;verdict:compatible;affected:0;added:0;removed:0;type_problems_high:0;type_problems_medium:0;type_problems_low:0;interface_problems_high:0;interface_problems_medium:0;interface_problems_low:0;changed_constants:0;tool_version:2.3 -->
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <meta name="keywords" content="zchunk, compatibility, API, ABI, report" />
-<meta name="description" content="API/ABI compatibility report for the zchunk object between 1.2.4 and 1.3.0 versions" />
-<title>zchunk: 1.2.4 to 1.3.0 compatibility report</title>
+<meta name="description" content="API/ABI compatibility report for the zchunk object between 1.3.0 and 1.3.1 versions" />
+<meta name="robots" content="noindex" />
+<title>zchunk: 1.3.0 to 1.3.1 compatibility report</title>
 <style type="text/css">
 body {
     font-family:Arial, sans-serif;
@@ -381,7 +382,7 @@ else if (window.attachEvent) window.attachEvent('onload', initTabs);
 -->
 </script>
 </head>
-<body><a name='Source'></a><a name='Binary'></a><a name='Top'></a><h1>API compatibility report for the <span style='color:Blue;'>libzck.so</span> object between <span style='color:Red;'>1.2.4</span> and <span style='color:Red;'>1.3.0</span> versions on <span style='color:Blue;'>x86_64</span></h1>
+<body><a name='Source'></a><a name='Binary'></a><a name='Top'></a><h1>API compatibility report for the <span style='color:Blue;'>libzck.so</span> object between <span style='color:Red;'>1.3.0</span> and <span style='color:Red;'>1.3.1</span> versions on <span style='color:Blue;'>x86_64</span></h1>
 
             <br/>
             <div class='tabset'>
@@ -391,8 +392,8 @@ else if (window.attachEvent) window.attachEvent('onload', initTabs);
 <h2>Test Info</h2><hr/>
 <table class='summary'>
 <tr><th>Module Name</th><td>zchunk</td></tr>
-<tr><th>Version #1</th><td>1.2.4</td></tr>
-<tr><th>Version #2</th><td>1.3.0</td></tr>
+<tr><th>Version #1</th><td>1.3.0</td></tr>
+<tr><th>Version #2</th><td>1.3.1</td></tr>
 <tr><th>Arch</th><td>x86_64</td></tr>
 <tr><th>GCC Version</th><td>12.2.1</td></tr>
 <tr><th>Subject</th><td width='150px'>Binary Compatibility</td></tr>
@@ -415,36 +416,8 @@ else if (window.attachEvent) window.attachEvent('onload', initTabs);
 <tr><td>Medium</td><td>0</td></tr>
 <tr><td>Low</td><td>0</td></tr>
 <tr><th>Problems with<br/>Constants</th><td>Low</td><td>0</td></tr>
-<tr><th>Other Changes<br/>in Data Types</th><td>-</td><td class='passed'><a href='#Other_Binary_Changes_In_Types' style='color:Blue;'>1</a></td></tr>
 </table>
 
-<a name='Other_Binary_Changes'></a><a name='Other_Binary_Changes_In_Types'></a>
-<h2>Other Changes in Data Types <span class='passed'>&nbsp;1&nbsp;</span></h2><hr/>
-<span class='h_name'>zck.h</span><br/>
-<span class="section" onclick="javascript:showContent(this, 'c_1')">
-<span class='ext'>[+]</span> <span class='ttype'>enum</span> zck_ioption <span class='passed'>&nbsp;1&nbsp;</span></span>
-<br/>
-<div id="c_1" style="display:none;">
-<table class='ptable'><tr>
-<th class='pn'></th>
-<th class='chg'>Change</th>
-<th>Effect</th></tr><tr>
-<th>1</th>
-<td>The member <b>ZCK_NO_WRITE</b> with value <b>5</b> has been added.</td>
-<td>No effect.</td>
-</tr>
-</table>
-<span class="sect_aff" onclick="javascript:showContent(this, 'c_2')">
-[+] affected symbols: 1 (1.2%)</span>
-<div id="c_2" style="display:none;">
-<div class='affected'><span class='iname_a'>zck_set_ioption&#160;<span class='sym_p'><span>(&#160;zckCtx* <i>zck</i></span>, <span>zck_ioption <span class='fp'>option</span></span>, <span>ssize_t <i>value</i></span>&#160;)</span></span><br/>
-<div class='affect'>2nd parameter &#39;option&#39; has base type &#39;enum zck_ioption&#39;.</div>
-</div>
-</div>
-<br/><br/></div>
-
-<br/>
-<a class='top_ref' href='#Top'>to the top</a><br/>
 <a name='Headers'></a><h2>Header Files <span class='gray'>&nbsp;1&nbsp;</span></h2><hr/>
 <div class='h_list'>
 zck.h<br/>
@@ -452,15 +425,15 @@ zck.h<br/>
 <br/><a class='top_ref' href='#Top'>to the top</a><br/>
 <a name='Libs'></a><h2>Objects <span class='gray'>&nbsp;1&nbsp;</span></h2><hr/>
 <div class='lib_list'>
-libzck.so.1.2.4<br/>
+libzck.so.1.3.0<br/>
 </div>
 <br/><a class='top_ref' href='#Top'>to the top</a><br/>
 <br/><br/><br/></div><div id='SourceTab' class='tab'>
 <h2>Test Info</h2><hr/>
 <table class='summary'>
 <tr><th>Module Name</th><td>zchunk</td></tr>
-<tr><th>Version #1</th><td>1.2.4</td></tr>
-<tr><th>Version #2</th><td>1.3.0</td></tr>
+<tr><th>Version #1</th><td>1.3.0</td></tr>
+<tr><th>Version #2</th><td>1.3.1</td></tr>
 <tr><th>Arch</th><td>x86_64</td></tr>
 <tr><th>Subject</th><td width='150px'>Source Compatibility</td></tr>
 </table>
@@ -482,36 +455,8 @@ libzck.so.1.2.4<br/>
 <tr><td>Medium</td><td>0</td></tr>
 <tr><td>Low</td><td>0</td></tr>
 <tr><th>Problems with<br/>Constants</th><td>Low</td><td>0</td></tr>
-<tr><th>Other Changes<br/>in Data Types</th><td>-</td><td class='passed'><a href='#Other_Source_Changes_In_Types' style='color:Blue;'>1</a></td></tr>
 </table>
 
-<a name='Other_Source_Changes'></a><a name='Other_Source_Changes_In_Types'></a>
-<h2>Other Changes in Data Types <span class='passed'>&nbsp;1&nbsp;</span></h2><hr/>
-<span class='h_name'>zck.h</span><br/>
-<span class="section" onclick="javascript:showContent(this, 'c_3')">
-<span class='ext'>[+]</span> <span class='ttype'>enum</span> zck_ioption <span class='passed'>&nbsp;1&nbsp;</span></span>
-<br/>
-<div id="c_3" style="display:none;">
-<table class='ptable'><tr>
-<th class='pn'></th>
-<th class='chg'>Change</th>
-<th>Effect</th></tr><tr>
-<th>1</th>
-<td>The member <b>ZCK_NO_WRITE</b> with value <b>5</b> has been added.</td>
-<td>No effect.</td>
-</tr>
-</table>
-<span class="sect_aff" onclick="javascript:showContent(this, 'c_4')">
-[+] affected symbols: 1 (1.2%)</span>
-<div id="c_4" style="display:none;">
-<div class='affected'><span class='iname_a'>zck_set_ioption&#160;<span class='sym_p'><span>(&#160;zckCtx* <i>zck</i></span>, <span>zck_ioption <span class='fp'>option</span></span>, <span>ssize_t <i>value</i></span>&#160;)</span></span><br/>
-<div class='affect'>2nd parameter &#39;option&#39; has base type &#39;enum zck_ioption&#39;.</div>
-</div>
-</div>
-<br/><br/></div>
-
-<br/>
-<a class='top_ref' href='#Top'>to the top</a><br/>
 <a name='Headers'></a><h2>Header Files <span class='gray'>&nbsp;1&nbsp;</span></h2><hr/>
 <div class='h_list'>
 zck.h<br/>
@@ -519,7 +464,7 @@ zck.h<br/>
 <br/><a class='top_ref' href='#Top'>to the top</a><br/>
 <a name='Libs'></a><h2>Objects <span class='gray'>&nbsp;1&nbsp;</span></h2><hr/>
 <div class='lib_list'>
-libzck.so.1.2.4<br/>
+libzck.so.1.3.0<br/>
 </div>
 <br/><a class='top_ref' href='#Top'>to the top</a><br/>
 <br/><br/><br/></div><hr/>

@@ -134,6 +134,13 @@ void *zmalloc(size_t size) {
 }
 
 void *zrealloc(void *ptr, size_t size) {
+    /* Handle requested size of zero */
+    if(size == 0) {
+        if(ptr != NULL)
+            free(ptr);
+        return NULL;
+    }
+
     void *ret = realloc(ptr, size);
     /*
      * Realloc does not touch the original block if fails.

@@ -68,7 +68,7 @@ int compint_to_size(zckCtx *zck, size_t *val, const char *compint,
             break;
         i++;
         /* Make sure we're not overflowing and fail if we do */
-        if(count > MAX_COMP_SIZE || count > max_length || *val < old_val) {
+        if(count >= MAX_COMP_SIZE || count >= max_length || *val < old_val) {
             if(count > max_length)
                 set_fatal_error(zck, "Read past end of header");
             else

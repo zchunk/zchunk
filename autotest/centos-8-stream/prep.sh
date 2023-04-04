@@ -1,5 +1,5 @@
 #!/bin/bash
-docker pull docker.io/tgagor/centos:stream8
+docker pull quay.io/centos/centos:stream8
 if [ "$?" -ne 0 ]; then
         exit 1
 fi

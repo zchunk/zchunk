@@ -101,8 +101,10 @@ static bool read_header_from_file(zckCtx *zck) {
     zck_log(ZCK_LOG_DEBUG, "Reading the rest of the header: %llu bytes",
             (long long unsigned) zck->header_length);
     if(loaded < zck->header_length) {
-        if(!read_data(zck, header + loaded, zck->header_length - loaded))
+        if(read_data(zck, header + loaded, zck->header_length - loaded) < zck->header_length - loaded) {
+            set_fatal_error(zck, "Unable to read %llu bytes from the file", zck->header_length - loaded);
             return false;
+        }
         zck->header_size = zck->lead_size + zck->header_length;
     }
 

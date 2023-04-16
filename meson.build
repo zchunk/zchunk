@@ -14,7 +14,7 @@ fs = import('fs')
 cc = meson.get_compiler('c')
 add_project_arguments(cc.get_supported_arguments(common_cflags), language : 'c')
 
-if build_machine.system() == 'freebsd'
+if build_machine.system() == 'freebsd' or build_machine.system() == 'midnightbsd'
     add_project_arguments('-DFREEBSD', language : 'c')
 endif
 

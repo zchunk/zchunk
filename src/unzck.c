@@ -131,14 +131,6 @@ int main (int argc, char *argv[]) {
 
     zck_set_log_level(arguments.log_level);
 
-    if(!arguments.std_out) {
-        if(strlen(arguments.args[0]) < 5 ||
-           (strcmp(arguments.args[0] + strlen(arguments.args[0]) - 4, ".zck") != 0 &&
-            strcmp(arguments.args[0] + strlen(arguments.args[0]) - 4, ".zhr") != 0)) {
-            LOG_ERROR("Not a *.zck or *.zhr file: %s\n", arguments.args[0]);
-            exit(1);
-        }
-    }
     int src_fd = open(arguments.args[0], O_RDONLY | O_BINARY);
     if(src_fd < 0) {
         LOG_ERROR("Unable to open %s\n", arguments.args[0]);
@@ -146,19 +138,23 @@ int main (int argc, char *argv[]) {
         exit(1);
     }
     char *base_name = basename(arguments.args[0]);
+    if(strlen(base_name) > 4 && strncmp(base_name + strlen(base_name)-4, ".zck", 4) == 0) {
+        base_name[strlen(base_name)-4] = '\0';
+    }
+    printf("%s\n", base_name);
     char *out_name = NULL;
     if(arguments.dict)
-        out_name = calloc(strlen(base_name) + 3, 1); // len .zck -> .zdict = +2
+        out_name = calloc(strlen(base_name) + 7, 1); // add .zdict suffix
     else if(arguments.header)
-        out_name = calloc(strlen(base_name), 1); // .zck -> zhr
+        out_name = calloc(strlen(base_name) + 5, 1); // add .zhr suffix
     else
-        out_name = calloc(strlen(base_name) - 2, 1); // strip .zck
+        out_name = calloc(strlen(base_name) + 1, 1); // strip .zck
     assert(out_name);
-    snprintf(out_name, strlen(base_name) - 3, "%s", base_name); //Strip off .zck
+    strncpy(out_name, base_name, strlen(base_name));
     if(arguments.dict)
-        snprintf(out_name + strlen(base_name) - 4, 7, ".zdict");
+        snprintf(out_name + strlen(base_name), 7, ".zdict");
     else if(arguments.header)
-        snprintf(out_name + strlen(base_name) - 4, 5, ".zhr");
+        snprintf(out_name + strlen(base_name), 5, ".zhr");
 
 #ifdef _WIN32
     int dst_fd = _fileno(stdout);

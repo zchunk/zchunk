@@ -74,9 +74,14 @@ static bool read_optional_element(zckCtx *zck, size_t id, size_t data_size,
 }
 
 static bool read_header_from_file(zckCtx *zck) {
-    /* Verify that lead_size and header_length have been set */
+    /* Verify that lead_size and header_length have been set and are legit */
     if(zck->lead_size == 0 || zck->header_length == 0) {
         set_error(zck, "Lead and header sizes are both 0.  Have you run zck_read_lead() yet?");
+        return false;
+    }
+    if((zck->lead_size > zck->lead_size + zck->header_length) ||
+       (zck->header_length > zck->lead_size + zck->header_length)) {
+        zck_log(ZCK_LOG_ERROR, "Integer overflow when reading header");
         return false;
     }
 
@@ -532,6 +537,12 @@ static bool read_lead(zckCtx *zck) {
 
     /* Set header digest location */
     zck->hdr_digest_loc = length;
+
+    /* Verify that we're not going to overflow */
+    if(length > length + zck->hash_type.digest_size) {
+        zck_log(ZCK_LOG_ERROR, "Integer overflow when reading lead");
+        return false;
+    }
 
     /* Read header digest */
     zck_log(ZCK_LOG_DEBUG, "Reading header digest");

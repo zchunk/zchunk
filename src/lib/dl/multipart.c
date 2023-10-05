@@ -119,6 +119,12 @@ size_t multipart_extract(zckDL *dl, char *b, size_t l) {
 
     /* Add new data to stored buffer */
     if(mp->buffer) {
+        if((mp->buffer_len > mp->buffer_len + l) ||
+           (l > mp->buffer_len + l)) {
+            zck_log(ZCK_LOG_ERROR, "Integer overflow when extracting multipart data");
+            return 0;
+        }
+
         buf = zrealloc(mp->buffer, mp->buffer_len + l);
         if (!buf) {
             zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);

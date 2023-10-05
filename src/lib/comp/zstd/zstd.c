@@ -117,6 +117,12 @@ static ssize_t compress(zckCtx *zck, zckComp *comp, const char *src,
     ALLOCD_INT(zck, dst_size);
     ALLOCD_INT(zck, comp);
 
+    if((comp->dc_data_size > comp->dc_data_size + src_size) ||
+       (src_size > comp->dc_data_size + src_size)) {
+        zck_log(ZCK_LOG_ERROR, "Integer overflow when reading decompressed data");
+        return false;
+    }
+
     comp->dc_data = zrealloc(comp->dc_data, comp->dc_data_size + src_size);
     if (!comp->dc_data) {
         zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);

@@ -115,6 +115,12 @@ static bool comp_add_to_data(zckCtx *zck, zckComp *comp, const char *src,
     ALLOCD_BOOL(zck, comp);
     ALLOCD_BOOL(zck, src);
 
+    if((comp->data_size > comp->data_size + src_size) ||
+       (src_size > comp->data_size + src_size)) {
+        zck_log(ZCK_LOG_ERROR, "Integer overflow when reading data");
+        return false;
+    }
+
     comp->data = zrealloc(comp->data, comp->data_size + src_size);
     if (!comp->data) {
         zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);

@@ -33,31 +33,12 @@
 
 #include "zck_private.h"
 
-/***** If we're not using OpenSSL, use bundled sha libraries *****/
-#ifndef ZCHUNK_OPENSSL
-#include "sha1/sha1.h"
-#include "sha2/sha2.h"
-#define SHA256_CTX sha256_ctx
-#define SHA256_Init sha256_init
-#define SHA256_Update sha256_update
-static void SHA256_Final(unsigned char *md, SHA256_CTX *c) {
-    sha256_final(c, md);
-}
-#define SHA512_CTX sha512_ctx
-#define SHA512_Init sha512_init
-#define SHA512_Update sha512_update
-static void SHA512_Final(unsigned char *md, SHA512_CTX *c) {
-    sha512_final(c, md);
-}
-/***** If we are using OpenSSL, set the defines accordingly *****/
+#if defined(ZCHUNK_OPENSSL)
+#include "openssl/openssl.h"
 #else
-#include <openssl/sha.h>
-#define SHA512_DIGEST_SIZE SHA512_DIGEST_LENGTH
-#define SHA256_DIGEST_SIZE SHA256_DIGEST_LENGTH
-#define SHA1_DIGEST_LENGTH SHA_DIGEST_LENGTH
-#define sha1_byte void
+/***** Using bundled sha libraries *****/
+#include "bundled/libsha.h"
 #endif
-
 /* This needs to be updated to the largest hash size every time a new hash type
  * is added */
 int get_max_hash_size() {
@@ -207,12 +188,13 @@ bool hash_setup(zckCtx *zck, zckHashType *ht, int h) {
     return false;
 }
 
-void hash_close(zckHash *hash) {
+void hash_close(zckHash *hash)
+{
     if(!hash)
         return;
 
     if(hash->ctx) {
-        free(hash->ctx);
+        lib_hash_ctx_close(hash);
         hash->ctx = NULL;
     }
     hash->type = NULL;
@@ -230,41 +212,10 @@ bool hash_init(zckCtx *zck, zckHash *hash, zckHashType *hash_type) {
         set_error(zck, "Either zckHash or zckHashType struct is null");
         return false;
     }
-    if(hash_type->type == ZCK_HASH_SHA1) {
-        zck_log(ZCK_LOG_DDEBUG, "Initializing SHA-1 hash");
-        hash->ctx = zmalloc(sizeof(SHA_CTX));
-        if (!hash->ctx) {
-           zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
-           return false;
-        }
-        hash->type = hash_type;
-        SHA1_Init((SHA_CTX *) hash->ctx);
-        return true;
-    } else if(hash_type->type == ZCK_HASH_SHA256) {
-        zck_log(ZCK_LOG_DDEBUG, "Initializing SHA-256 hash");
-        hash->ctx = zmalloc(sizeof(SHA256_CTX));
-        if (!hash->ctx) {
-           zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
-           return false;
-        }
-        hash->type = hash_type;
-        SHA256_Init((SHA256_CTX *) hash->ctx);
-        return true;
-    } else if(hash_type->type >= ZCK_HASH_SHA512 &&
-              hash_type->type <= ZCK_HASH_SHA512_128) {
-        zck_log(ZCK_LOG_DDEBUG, "Initializing SHA-512 hash");
-        hash->ctx = zmalloc(sizeof(SHA512_CTX));
-        if (!hash->ctx) {
-           zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
-           return false;
-        }
-        hash->type = hash_type;
-        SHA512_Init((SHA512_CTX *) hash->ctx);
-        return true;
-    }
-    set_error(zck, "Unsupported hash type: %s",
-              zck_hash_name_from_type(hash_type->type));
-    return false;
+
+    hash->type = hash_type;
+
+    return lib_hash_init(zck, hash);
 }
 
 bool hash_update(zckCtx *zck, zckHash *hash, const char *message,
@@ -284,23 +235,7 @@ bool hash_update(zckCtx *zck, zckHash *hash, const char *message,
         return false;
     }
     if(hash && hash->ctx && hash->type) {
-        if(hash->type->type == ZCK_HASH_SHA1) {
-            SHA1_Update((SHA_CTX *)hash->ctx, (const sha1_byte *)message, size);
-            return true;
-        } else if(hash->type->type == ZCK_HASH_SHA256) {
-            SHA256_Update((SHA256_CTX *)hash->ctx,
-                          (const unsigned char *)message, size);
-            return true;
-        } else if(hash->type->type >= ZCK_HASH_SHA512 &&
-                  hash->type->type <= ZCK_HASH_SHA512_128) {
-            SHA512_Update((SHA512_CTX *)hash->ctx,
-                          (const unsigned char *)message, size);
-            return true;
-        }
-        set_error(zck, "Unsupported hash type: %s",
-                  zck_hash_name_from_type(hash->type->type));
-
-        return false;
+        return lib_hash_update(zck, hash, message, size);
     }
     set_error(zck, "Hash hasn't been initialized");
     return false;
@@ -312,39 +247,7 @@ char *hash_finalize(zckCtx *zck, zckHash *hash) {
         hash_close(hash);
         return NULL;
     }
-    if(hash->type->type == ZCK_HASH_SHA1) {
-        unsigned char *digest = zmalloc(SHA1_DIGEST_LENGTH);
-        if (!digest) {
-           zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
-           return false;
-        }
-        SHA1_Final((sha1_byte*)digest, (SHA_CTX *)hash->ctx);
-        hash_close(hash);
-        return (char *)digest;
-    } else if(hash->type->type == ZCK_HASH_SHA256) {
-        unsigned char *digest = zmalloc(SHA256_DIGEST_SIZE);
-        if (!digest) {
-           zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
-           return false;
-        }
-        SHA256_Final(digest, (SHA256_CTX *)hash->ctx);
-        hash_close(hash);
-        return (char *)digest;
-    } else if(hash->type->type >= ZCK_HASH_SHA512 &&
-              hash->type->type <= ZCK_HASH_SHA512_128) {
-        unsigned char *digest = zmalloc(SHA512_DIGEST_SIZE);
-        if (!digest) {
-           zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
-           return false;
-        }
-        SHA512_Final(digest, (SHA512_CTX *)hash->ctx);
-        hash_close(hash);
-        return (char *)digest;
-    }
-    set_error(zck, "Unsupported hash type: %s",
-              zck_hash_name_from_type(hash->type->type));
-    hash_close(hash);
-    return NULL;
+    return lib_hash_final(zck, hash);
 }
 
 bool set_full_hash_type(zckCtx *zck, int hash_type) {

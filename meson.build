@@ -47,6 +47,9 @@ else
 endif
 if openssl_dep.found()
     add_project_arguments('-DZCHUNK_OPENSSL', language : 'c')
+    if get_option('with-deprecated-openssl') == true
+        add_project_arguments('-DZCHUNK_OPENSSL_DEPRECATED', language : 'c')
+    endif
 endif
 
 # includes

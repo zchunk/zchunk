@@ -1,5 +1,6 @@
 option('with-zstd', type : 'feature', value : 'auto')
 option('with-openssl', type : 'feature', value : 'auto')
+option('with-deprecated-openssl', type : 'boolean', value : false)
 option('with-curl', type : 'feature', value : 'auto')
 option('coverity', type : 'boolean', value : false)
 option('docs', type : 'boolean', value : true)

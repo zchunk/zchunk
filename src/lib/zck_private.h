@@ -10,6 +10,10 @@
 #include "uthash.h"
 #include "zck.h"
 
+#if defined(ZCHUNK_OPENSSL) && !defined(ZCHUNK_OPENSSL_DEPRECATED)
+#include <openssl/evp.h>
+#endif
+
 #define BUF_SIZE 32768
 /* Maximum string length for a compressed size_t */
 #define MAX_COMP_SIZE (((sizeof(size_t) * 8) / 7) + 1)
@@ -108,7 +112,11 @@ typedef struct zckHashType {
 
 struct zckHash {
     zckHashType *type;
+#if defined(ZCHUNK_OPENSSL) && !defined(ZCHUNK_OPENSSL_DEPRECATED)
+    EVP_MD_CTX *ctx;
+#else
     void *ctx;
+#endif
 };
 
 #ifndef CURLINC_CURL_H

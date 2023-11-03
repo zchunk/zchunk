@@ -19,4 +19,3 @@ bool lib_hash_update(zckCtx *zck, zckHash *hash, const char *message, const size
 char *lib_hash_final(zckCtx *zck, zckHash *hash);
 
 #endif
-

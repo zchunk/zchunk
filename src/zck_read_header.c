@@ -189,6 +189,7 @@ int main (int argc, char *argv[]) {
             printf("No dictionary\n");
         else
             printf("Dictionary: %s\n", dict_digest);
+        free(dict_digest);
     }
     if(!arguments.quiet && arguments.show_chunks)
         printf("\n");

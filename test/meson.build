@@ -47,6 +47,11 @@ shacheck = executable('shacheck',
                       include_directories: incdir,
                       dependencies: [zstd_dep, openssl_dep],
                       c_args: preprocessor_defines)
+exitcodecheck = executable('exitcodecheck',
+                      ['exitcodecheck.c'] + util_sources,
+                      include_directories: incdir,
+                      dependencies: [zstd_dep, openssl_dep],
+                      c_args: preprocessor_defines)
 zck_cmp_uncomp = executable(
     'zck_cmp_uncomp',
     ['zck_cmp_uncomp.c'],
@@ -435,6 +440,76 @@ if build_machine.endian() != 'big'
             'LICENSE.manual.dict.fodt.zck'
         ],
         is_parallel: false
+    )
+    test(
+        'handles integer overflow in header',
+        exitcodecheck,
+        args: [
+            zck_read_header,
+            '1',
+            '-v',
+            join_paths(file_path, 'integer_overflow_header.zck')
+        ]
+    )
+    test(
+        'handles empty file',
+        exitcodecheck,
+        args: [
+            unzck,
+            '1',
+            '-v',
+            join_paths(file_path, 'zerolen.zck')
+        ]
+    )
+    test(
+        'handles compressed int that\'s too large - variant 1',
+        exitcodecheck,
+        args: [
+            unzck,
+            '1',
+            '-v',
+            join_paths(file_path, 'compressed_int_too_large1.zck')
+        ]
+    )
+    test(
+        'handles compressed int that\'s too large - variant 2',
+        exitcodecheck,
+        args: [
+            unzck,
+            '1',
+            '-v',
+            join_paths(file_path, 'compressed_int_too_large2.zck')
+        ]
+    )
+    test(
+        'handles compressed int that\'s too large - variant 3',
+        exitcodecheck,
+        args: [
+            unzck,
+            '1',
+            '-v',
+            join_paths(file_path, 'compressed_int_too_large3.zck')
+        ]
+    )
+    test(
+        'handles compressed int that\'s too large - variant 4',
+        exitcodecheck,
+        args: [
+            unzck,
+            '1',
+            '-v',
+            join_paths(file_path, 'compressed_int_too_large4.zck')
+        ]
+    )
+    test(
+        'handles compressed int that\'s too large - variant 5',
+        exitcodecheck,
+        args: [
+            unzck,
+            '1',
+            '-v',
+            join_paths(file_path, 'compressed_int_too_large5.zck')
+        ]
     )
 endif
 

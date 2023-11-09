@@ -172,7 +172,8 @@ int main (int argc, char *argv[]) {
     ssize_t dl_size = zck_get_header_length(zck_tgt);
     if(dl_size < 0)
         exit(1);
-    ssize_t total_size = zck_get_header_length(zck_tgt);
+    ssize_t header_size = zck_get_header_length(zck_tgt);
+    ssize_t total_size = header_size;
     ssize_t matched_chunks = 0;
     for(tgt_idx = zck_get_first_chunk(zck_tgt); tgt_idx;
         tgt_idx = zck_get_next_chunk(tgt_idx)) {
@@ -191,10 +192,15 @@ int main (int argc, char *argv[]) {
         }
         total_size += zck_get_chunk_comp_size(tgt_idx);
     }
-    printf("Would download %lli of %lli bytes\n", (long long) dl_size,
-           (long long) total_size);
-    printf("Matched %lli of %llu chunks\n", (long long) matched_chunks,
-           (long long unsigned) zck_get_chunk_count(zck_tgt));
+    printf("Would download in total %lli of %lli bytes (%lli%%), %lli in the header and the rest in %lli chunks\n",
+           (long long) dl_size, (long long) total_size,
+           (long long) (dl_size * 100 / total_size),
+           (long long) header_size,
+           (long long) (zck_get_chunk_count(zck_tgt) - matched_chunks));
+    printf("Matched %lli of %llu (%lli%%) chunks\n", (long long) matched_chunks,
+           (long long unsigned) zck_get_chunk_count(zck_tgt),
+           (long long) (matched_chunks * 100 / zck_get_chunk_count(zck_tgt)));
+
     zck_free(&zck_tgt);
     zck_free(&zck_src);
 }

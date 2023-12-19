@@ -1,7 +1,7 @@
 #ifndef ZCK_H
 #define ZCK_H
 
-#define ZCK_VERSION "1.3.1"
+#define ZCK_VERSION "1.4.0"
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -184,6 +184,9 @@ char ZCK_PUBLIC_API *zck_get_range_char(zckCtx *zck, zckRange *range)
     ZCK_WARN_UNUSED;
 /* Get file descriptor attached to zchunk context */
 int ZCK_PUBLIC_API zck_get_fd(zckCtx *zck)
+    ZCK_WARN_UNUSED;
+/* Get context from chunk */
+zckCtx ZCK_PUBLIC_API *zck_get_chunk_ctx(zckChunk *chunk)
     ZCK_WARN_UNUSED;
 /* Set file descriptor attached to zchunk context */
 bool ZCK_PUBLIC_API zck_set_fd(zckCtx *zck, int fd)

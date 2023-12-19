@@ -273,8 +273,11 @@ bool ZCK_PUBLIC_API zck_find_matching_chunks(zckCtx *src, zckCtx *tgt) {
          * chunks from different sources. Check first if comparison ran
          * for the chunk and it was already set as valid
          */
-        if (tgt_idx->valid)
+        if (tgt_idx->valid) {
+            tgt_idx = tgt_idx->next;
             continue;
+        }
+
         /*
          * Compare digest for compressed data if the same compressor
          * was iused

@@ -499,7 +499,7 @@ bool ZCK_PUBLIC_API zck_init_write (zckCtx *zck, int dst_fd) {
     return true;
 }
 
-zckCtx ZCK_PUBLIC_API *zck_get_ctx(zckChunk *chunk) {
+zckCtx ZCK_PUBLIC_API *zck_get_chunk_ctx(zckChunk *chunk) {
     return chunk->zck;
 }
 

@@ -185,6 +185,9 @@ char ZCK_PUBLIC_API *zck_get_range_char(zckCtx *zck, zckRange *range)
 /* Get file descriptor attached to zchunk context */
 int ZCK_PUBLIC_API zck_get_fd(zckCtx *zck)
     ZCK_WARN_UNUSED;
+/* Get context from zchunk */
+zckCtx ZCK_PUBLIC_API *zck_get_ctx(zckChunk *chunk)
+    ZCK_WARN_UNUSED;
 /* Set file descriptor attached to zchunk context */
 bool ZCK_PUBLIC_API zck_set_fd(zckCtx *zck, int fd)
     ZCK_WARN_UNUSED;

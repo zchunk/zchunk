@@ -2,7 +2,7 @@ project(
     'zck', 'c',
     version : '1.3.2',
     meson_version : '>=0.53.0',
-    default_options : ['c_std=gnu99']
+    default_options : ['c_std=gnu11']
 )
 
 so_version = '1'

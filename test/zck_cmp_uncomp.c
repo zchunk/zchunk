@@ -132,8 +132,6 @@ int main (int argc, char *argv[]) {
     zckCtx *zckSrc = zck_create();
     zckCtx *zckDst = zck_create();
     if(!zckSrc || !zckDst) {
-        LOG_ERROR("%s", zck_get_error(NULL));
-        zck_clear_error(NULL);
         exit(1);
     }
     if(!zck_init_write(zckSrc, dst_fd)) {

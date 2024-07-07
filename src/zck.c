@@ -238,8 +238,6 @@ int main (int argc, char *argv[]) {
 
     zckCtx *zck = zck_create();
     if(zck == NULL) {
-        LOG_ERROR("%s", zck_get_error(NULL));
-        zck_clear_error(NULL);
         exit(1);
     }
     if(!zck_init_write(zck, dst_fd)) {

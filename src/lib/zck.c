@@ -439,7 +439,6 @@ zckCtx ZCK_PUBLIC_API *zck_create() {
        zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
        return false;
     }
-    zck_clear_error(NULL);
     zck->prep_hash_type = -1;
     zck->prep_hdr_size = -1;
     return zck;

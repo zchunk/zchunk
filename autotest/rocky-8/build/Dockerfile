@@ -1,4 +1,4 @@
-FROM zchunk-centos:7
+FROM zchunk-rocky:8
 ADD ./ /code
 WORKDIR /code
 RUN meson build --auto-features=enabled && cd build && ninja-build

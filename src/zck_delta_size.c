@@ -117,8 +117,6 @@ int main (int argc, char *argv[]) {
     }
     zckCtx *zck_src = zck_create();
     if(zck_src == NULL) {
-        LOG_ERROR("%s", zck_get_error(NULL));
-        zck_clear_error(NULL);
         exit(1);
     }
     if(!zck_init_read(zck_src, src_fd)) {
@@ -138,8 +136,6 @@ int main (int argc, char *argv[]) {
     }
     zckCtx *zck_tgt = zck_create();
     if(zck_tgt == NULL) {
-        LOG_ERROR("%s", zck_get_error(NULL));
-        zck_clear_error(NULL);
         zck_free(&zck_src);
         exit(1);
     }

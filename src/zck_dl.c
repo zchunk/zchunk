@@ -330,8 +330,6 @@ int main (int argc, char *argv[]) {
         }
         zck_src = zck_create();
         if(zck_src == NULL) {
-            LOG_ERROR("%s", zck_get_error(NULL));
-            zck_clear_error(NULL);
             exit(10);
         }
         if(!zck_init_read(zck_src, src_fd)) {
@@ -359,8 +357,6 @@ int main (int argc, char *argv[]) {
     }
     zckCtx *zck_tgt = zck_create();
     if(zck_tgt == NULL) {
-        LOG_ERROR("%s", zck_get_error(NULL));
-        zck_clear_error(NULL);
         exit(10);
     }
     if(!zck_init_adv_read(zck_tgt, dst_fd)) {
@@ -370,8 +366,6 @@ int main (int argc, char *argv[]) {
 
     zckDL *dl = zck_dl_init(zck_tgt);
     if(dl == NULL) {
-        LOG_ERROR("%s", zck_get_error(NULL));
-        zck_clear_error(NULL);
         exit(10);
     }
 
@@ -501,10 +495,6 @@ int main (int argc, char *argv[]) {
     }
 out:
     if(exit_val > 0) {
-        if(zck_is_error(NULL)) {
-            LOG_ERROR("%s", zck_get_error(NULL));
-            zck_clear_error(NULL);
-        }
         if(zck_is_error(zck_src))
             LOG_ERROR("%s", zck_get_error(zck_src));
         if(zck_is_error(zck_tgt))

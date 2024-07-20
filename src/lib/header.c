@@ -568,13 +568,13 @@ static bool read_lead(zckCtx *zck) {
         zck->header_length = 0;
         zck->hdr_digest_loc = 0;
         hash_reset(&(zck->hash_type));
+        char *exp = get_digest_string(zck->prep_digest, zck->hash_type.digest_size);
+        char *act = get_digest_string(header + length, zck->hash_type.digest_size);
         set_error(zck,
                   "Header digest doesn't match requested header digest"
-                  "Expected: %sActual: %s",
-                  get_digest_string(zck->prep_digest,
-                                    zck->hash_type.digest_size),
-                  get_digest_string(header + length,
-                                    zck->hash_type.digest_size));
+                  "Expected: %s Actual: %s", exp, act);
+        free(exp);
+        free(act);
         free(header);
         return false;
     }

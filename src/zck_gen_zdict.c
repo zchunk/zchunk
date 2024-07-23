@@ -64,12 +64,14 @@ static struct argp_option options[] = {
     {"dir",     'd', "DIRECTORY", 0,
      "Write individual chunks to DIRECTORY (defaults to temporary directory)"},
     {"version", 'V', 0,        0, "Show program version"},
+    {"zstd-program", 'p', "/usr/bin/zstd", 0, "Path to zstd (defaults to /usr/bin/zstd"},
     { 0 }
 };
 
 struct arguments {
   char *args[1];
   char *dir;
+  char *zstd_program;
   zck_log_type log_level;
   bool stdout;
   bool exit;
@@ -92,6 +94,9 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state) {
             break;*/
         case 'd':
             arguments->dir = arg;
+            break;
+        case 'p':
+            arguments->zstd_program = arg;
             break;
         case 'V':
             version();
@@ -299,7 +304,7 @@ int main (int argc, char *argv[]) {
     /* Create dictionary */
 #ifdef _WIN32
     char buf[5000];
-    sprintf(buf, "zstd --train '%s' -r -o '%s'", dir, out_name);
+    sprintf(buf, "%s --train '%s' -r -o '%s'", arguments.zstd_program, dir, out_name);
     int w = system(buf);
     if (w < 0)
     {
@@ -309,8 +314,8 @@ int main (int argc, char *argv[]) {
 #else
     int pid = fork();
     if(pid == 0) {
-        execl("/usr/bin/zstd", "zstd", "--train", dir, "-r", "-o", out_name, NULL);
-        LOG_ERROR("Unable to find /usr/bin/zstd\n");
+        execl(arguments.zstd_program, "zstd", "--train", dir, "-r", "-o", out_name, NULL);
+        LOG_ERROR("Unable to find %s\n", arguments.zstd_program);
         exit(1);
     }
     int wstatus = 0;

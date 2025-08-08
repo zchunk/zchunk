@@ -77,6 +77,10 @@ typedef size_t (*zck_wcb)(void *ptr, size_t l, size_t c, void *dl_v);
     #define ZCK_PUBLIC_API __attribute__((visibility("default")))
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*******************************************************************
  * Reading a zchunk file
  *******************************************************************/
@@ -409,5 +413,9 @@ bool ZCK_PUBLIC_API zck_dl_set_write_data(zckDL *dl, void *data)
 size_t ZCK_PUBLIC_API zck_write_chunk_cb(void *ptr, size_t l, size_t c, void *dl_v);
 size_t ZCK_PUBLIC_API zck_write_zck_header_cb(void *ptr, size_t l, size_t c, void *dl_v);
 size_t ZCK_PUBLIC_API zck_header_cb(char *b, size_t l, size_t c, void *dl_v);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

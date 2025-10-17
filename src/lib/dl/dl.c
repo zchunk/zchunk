@@ -248,10 +248,16 @@ bool ZCK_PUBLIC_API zck_copy_chunks(zckCtx *src, zckCtx *tgt) {
         }
         zckChunk *f = NULL;
 
-        HASH_FIND(hh, src_info->ht, tgt_idx->digest, tgt_idx->digest_size, f);
-        if(f && f->length == tgt_idx->length &&
-           f->comp_length == tgt_idx->comp_length)
+        /* If both archives has uncompressed data digests, check them instead of the compressed ones */
+        if(src->has_uncompressed_source && tgt->has_uncompressed_source){
+            HASH_FIND(hhuncomp, src_info->htuncomp, tgt_idx->digest_uncompressed, tgt_idx->digest_size, f);
+        }else{
+            HASH_FIND(hh, src_info->ht, tgt_idx->digest, tgt_idx->digest_size, f);
+        }
+
+        if(f && f->length == tgt_idx->length)
             write_and_verify_chunk(src, tgt, f, tgt_idx);
+        
         tgt_idx = tgt_idx->next;
     }
     return true;
@@ -279,13 +285,14 @@ bool ZCK_PUBLIC_API zck_find_matching_chunks(zckCtx *src, zckCtx *tgt) {
         }
 
         /*
-         * Compare digest for compressed data if the same compressor
+         * Compare digest for uncompressed data if both archives support it,
+         * otherwise compare digest for compressed data if the same compressor
          * was iused
          */
-        if (src->comp.type == tgt->comp.type) {
-            HASH_FIND(hh, src_info->ht, tgt_idx->digest, tgt_idx->digest_size, f);
-        } else if (src->has_uncompressed_source && tgt->has_uncompressed_source) {
+        if (src->has_uncompressed_source && tgt->has_uncompressed_source) {
             HASH_FIND(hhuncomp, src_info->htuncomp, tgt_idx->digest_uncompressed, tgt_idx->digest_size, f);
+        }else if (src->comp.type == tgt->comp.type) {
+            HASH_FIND(hh, src_info->ht, tgt_idx->digest, tgt_idx->digest_size, f);
         } else {
 
         }

@@ -271,11 +271,19 @@ bool ZCK_PUBLIC_API zck_compare_chunk_digest(zckChunk *a, zckChunk *b) {
     } else {
         ALLOCD_BOOL(NULL, b);
     }
-
+    
     if(a->digest_size != b->digest_size)
         return false;
-    if(memcmp(a->digest, b->digest, a->digest_size) != 0)
-        return false;
+	
+	if(a->zck->has_uncompressed_source && b->zck->has_uncompressed_source){
+		/* If both archives has uncompressed digest, compare them instead */
+        if(memcmp(a->digest_uncompressed, b->digest_uncompressed, a->digest_size) != 0)
+            return false;
+    }else {
+        if(memcmp(a->digest, b->digest, a->digest_size) != 0)
+            return false;
+    }
+
     return true;
 }
 

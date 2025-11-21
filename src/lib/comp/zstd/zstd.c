@@ -82,7 +82,7 @@ static bool init(zckCtx *zck, zckComp *comp) {
     return true;
 }
 
-static bool close(zckCtx *zck, zckComp *comp) {
+static bool close_zck_component(zckCtx *zck, zckComp *comp) {
     ALLOCD_BOOL(zck, zck);
     ALLOCD_BOOL(zck, comp);
 
@@ -284,7 +284,7 @@ bool zstd_setup(zckCtx *zck, zckComp *comp) {
     comp->end_cchunk = end_cchunk;
     comp->decompress = decompress;
     comp->end_dchunk = end_dchunk;
-    comp->close = close;
+    comp->close = close_zck_component;
     comp->type = ZCK_COMP_ZSTD;
     return set_default_parameters(zck, comp);
 }

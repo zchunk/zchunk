@@ -197,6 +197,14 @@ static bool read_preface(zckCtx *zck) {
                 return false;
             if(!read_optional_element(zck, id, data_size, header+length))
                 return false;
+            /* Verify optional element data doesn't extend past the header
+             * buffer. Without this check, a malicious data_size would push
+             * `length` past max_length, causing the subsequent
+             * compint_to_int (for index_size) to read out of bounds. */
+            if(length + data_size > max_length) {
+                set_fatal_error(zck, "Read past end of optional element data");
+                return false;
+            }
             length += data_size;
         }
     }

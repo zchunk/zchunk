@@ -511,6 +511,16 @@ if build_machine.endian() != 'big'
             join_paths(file_path, 'compressed_int_too_large5.zck')
         ]
     )
+    test(
+        'rejects optional element data exceeding header boundary',
+        exitcodecheck,
+        args: [
+            zck_read_header,
+            '1',
+            '-v',
+            join_paths(file_path, 'optelems_overread.zck')
+        ]
+    )
 endif
 
 run_target('test-abi',

@@ -153,6 +153,9 @@ void ZCK_PUBLIC_API zck_range_free(zckRange **info) {
 }
 
 char ZCK_PUBLIC_API *zck_get_range_char(zckCtx *zck, zckRange *range) {
+    if(range == NULL || range->first == NULL)
+        return zmalloc(1);
+
     int buf_size = BUF_SIZE;
     char *output = zmalloc(buf_size);
     if (!output) {

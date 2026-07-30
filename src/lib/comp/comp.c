@@ -101,7 +101,8 @@ static size_t comp_read_from_dc(zckCtx *zck, zckComp *comp, char *dst,
     size_t dl_size = dst_size;
     if(dl_size > comp->dc_data_size - comp->dc_data_loc)
         dl_size = comp->dc_data_size - comp->dc_data_loc;
-    memcpy(dst, comp->dc_data+comp->dc_data_loc, dl_size);
+    if(dl_size > 0)
+        memcpy(dst, comp->dc_data+comp->dc_data_loc, dl_size);
     comp->dc_data_loc += dl_size;
     if(dl_size > 0)
         zck_log(ZCK_LOG_DEBUG, "Reading %llu bytes from decompressed buffer",
@@ -414,8 +415,9 @@ bool comp_add_to_dc(zckCtx *zck, zckComp *comp, const char *src,
                 (long long unsigned) comp->dc_data_loc);
     zck_log(ZCK_LOG_DEBUG, "Adding %llu bytes to decompressed buffer",
             (long long unsigned) src_size);
-    memcpy(temp, comp->dc_data + comp->dc_data_loc,
-           comp->dc_data_size - comp->dc_data_loc);
+    if(comp->dc_data_size > comp->dc_data_loc)
+        memcpy(temp, comp->dc_data + comp->dc_data_loc,
+               comp->dc_data_size - comp->dc_data_loc);
     free(comp->dc_data);
     comp->dc_data_size -= comp->dc_data_loc;
     comp->dc_data_loc = 0;

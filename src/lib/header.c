@@ -195,6 +195,10 @@ static bool read_preface(zckCtx *zck) {
             if(!compint_to_size(zck, &data_size, header+length, &length,
                                 max_length))
                 return false;
+            if(data_size > max_length - length) {
+                set_fatal_error(zck, "Optional element exceeds header size");
+                return false;
+            }
             if(!read_optional_element(zck, id, data_size, header+length))
                 return false;
             length += data_size;

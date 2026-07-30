@@ -41,13 +41,30 @@
 
 #include "zck_private.h"
 
+static void index_read_free_chunk(zckChunk **chunk) {
+    if(*chunk == NULL)
+        return;
+
+    free((*chunk)->digest);
+    free((*chunk)->digest_uncompressed);
+    free(*chunk);
+    *chunk = NULL;
+}
+
 bool index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
     VALIDATE_BOOL(zck);
+    if(size > max_length) {
+        set_fatal_error(zck, "Index exceeds header size");
+        return false;
+    }
+
     size_t length = 0;
 
     /* Read and configure hash type */
     int hash_type = 0;
-    if(!compint_to_int(zck, &hash_type, data + length, &length, size)) {
+    if(length >= size ||
+       !compint_to_int(zck, &hash_type, data + length, &length,
+                       size - length)) {
         set_fatal_error(zck, "Unable to read hash type");
         return false;
     }
@@ -58,8 +75,9 @@ bool index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
 
     /* Read number of index entries */
     size_t index_count;
-    if(!compint_to_size(zck, &index_count, data + length, &length,
-                        size)) {
+    if(length >= size ||
+       !compint_to_size(zck, &index_count, data + length, &length,
+                        size - length)) {
         set_fatal_error(zck, "Unable to read index count");
         return false;
     }
@@ -90,10 +108,6 @@ bool index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
         }
         memcpy(new->digest, data+length, zck->index.digest_size);
         new->digest_size = zck->index.digest_size;
-        HASH_FIND(hh, zck->index.ht, new->digest, new->digest_size, tmp);
-        if(!tmp)
-            HASH_ADD_KEYPTR(hh, zck->index.ht, new->digest, new->digest_size,
-                            new);
         length += zck->index.digest_size;
 
         /* Read uncompressed entry digest, if any */
@@ -101,30 +115,27 @@ bool index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
             /* same size for digest as compressed */
             if(zck->index.digest_size > size - length) {
                 set_fatal_error(zck, "Read past end of index");
-                free(new->digest);
-                free(new);
+                index_read_free_chunk(&new);
                 return false;
             }
             new->digest_uncompressed = zmalloc(zck->index.digest_size);
             if (!new->digest_uncompressed) {
-                free(new->digest);
-                free(new);
                 zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
+                index_read_free_chunk(&new);
                 return false;
             }
             memcpy(new->digest_uncompressed, data+length, zck->index.digest_size);
-            HASH_FIND(hhuncomp, zck->index.htuncomp, new->digest_uncompressed, new->digest_size, tmp);
-            if(!tmp)
-               HASH_ADD_KEYPTR(hhuncomp, zck->index.htuncomp, new->digest_uncompressed, new->digest_size,
-                               new);
             length += zck->index.digest_size;
-	}
+        }
+
         /* Read and store entry length */
         size_t chunk_length = 0;
-        if(!compint_to_size(zck, &chunk_length, data+length, &length,
-                            size)) {
+        if(length >= size ||
+           !compint_to_size(zck, &chunk_length, data+length, &length,
+                            size - length)) {
             set_fatal_error(zck, "Unable to read chunk %i compressed size",
                             count);
+            index_read_free_chunk(&new);
             return false;
         }
         new->start = idx_loc;
@@ -132,10 +143,12 @@ bool index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
 
         /* Read and store uncompressed entry length */
         chunk_length = 0;
-        if(!compint_to_size(zck, &chunk_length, data+length, &length,
-                            size)) {
+        if(length >= size ||
+           !compint_to_size(zck, &chunk_length, data+length, &length,
+                            size - length)) {
             set_fatal_error(zck, "Unable to read chunk %i uncompressed size",
                             count);
+            index_read_free_chunk(&new);
             return false;
         }
         new->length = chunk_length;
@@ -151,6 +164,19 @@ bool index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
         else
             zck->index.first = new;
         prev = new;
+
+        HASH_FIND(hh, zck->index.ht, new->digest, new->digest_size, tmp);
+        if(!tmp)
+            HASH_ADD_KEYPTR(hh, zck->index.ht, new->digest, new->digest_size,
+                            new);
+        if(zck->has_uncompressed_source) {
+            HASH_FIND(hhuncomp, zck->index.htuncomp, new->digest_uncompressed,
+                      new->digest_size, tmp);
+            if(!tmp)
+                HASH_ADD_KEYPTR(hhuncomp, zck->index.htuncomp,
+                                new->digest_uncompressed, new->digest_size,
+                                new);
+        }
     }
     if(count == 0 || (size_t)count != index_count) {
         set_fatal_error(zck, "Index entry count does not match index data");

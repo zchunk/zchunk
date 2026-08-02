@@ -163,7 +163,6 @@ char ZCK_PUBLIC_API *zck_get_range_char(zckCtx *zck, zckRange *range) {
        return NULL;
     }
     int loc = 0;
-    int count = 0;
     zckRangeItem *ri = range->first;
     while(ri) {
         int length = snprintf(output+loc, buf_size-loc, "%llu-%llu,",
@@ -185,7 +184,6 @@ char ZCK_PUBLIC_API *zck_get_range_char(zckCtx *zck, zckRange *range) {
             continue;
         }
         loc += length;
-        count++;
         ri = ri->next;
     }
     output[loc-1]='\0'; // Remove final comma

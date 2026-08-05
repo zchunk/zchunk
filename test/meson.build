@@ -52,6 +52,11 @@ exitcodecheck = executable('exitcodecheck',
                       include_directories: incdir,
                       dependencies: [zstd_dep, openssl_dep],
                       c_args: preprocessor_defines)
+huge_chunk_length = executable('huge_chunk_length',
+                               ['huge_chunk_length.c'] + util_sources,
+                               include_directories: incdir,
+                               dependencies: [zstd_dep, openssl_dep],
+                               c_args: preprocessor_defines)
 zck_cmp_uncomp = executable(
     'zck_cmp_uncomp',
     ['zck_cmp_uncomp.c'],
@@ -509,6 +514,13 @@ if build_machine.endian() != 'big'
             '1',
             '-v',
             join_paths(file_path, 'compressed_int_too_large5.zck')
+        ]
+    )
+    test(
+        'rejects implausible chunk length',
+        huge_chunk_length,
+        args: [
+            join_paths(file_path, 'huge_chunk_length.zck')
         ]
     )
 endif

@@ -140,6 +140,29 @@ bool index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
         count++;
         zck->index.length = idx_loc;
 
+        /* Reject implausible uncompressed chunk lengths to prevent
+         * unbounded memory allocation (CWE-409) when import_dict() or
+         * end_dchunk() zmalloc() the declared length from an attacker-
+         * controlled .zck index. The absolute cap is well above the
+         * default 10 MiB write-side chunk_max_size (CHUNK_DEFAULT_MAX);
+         * the ratio cap is comfortably above zstd's empirical maximum
+         * (~32k:1 on all-zero input). */
+#define ZCK_INDEX_MAX_ULENGTH  ((size_t)1024 * 1024 * 1024) /* 1 GiB */
+#define ZCK_INDEX_MAX_RATIO    65536
+        if(new->length > ZCK_INDEX_MAX_ULENGTH ||
+           (new->comp_length > 0 &&
+            new->length / new->comp_length > ZCK_INDEX_MAX_RATIO)) {
+            set_fatal_error(zck,
+                "Chunk %i has implausible uncompressed length %llu "
+                "(compressed length %llu)",
+                count - 1, (unsigned long long)new->length,
+                (unsigned long long)new->comp_length);
+            free(new->digest);
+            free(new->digest_uncompressed);
+            free(new);
+            return false;
+        }
+
         if(prev)
             prev->next = new;
         else

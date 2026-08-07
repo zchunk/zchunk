@@ -44,7 +44,9 @@
 #endif
 #include <dirent.h>
 #include <unistd.h>
+#ifndef _AIX
 #include <argp.h>
+#endif
 #include <zck.h>
 
 #if defined(stdout)

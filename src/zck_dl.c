@@ -39,7 +39,9 @@
 #endif
 #include <unistd.h>
 #include <errno.h>
+#ifndef _AIX
 #include <argp.h>
+#endif
 #include <zck.h>
 #include <curl/curl.h>
 

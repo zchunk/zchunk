@@ -33,7 +33,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#ifndef _AIX
 #include <argp.h>
+#endif
 #include <zck.h>
 
 #include "util_common.h"

@@ -237,7 +237,8 @@ bool import_dict(zckCtx *zck) {
        zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
        return false;
     }
-    if(comp_read(zck, data, size, 0) != size) {
+    if(comp_read(zck, data, size, 0) != (ssize_t)size) {
+        free(data);
         set_error(zck, "Error reading compressed dict");
         return false;
     }
@@ -383,6 +384,10 @@ bool ZCK_PUBLIC_API zck_set_ioption(zckCtx *zck, zck_ioption option, ssize_t val
             (long long unsigned) value
         );
         return false;
+
+    /* Maximum chunk size also limits the chunks we'll read */
+    } else if(option == ZCK_CHUNK_MAX) {
+        return comp_ioption(zck, option, value);
 
     /* Compression options */
     } else if(option < 2000) {

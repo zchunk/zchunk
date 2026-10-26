@@ -26,6 +26,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <limits.h>
 #include <stdbool.h>
 #include <zck.h>
 #include "zck_private.h"
@@ -48,32 +49,13 @@ int compint_to_size(zckCtx *zck, size_t *val, const char *compint,
     VALIDATE_BOOL(zck);
 
     *val = 0;
-    if(max_length == 0) {
-        set_fatal_error(zck, "Read past end of header");
-        return false;
-    }
-    size_t old_val = 0;
     const unsigned char *i = (unsigned char *)compint;
     int count = 0;
     bool done = false;
     while(true) {
-        size_t c = i[0];
-        if(c >= 128) {
-            c -= 128;
-            done = true;
-        }
-        /* There *must* be a more elegant way of doing c * 128**count */
-        for(int f=0; f<count; f++)
-            c *= 128;
-        *val += c;
-        (*length) = (*length) + 1;
-        count++;
-        if(done)
-            break;
-        i++;
-        /* Make sure we're not overflowing and fail if we do */
-        if(count >= MAX_COMP_SIZE || count >= max_length || *val < old_val) {
-            if(count > max_length)
+        /* Make sure there's another byte we're allowed to read */
+        if(count >= MAX_COMP_SIZE || count >= max_length) {
+            if(count >= max_length)
                 set_fatal_error(zck, "Read past end of header");
             else
                 set_fatal_error(zck, "Number too large");
@@ -81,7 +63,24 @@ int compint_to_size(zckCtx *zck, size_t *val, const char *compint,
             *val = 0;
             return false;
         }
-        old_val = *val;
+        size_t c = i[0];
+        if(c >= 128) {
+            c -= 128;
+            done = true;
+        }
+        /* Make sure c * 128**count fits, including on the final byte */
+        if(c > (SIZE_MAX >> (7*count))) {
+            set_fatal_error(zck, "Number too large");
+            *length -= count;
+            *val = 0;
+            return false;
+        }
+        *val += c << (7*count);
+        (*length) = (*length) + 1;
+        count++;
+        if(done)
+            break;
+        i++;
     }
     return true;
 }
@@ -105,10 +104,10 @@ int compint_to_int(zckCtx *zck, int *val, const char *compint, size_t *length,
     size_t new = (size_t)*val;
     if(!compint_to_size(zck, &new, compint, length, max_length))
         return false;
-    *val = (int)new;
-    if(*val < 0) {
-        set_fatal_error(zck, "Overflow error: compressed int is negative");
+    if(new > INT_MAX) {
+        set_fatal_error(zck, "Overflow error: compressed int is too large");
         return false;
     }
+    *val = (int)new;
     return true;
 }

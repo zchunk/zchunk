@@ -52,6 +52,11 @@ exitcodecheck = executable('exitcodecheck',
                       include_directories: incdir,
                       dependencies: [zstd_dep, openssl_dep],
                       c_args: preprocessor_defines)
+read_limits = executable('read_limits',
+                      ['read_limits.c'] + util_sources,
+                      include_directories: incdir,
+                      dependencies: [zstd_dep, openssl_dep],
+                      c_args: preprocessor_defines)
 multipart = executable('multipart',
                       ['multipart.c'] + util_sources,
                       include_directories: incdir,
@@ -86,6 +91,13 @@ test(
 test(
     'rejects malicious multipart responses',
     multipart
+)
+test(
+    'rejects out-of-range values when reading',
+    read_limits,
+    args: [
+        join_paths(file_path, 'LICENSE.nodict.fodt.zck')
+    ]
 )
 test(
     'rejects truncated preface without over-reading',

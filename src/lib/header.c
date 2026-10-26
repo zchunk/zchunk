@@ -235,7 +235,8 @@ static bool read_index(zckCtx *zck) {
     }
     header = zck->header + zck->lead_size + zck->preface_size;
     zck_log(ZCK_LOG_DEBUG, "Reading index at 0x%x", (unsigned long)(zck->lead_size + zck->preface_size));
-    int max_length = zck->header_size - (zck->lead_size + zck->preface_size);
+    size_t max_length = zck->header_size - (zck->lead_size +
+                                            zck->preface_size);
     if(!index_read(zck, header, zck->index_size, max_length))
         return false;
 
@@ -535,12 +536,6 @@ static bool read_lead(zckCtx *zck) {
         hash_reset(&(zck->hash_type));
         return false;
     }
-    if(header_length > SIZE_MAX) {
-        free(header);
-        set_error(zck, "Header length of %li invalid", header_length);
-        hash_reset(&(zck->hash_type));
-        return false;
-    }
     zck->header_length = header_length;
 
     /* Set header digest location */
@@ -680,6 +675,8 @@ ssize_t ZCK_PUBLIC_API zck_get_lead_length(zckCtx *zck) {
 ssize_t ZCK_PUBLIC_API zck_get_data_length(zckCtx *zck) {
     VALIDATE_INT(zck);
     zckChunk *idx = zck->index.first;
+    if(idx == NULL)
+        return 0;
     while(idx->next != NULL)
         idx = idx->next;
     return idx->start + idx->comp_length;

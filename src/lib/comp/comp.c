@@ -29,6 +29,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <limits.h>
 #include <math.h>
 #include <zck.h>
 
@@ -138,9 +139,14 @@ static bool comp_add_to_data(zckCtx *zck, zckComp *comp, const char *src,
 static ssize_t comp_end_dchunk(zckCtx *zck, bool use_dict, size_t fd_size) {
     VALIDATE_READ_INT(zck);
 
-    ssize_t rb = zck->comp.end_dchunk(zck, &(zck->comp), use_dict, fd_size);
-    if(validate_current_chunk(zck) < 1)
+    /* The checksum covers the compressed data, so check it before spending
+     * time and memory decompressing */
+    if(validate_current_chunk(zck) < 1) {
+        set_error(zck, "Chunk %i failed checksum validation",
+                  zck->comp.data_idx->number);
         return -1;
+    }
+    ssize_t rb = zck->comp.end_dchunk(zck, &(zck->comp), use_dict, fd_size);
     zck->comp.data_loc = 0;
     zck->comp.data_idx = zck->comp.data_idx->next;
     if(!hash_init(zck, &(zck->check_chunk_hash), &(zck->chunk_hash_type)))
@@ -350,11 +356,13 @@ bool comp_ioption(zckCtx *zck, zck_ioption option, ssize_t value) {
 
     /* Maximum chunk size */
     } else if(option == ZCK_CHUNK_MAX) {
-        VALIDATE_WRITE_BOOL(zck);
         if(value < 1) {
             set_error(zck, "Maximum chunk size must be > 0");
             return false;
         }
+        /* chunk_max_size is an int */
+        if(value > INT_MAX)
+            value = INT_MAX;
         if(value < zck->chunk_min_size) {
             set_error(zck, "Maximum chunk size must be >= minimum chunk size");
             return false;
@@ -504,7 +512,7 @@ ssize_t comp_read(zckCtx *zck, char *dst, size_t dst_size, bool use_dict) {
             }
         }
         if(zck->comp.data_loc == zck->comp.data_idx->comp_length) {
-            if(!comp_end_dchunk(zck, use_dict, zck->comp.data_idx->length)) {
+            if(comp_end_dchunk(zck, use_dict, zck->comp.data_idx->length) < 1) {
                 free(src);
                 return -1;
             }

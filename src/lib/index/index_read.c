@@ -28,6 +28,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <limits.h>
 #ifdef FREEBSD
 #include <sys/endian.h>
 #elif __APPLE__
@@ -152,6 +153,20 @@ bool index_read(zckCtx *zck, char *data, size_t size, size_t max_length) {
             return false;
         }
         new->length = chunk_length;
+
+        /* Chunks are decompressed into memory, so refuse any that are larger
+         * than we're willing to allocate */
+        size_t max_size = INT_MAX;
+        if(zck->chunk_max_size > 0)
+            max_size = zck->chunk_max_size;
+        if(new->length > max_size) {
+            set_fatal_error(zck, "Chunk %i is larger than maximum chunk size "
+                            "(%llu > %llu)", count,
+                            (long long unsigned) new->length,
+                            (long long unsigned) max_size);
+            index_read_free_chunk(&new);
+            return false;
+        }
         new->zck = zck;
         new->valid = 0;
         new->number = count;

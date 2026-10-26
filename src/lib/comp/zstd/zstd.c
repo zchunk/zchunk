@@ -242,6 +242,12 @@ static bool end_dchunk(zckCtx *zck, zckComp *comp, const bool use_dict,
                         ZSTD_getErrorName(retval));
         goto decomp_error_2;
     }
+    if(retval != fd_size) {
+        set_fatal_error(zck, "Decompressed chunk is %llu bytes, expected %llu",
+                        (long long unsigned) retval,
+                        (long long unsigned) fd_size);
+        goto decomp_error_2;
+    }
     if(!comp_add_to_dc(zck, comp, dst, fd_size))
         goto decomp_error_2;
     free(dst);

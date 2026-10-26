@@ -34,19 +34,53 @@
 
 #include "zck_private.h"
 
+/* Longest part header we'll buffer while waiting for its terminating blank
+ * line.  Real part headers are a few hundred bytes. */
+#define MAX_MP_HEADER_SIZE 65536
+
+/* Parse a decimal range value from a regex match, failing on overflow */
+static bool parse_range_value(const char *start, const char *end,
+                              size_t *val) {
+    *val = 0;
+    for(const char *c=start; c < end; c++) {
+        size_t digit = (size_t)(c[0] - '0');
+        if(*val > (SIZE_MAX - digit) / 10)
+            return false;
+        *val = *val * 10 + digit;
+    }
+    return true;
+}
+
 static char *add_boundary_to_regex(zckCtx *zck, const char *regex,
                                    const char *boundary) {
     VALIDATE_PTR(zck);
 
     if(regex == NULL || boundary == NULL)
         return NULL;
-    char *regex_b = zmalloc(strlen(regex) + strlen(boundary) + 1);
-    if(!regex_b || snprintf(regex_b, strlen(regex) + strlen(boundary), regex,
-                boundary) != strlen(regex) + strlen(boundary) - 2) {
+
+    /* The boundary comes from the server, so escape anything that's special
+     * in an extended regular expression */
+    char *escaped = zmalloc(2*strlen(boundary) + 1);
+    if(!escaped) {
+        set_error(zck, "Unable to build regular expression");
+        return NULL;
+    }
+    char *e = escaped;
+    for(const char *b=boundary; *b; b++) {
+        if(strchr("\\^$.|?*+()[]{}", *b))
+            *e++ = '\\';
+        *e++ = *b;
+    }
+
+    size_t length = strlen(regex) + strlen(escaped);
+    char *regex_b = zmalloc(length + 1);
+    if(!regex_b || snprintf(regex_b, length, regex, escaped) != length - 2) {
+        free(escaped);
         free(regex_b);
         set_error(zck, "Unable to build regular expression");
         return NULL;
     }
+    free(escaped);
     return regex_b;
 }
 
@@ -159,8 +193,11 @@ size_t multipart_extract(zckDL *dl, char *b, size_t l) {
             } else {
                 mp->length -= size;
             }
-            if(dl_write_range(dl, i, size) != size)
+            if(dl_write_range(dl, i, size) != size) {
+                if(alloc_buf)
+                    free(buf);
                 return 0;
+            }
             i += size;
             continue;
         }
@@ -169,10 +206,17 @@ size_t multipart_extract(zckDL *dl, char *b, size_t l) {
          * and leave loop */
         if(i >= end) {
             size_t size = buf + l - header_start;
+            if(size > MAX_MP_HEADER_SIZE) {
+                set_error(dl->zck, "Multipart part header too large");
+                if(alloc_buf)
+                    free(buf);
+                return 0;
+            }
             if(size > 0) {
                 mp->buffer = zmalloc(size);
                 if (!mp->buffer) {
-                    free(buf);
+                    if(alloc_buf)
+                        free(buf);
                     zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);
                     return 0;
                 }
@@ -209,15 +253,19 @@ size_t multipart_extract(zckDL *dl, char *b, size_t l) {
             goto end;
         }
 
-        /* Get range start from regex */
+        /* Get range start and end from regex */
         size_t rstart = 0;
-        for(char *c=i + match[1].rm_so; c < i + match[1].rm_eo; c++)
-            rstart = rstart*10 + (size_t)(c[0] - 48);
-
-        /* Get range end from regex */
         size_t rend = 0;
-        for(char *c=i + match[2].rm_so; c < i + match[2].rm_eo; c++)
-            rend = rend*10 + (size_t)(c[0] - 48);
+        if(!parse_range_value(i + match[1].rm_so, i + match[1].rm_eo,
+                              &rstart) ||
+           !parse_range_value(i + match[2].rm_so, i + match[2].rm_eo,
+                              &rend) ||
+           rend < rstart) {
+            set_error(dl->zck, "Invalid multipart download range");
+            if(alloc_buf)
+                free(buf);
+            return 0;
+        }
 
         i = j;
         zck_log(ZCK_LOG_DEBUG, "Download range: %llu-%llu",
@@ -237,9 +285,11 @@ size_t multipart_get_boundary(zckDL *dl, char *b, size_t size) {
     ALLOCD_BOOL(NULL, dl);
     VALIDATE_BOOL(dl->zck);
 
-    /* Create regex to find boundary */
+    /* Create regex to find boundary.  The boundary runs to the end of the
+     * line, minus any trailing spaces.  Don't use non-greedy matching (*?);
+     * it isn't POSIX and macOS's regex rejects it */
     if(dl->hdr_regex == NULL) {
-        char *regex = "boundary *= *(.*?) *\r";
+        char *regex = "boundary *= *([^\r]*[^ \r])";
         dl->hdr_regex = zmalloc(sizeof(regex_t));
         if(!dl->hdr_regex || !create_regex(dl->zck, dl->hdr_regex, regex))
             return 0;
@@ -267,6 +317,11 @@ size_t multipart_get_boundary(zckDL *dl, char *b, size_t size) {
             boundary_start  += 1;
             boundary_length -= 2;
         }
+
+        /* Drop any earlier boundary, along with the regexes built from it */
+        free(dl->boundary);
+        dl->boundary = NULL;
+        clear_dl_regex(dl);
         char *boundary = zmalloc(boundary_length + 1);
         if (!boundary) {
             zck_log(ZCK_LOG_ERROR, "OOM in %s", __func__);

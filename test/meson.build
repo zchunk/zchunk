@@ -52,6 +52,11 @@ exitcodecheck = executable('exitcodecheck',
                       include_directories: incdir,
                       dependencies: [zstd_dep, openssl_dep],
                       c_args: preprocessor_defines)
+multipart = executable('multipart',
+                      ['multipart.c'] + util_sources,
+                      include_directories: incdir,
+                      dependencies: [zstd_dep, openssl_dep],
+                      c_args: preprocessor_defines)
 read_header_bounds = executable('read_header_bounds',
                       ['read_header_bounds.c'] + util_sources,
                       include_directories: incdir,
@@ -77,6 +82,10 @@ test(
     'create and validate empty zchunk file',
     empty,
     is_parallel: false
+)
+test(
+    'rejects malicious multipart responses',
+    multipart
 )
 test(
     'rejects truncated preface without over-reading',

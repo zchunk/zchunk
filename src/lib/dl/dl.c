@@ -36,7 +36,7 @@
 #include "zck_private.h"
 
 /* Free zckDL header regex used for downloading ranges */
-static void clear_dl_regex(zckDL *dl) {
+void clear_dl_regex(zckDL *dl) {
     if(dl == NULL)
         return;
 

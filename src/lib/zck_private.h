@@ -418,6 +418,7 @@ void reset_mp(zckMP *mp);
 /* dl/dl.c */
 int dl_write_range(zckDL *dl, const char *at, size_t length)
     ZCK_WARN_UNUSED;
+void clear_dl_regex(zckDL *dl);
 
 /* compint.c */
 int compint_from_int(zckCtx *zck, char *compint, int val, size_t *length)

@@ -1,7 +1,7 @@
 #ifndef ZCK_H
 #define ZCK_H
 
-#define ZCK_VERSION "1.5.4"
+#define ZCK_VERSION "1.5.5"
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -33,7 +33,13 @@ typedef enum zck_ioption {
     ZCK_COMP_TYPE = 100,        /* Set compression type using zck_comp */
     ZCK_MANUAL_CHUNK,           /* Disable auto-chunking */
     ZCK_CHUNK_MIN,              /* Minimum chunk size when manual chunking */
-    ZCK_CHUNK_MAX,              /* Maximum chunk size when manual chunking */
+    ZCK_CHUNK_MAX,              /* Maximum chunk size when manual chunking.
+                                   When reading, chunks whose uncompressed size
+                                   is larger than this are rejected.  The read
+                                   default is INT_MAX, and larger values are
+                                   treated as INT_MAX.  Readers must set it
+                                   between zck_init_adv_read() and
+                                   zck_read_header() */
     ZCK_ZSTD_COMP_LEVEL = 1000  /* Set zstd compression level */
 } zck_ioption;
 

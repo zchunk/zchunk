@@ -164,7 +164,8 @@ static bool read_preface(zckCtx *zck) {
 
     /* Read flags */
     size_t flags = 0;
-    if(!compint_to_size(zck, &flags, header+length, &length, max_length))
+    if(!compint_to_size(zck, &flags, header+length, &length,
+                        max_length - length))
         return false;
     if(!check_flags(zck, flags))
         return false;
@@ -174,7 +175,8 @@ static bool read_preface(zckCtx *zck) {
     int tmp = 0;
 
     /* Read and initialize compression type */
-    if(!compint_to_int(zck, &tmp, header+length, &length, max_length))
+    if(!compint_to_int(zck, &tmp, header+length, &length,
+                       max_length - length))
         return false;
     if(!comp_ioption(zck, ZCK_COMP_TYPE, tmp))
         return false;
@@ -185,15 +187,16 @@ static bool read_preface(zckCtx *zck) {
     if(zck->has_optional_elems) {
         size_t opt_count = 0;
         if(!compint_to_size(zck, &opt_count, header+length, &length,
-                            max_length))
+                            max_length - length))
             return false;
         for(size_t i=0; i<opt_count; i++) {
             size_t id = 0;
             size_t data_size = 0;
-            if(!compint_to_size(zck, &id, header+length, &length, max_length))
+            if(!compint_to_size(zck, &id, header+length, &length,
+                                max_length - length))
                 return false;
             if(!compint_to_size(zck, &data_size, header+length, &length,
-                                max_length))
+                                max_length - length))
                 return false;
             if(data_size > max_length - length) {
                 set_fatal_error(zck, "Optional element exceeds header size");
@@ -206,7 +209,8 @@ static bool read_preface(zckCtx *zck) {
     }
 
     /* Read and initialize index size */
-    if(!compint_to_int(zck, &tmp, header+length, &length, max_length))
+    if(!compint_to_int(zck, &tmp, header+length, &length,
+                       max_length - length))
         return false;
     zck->index_size = tmp;
 

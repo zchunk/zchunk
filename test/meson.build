@@ -52,6 +52,11 @@ exitcodecheck = executable('exitcodecheck',
                       include_directories: incdir,
                       dependencies: [zstd_dep, openssl_dep],
                       c_args: preprocessor_defines)
+read_header_bounds = executable('read_header_bounds',
+                      ['read_header_bounds.c'] + util_sources,
+                      include_directories: incdir,
+                      dependencies: [zstd_dep, openssl_dep],
+                      c_args: preprocessor_defines)
 zck_cmp_uncomp = executable(
     'zck_cmp_uncomp',
     ['zck_cmp_uncomp.c'],
@@ -71,6 +76,11 @@ endif
 test(
     'create and validate empty zchunk file',
     empty,
+    is_parallel: false
+)
+test(
+    'rejects truncated preface without over-reading',
+    read_header_bounds,
     is_parallel: false
 )
 test(

@@ -48,6 +48,10 @@ int compint_to_size(zckCtx *zck, size_t *val, const char *compint,
     VALIDATE_BOOL(zck);
 
     *val = 0;
+    if(max_length == 0) {
+        set_fatal_error(zck, "Read past end of header");
+        return false;
+    }
     size_t old_val = 0;
     const unsigned char *i = (unsigned char *)compint;
     int count = 0;

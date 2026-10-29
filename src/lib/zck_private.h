@@ -309,7 +309,7 @@ struct zckCtx {
     int error_state;
 };
 
-int get_tmp_fd()
+int get_tmp_fd(zckCtx *zck)
     ZCK_WARN_UNUSED;
 bool import_dict(zckCtx *zck)
     ZCK_WARN_UNUSED;
